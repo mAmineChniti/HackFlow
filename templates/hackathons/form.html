@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} — HackFlow{% endblock %}
+
+{% block content %}
+<div class="relative py-10 md:py-14">
+    <!-- Back link -->
+    <div class="container-page mb-6">
+        <a href="{% url 'hackathons:list' %}" class="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
+            <c-lucideicon.arrow-left class="size-3.5" />
+            Retour à la liste des hackathons
+        </a>
+    </div>
+
+    <div class="container-page max-w-4xl space-y-8">
+        <!-- Header -->
+        <div class="border-b border-border/60 pb-6">
+            <div class="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-xs font-medium text-primary mb-3">
+                <span class="size-1.5 rounded-full bg-primary animate-pulse"></span>
+                Espace Organisateur
+            </div>
+            <h1 class="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                {{ page_title }}
+            </h1>
+            <p class="mt-2 text-sm text-muted-foreground">
+                Remplissez les informations ci-dessous pour configurer votre hackathon, ses dates et ses critères.
+            </p>
+        </div>
+
+        <!-- AI Assistant Banner (Innovation BioDev) -->
+        <div class="rounded-xl border border-primary/40 bg-gradient-to-r from-primary/10 via-background to-secondary/20 p-5 shadow-sm">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">✨</span>
+                        <h2 class="text-sm font-semibold text-foreground">Assistant IA HackFlow</h2>
+                    </div>
+                    <p class="text-xs text-muted-foreground">
+                        Besoin d'inspiration ? Laissez l'IA générer un slogan percutant, un programme type et le règlement adapté à votre thème.
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    onclick="alert('💡 Astuce IA : Vous pourrez bientôt connecter votre clé API Gemini ou Claude pour auto-remplir ce formulaire en 1 clic !')"
+                    class="inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/20 px-3.5 py-1.5 font-mono text-xs font-medium text-primary hover:bg-primary/30 transition-colors shrink-0"
+                >
+                    <c-lucideicon.sparkles class="size-3.5" />
+                    Suggérer avec l'IA
+                </button>
+            </div>
+        </div>
+
+        <!-- Form Card -->
+        <c-card class="border-border/80 bg-card/60 p-6 md:p-8 backdrop-blur-sm">
+            <form method="post" enctype="multipart/form-data" class="space-y-8">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <c-alert variant="destructive">
+                    <c-alert.description>
+                        {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                        {% endfor %}
+                    </c-alert.description>
+                </c-alert>
+                {% endif %}
+
+                <!-- Section 1 : Général -->
+                <div class="space-y-4">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-primary font-mono">// 1. Informations générales</h2>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="sm:col-span-2 space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Titre de l'événement *</label>
+                            {{ form.title }}
+                            {% for error in form.title.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="sm:col-span-2 space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Slogan court (Tagline) *</label>
+                            {{ form.tagline }}
+                            {% for error in form.tagline.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Catégorie *</label>
+                            {{ form.category }}
+                            {% for error in form.category.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Niveau de difficulté</label>
+                            {{ form.difficulty }}
+                            {% for error in form.difficulty.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="sm:col-span-2 space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Description détaillée *</label>
+                            {{ form.description }}
+                            {% for error in form.description.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="sm:col-span-2 space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Image de bannière</label>
+                            {{ form.banner_image }}
+                            {% for error in form.banner_image.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <c-separator />
+
+                <!-- Section 2 : Modalité & Lieu -->
+                <div class="space-y-4">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-primary font-mono">// 2. Modalité & Lieu</h2>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Modalité *</label>
+                            {{ form.mode }}
+                            {% for error in form.mode.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Lieu physique ou lien virtuel</label>
+                            {{ form.location }}
+                            {% for error in form.location.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <c-separator />
+
+                <!-- Section 3 : Dates & Planning -->
+                <div class="space-y-4">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-primary font-mono">// 3. Dates & Planning</h2>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Ouverture des inscriptions *</label>
+                            {{ form.registration_start }}
+                            {% for error in form.registration_start.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Date limite d'inscription *</label>
+                            {{ form.registration_deadline }}
+                            {% for error in form.registration_deadline.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Début du Hackathon *</label>
+                            {{ form.start_date }}
+                            {% for error in form.start_date.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Fin du Hackathon *</label>
+                            {{ form.end_date }}
+                            {% for error in form.end_date.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <c-separator />
+
+                <!-- Section 4 : Règles d'équipes & Capacité -->
+                <div class="space-y-4">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-primary font-mono">// 4. Participants, Équipes & Prix</h2>
+                    <div class="grid gap-4 sm:grid-cols-3">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Capacité max participants</label>
+                            {{ form.max_participants }}
+                            {% for error in form.max_participants.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Taille min équipe</label>
+                            {{ form.min_team_size }}
+                            {% for error in form.min_team_size.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Taille max équipe</label>
+                            {{ form.max_team_size }}
+                            {% for error in form.max_team_size.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="sm:col-span-2 space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Prix / Récompenses</label>
+                            {{ form.prize_pool }}
+                            {% for error in form.prize_pool.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Email de contact</label>
+                            {{ form.contact_email }}
+                            {% for error in form.contact_email.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="sm:col-span-3 space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Lien ressources externes</label>
+                            {{ form.resources_link }}
+                            {% for error in form.resources_link.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="sm:col-span-3 space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Règlement et Critères</label>
+                            {{ form.rules }}
+                            {% for error in form.rules.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <c-separator />
+
+                <!-- Section 5 : Statut & Visibilité -->
+                <div class="space-y-4">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-primary font-mono">// 5. Statut & Publication</h2>
+                    <div class="grid gap-4 sm:grid-cols-2 items-center">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Statut du cycle de vie</label>
+                            {{ form.status }}
+                            {% for error in form.status.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="flex items-center gap-3 pt-5">
+                            {{ form.is_published }}
+                            <label for="{{ form.is_published.id_for_label }}" class="text-xs font-medium text-foreground cursor-pointer">
+                                Publier immédiatement dans le catalogue public
+                            </label>
+                            {% for error in form.is_published.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit buttons -->
+                <div class="flex items-center justify-end gap-3 pt-4">
+                    <c-button_link href="{% url 'hackathons:list' %}" variant="outline" size="lg">
+                        Annuler
+                    </c-button_link>
+                    <c-button type="submit" size="lg">
+                        <c-lucideicon.check class="size-4" />
+                        {{ action_label }}
+                    </c-button>
+                </div>
+            </form>
+        </c-card>
+    </div>
+</div>
+{% endblock %}

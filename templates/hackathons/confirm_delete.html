@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Supprimer {{ object.title }} — HackFlow{% endblock %}
+
+{% block content %}
+<div class="container-page py-16 max-w-xl">
+    <c-card class="border-destructive/40 bg-card/80 shadow-2xl p-6 md:p-8">
+        <div class="flex items-center gap-3 text-destructive mb-4">
+            <span class="flex size-10 items-center justify-center rounded-full bg-destructive/10">
+                <c-lucideicon.alert-triangle class="size-5" />
+            </span>
+            <h1 class="text-xl font-bold">Confirmer la suppression</h1>
+        </div>
+
+        <p class="text-sm text-muted-foreground leading-relaxed">
+            Êtes-vous absolument sûr de vouloir supprimer définitivement le hackathon
+            <strong class="text-foreground">"{{ object.title }}"</strong> ?
+        </p>
+
+        <c-alert variant="destructive" class="my-6">
+            <c-alert.description>
+                Cette action est irréversible. Les inscriptions associées ainsi que le programme de cet événement seront supprimés.
+            </c-alert.description>
+        </c-alert>
+
+        <form method="post" class="flex items-center justify-end gap-3">
+            {% csrf_token %}
+            <c-button_link href="{{ object.get_absolute_url }}" variant="outline" size="default">
+                Annuler
+            </c-button_link>
+            <c-button type="submit" variant="destructive" size="default">
+                <c-lucideicon.trash-2 class="size-4" />
+                Supprimer définitivement
+            </c-button>
+        </form>
+    </c-card>
+</div>
+{% endblock %}

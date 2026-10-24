@@ -1,0 +1,104 @@
+{% load humanize %}
+
+<div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    {% for hackathon in hackathons %}
+    <c-card class="group flex flex-col overflow-hidden border-border/70 bg-card/60 transition-all duration-200 hover:-translate-y-1 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5">
+        <!-- Banner / Gradient Header -->
+        <div class="relative h-32 overflow-hidden border-b border-border/60 bg-gradient-to-br from-primary/20 via-background to-secondary/30">
+            {% if hackathon.banner_image %}
+                <img src="{{ hackathon.banner_image.url }}" alt="{{ hackathon.title }}" class="absolute inset-0 size-full object-cover opacity-60 transition-transform duration-300 group-hover:scale-105" />
+            {% else %}
+                <div class="absolute inset-0 bg-grid-pattern opacity-30"></div>
+            {% endif %}
+            <div class="relative flex h-full flex-col justify-between p-4">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="rounded bg-background/80 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-primary backdrop-blur">
+                        {{ hackathon.category }}
+                    </span>
+                    <c-badge
+                        variant="{% if hackathon.status == 'registration_open' %}default{% elif hackathon.status == 'ongoing' %}destructive{% elif hackathon.status == 'finished' %}secondary{% else %}outline{% endif %}"
+                        class="shrink-0 backdrop-blur-md"
+                    >
+                        {{ hackathon.get_status_display }}
+                    </c-badge>
+                </div>
+                <div class="flex items-center justify-between text-xs text-muted-foreground">
+                    <span class="rounded bg-background/60 px-1.5 py-0.5 font-mono text-[11px] backdrop-blur">
+                        {{ hackathon.get_mode_display }}
+                    </span>
+                    {% if hackathon.prize_pool %}
+                    <span class="font-mono font-medium text-foreground">
+                        🏆 {{ hackathon.prize_pool }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <c-card.header class="pb-3">
+            <c-card.title class="line-clamp-1 text-lg group-hover:text-primary transition-colors">
+                <a href="{{ hackathon.get_absolute_url }}">
+                    {{ hackathon.title }}
+                </a>
+            </c-card.title>
+            <c-card.description class="line-clamp-2 text-xs">
+                {{ hackathon.tagline|default:hackathon.description }}
+            </c-card.description>
+        </c-card.header>
+
+        <c-card.content class="flex-1 space-y-4 pt-0">
+            <div class="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                <div class="flex items-center gap-2 text-muted-foreground">
+                    <c-lucideicon.calendar class="size-3.5 shrink-0 text-primary" />
+                    <span>{{ hackathon.start_date|date:"d M" }} – {{ hackathon.end_date|date:"d M Y" }}</span>
+                </div>
+                <div class="flex items-center gap-2 text-muted-foreground">
+                    <c-lucideicon.map-pin class="size-3.5 shrink-0 text-primary" />
+                    <span class="truncate">{{ hackathon.location|default:hackathon.get_mode_display }}</span>
+                </div>
+                <div class="flex items-center gap-2 text-muted-foreground">
+                    <c-lucideicon.users class="size-3.5 shrink-0 text-primary" />
+                    <span>{{ hackathon.total_registered|default:hackathon.registered_count }} inscrits</span>
+                </div>
+                <div class="flex items-center gap-2 text-muted-foreground">
+                    <c-lucideicon.shield-check class="size-3.5 shrink-0 text-primary" />
+                    <span>Équipe: {{ hackathon.min_team_size }}-{{ hackathon.max_team_size }} pers.</span>
+                </div>
+            </div>
+
+            <!-- Capacity Progress -->
+            <div class="space-y-1.5">
+                <div class="flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span>{{ hackathon.registered_count }} / {{ hackathon.max_participants }} places</span>
+                    <span class="font-mono">{{ hackathon.registration_progress_percent }}%</span>
+                </div>
+                <c-progress value="{{ hackathon.registered_count }}" max="{{ hackathon.max_participants }}" />
+            </div>
+        </c-card.content>
+
+        <!-- Footer -->
+        <c-card.footer class="pt-0">
+            <c-button_link href="{{ hackathon.get_absolute_url }}" variant="outline" size="sm" class="w-full justify-between group-hover:border-primary/50">
+                <span>Découvrir l'événement</span>
+                <c-lucideicon.arrow-right class="size-3.5 transition-transform group-hover:translate-x-1" />
+            </c-button_link>
+        </c-card.footer>
+    </c-card>
+    {% empty %}
+    <div class="col-span-full rounded-2xl border border-dashed border-border/80 bg-card/30 p-12 text-center">
+        <div class="mx-auto flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <c-lucideicon.calendar-off class="size-6" />
+        </div>
+        <h3 class="mt-4 text-base font-semibold">Aucun hackathon trouvé</h3>
+        <p class="mt-2 text-sm text-muted-foreground">
+            Aucun événement ne correspond à vos filtres actuels. Essayez de réinitialiser vos critères.
+        </p>
+        <div class="mt-6">
+            <c-button_link href="{% url 'hackathons:list' %}" variant="outline" size="sm">
+                Réinitialiser les filtres
+            </c-button_link>
+        </div>
+    </div>
+    {% endfor %}
+</div>

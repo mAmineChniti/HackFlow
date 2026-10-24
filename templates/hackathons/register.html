@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Inscription : {{ hackathon.title }} — HackFlow{% endblock %}
+
+{% block content %}
+<div class="container-page py-12 max-w-2xl">
+    <!-- Back -->
+    <a href="{{ hackathon.get_absolute_url }}" class="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground mb-6">
+        <c-lucideicon.arrow-left class="size-3.5" />
+        Retour aux détails du hackathon
+    </a>
+
+    <c-card class="border-border/80 bg-card/70 p-6 md:p-8 shadow-xl backdrop-blur-sm">
+        <div class="border-b border-border/60 pb-5 mb-6">
+            <span class="rounded bg-primary/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-primary">
+                {{ hackathon.category }}
+            </span>
+            <h1 class="text-2xl font-bold text-foreground mt-2">
+                Inscription à {{ hackathon.title }}
+            </h1>
+            <p class="text-xs text-muted-foreground mt-1">
+                {{ hackathon.start_date|date:"d M Y" }} · {{ hackathon.get_mode_display }} · {{ hackathon.prize_pool|default:"Prix d'excellence" }}
+            </p>
+        </div>
+
+        <div class="rounded-lg border border-primary/20 bg-primary/5 p-4 mb-6">
+            <div class="flex items-start gap-3">
+                <span class="text-lg">🤖</span>
+                <div class="space-y-0.5">
+                    <p class="text-xs font-medium text-foreground">Formation d'équipes assistée par IA</p>
+                    <p class="text-[11px] text-muted-foreground leading-relaxed">
+                        Indiquez précisément vos compétences techniques et domaines d'intérêt. Notre algorithme d'IA pourra vous suggérer des coéquipiers complémentaires (ex: Développeur Back + Designer UI + Data Scientist).
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+
+            <div class="space-y-1.5">
+                <label class="text-xs font-medium text-foreground">Vos compétences clés (séparées par des virgules) *</label>
+                {{ form.skills }}
+                <p class="text-[11px] text-muted-foreground">Ex: Python, Django, React, PyTorch, Figma, NLP, Docker</p>
+                {% for error in form.skills.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="text-xs font-medium text-foreground">Motivation & Projets envisagés</label>
+                {{ form.motivation }}
+                {% for error in form.motivation.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-border/60">
+                <c-button_link href="{{ hackathon.get_absolute_url }}" variant="outline" size="default">
+                    Annuler
+                </c-button_link>
+                <c-button type="submit" size="default">
+                    <c-lucideicon.check class="size-4" />
+                    Confirmer mon inscription
+                </c-button>
+            </div>
+        </form>
+    </c-card>
+</div>
+{% endblock %}

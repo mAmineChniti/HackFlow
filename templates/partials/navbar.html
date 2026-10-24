@@ -17,7 +17,7 @@
             </a>
 
             <nav class="hidden items-center gap-1 lg:flex" aria-label="Main navigation">
-                <a href="{% url 'core:home' %}#hackathons" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Hackathons</a>
+                <a href="{% url 'hackathons:list' %}" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Hackathons</a>
                 <a href="{% url 'core:home' %}#challenges" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Challenges</a>
                 <a href="{% url 'core:home' %}#leaderboard" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Leaderboard</a>
                 <a href="{% url 'core:home' %}#organizers" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">For organizers</a>
@@ -66,7 +66,13 @@
                         </a>
                     </c-dropdown_menu.item>
                     <c-dropdown_menu.item>
-                        <a href="{% url 'core:home' %}#hackathons" class="flex w-full items-center gap-2 text-foreground">
+                        <a href="{% url 'hackathons:dashboard' %}" class="flex w-full items-center gap-2 text-foreground">
+                            <c-lucideicon.layout-dashboard class="size-4 text-muted-foreground" />
+                            Mes Hackathons
+                        </a>
+                    </c-dropdown_menu.item>
+                    <c-dropdown_menu.item>
+                        <a href="{% url 'hackathons:list' %}" class="flex w-full items-center gap-2 text-foreground">
                             <c-lucideicon.calendar class="size-4 text-muted-foreground" />
                             Browse events
                         </a>

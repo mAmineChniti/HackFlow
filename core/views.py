@@ -169,16 +169,24 @@ TESTIMONIALS = [
     },
 ]
 
+from hackathons.models import Hackathon
+
 
 def home(request):
+    db_hackathons = list(
+        Hackathon.objects.filter(is_published=True).order_by("start_date")[:6]
+    )
+
     return render(
         request,
         "home.html",
         {
-            "hackathons": HACKATHONS,
+            "hackathons": db_hackathons if db_hackathons else HACKATHONS,
+            "using_db_hackathons": bool(db_hackathons),
             "challenges": CHALLENGES,
             "leaderboard": LEADERBOARD,
             "faqs": FAQS,
             "testimonials": TESTIMONIALS,
         },
     )
+
