@@ -1,0 +1,35 @@
+{% extends "admin/change_list.html" %}
+{% load i18n %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+    <div class="sponsor-admin-section-heading">
+        <div>
+            <p class="sponsor-admin-eyebrow">{% translate "Sponsor Management" %}</p>
+            <h1>{{ cl.opts.verbose_name_plural|capfirst }}</h1>
+            <p>
+                {% if cl.opts.model_name == "sponsor" %}
+                    {% translate "Review company profiles, contact information, and linked partnerships." %}
+                {% elif cl.opts.model_name == "sponsorship" %}
+                    {% translate "Track each hackathon partnership, its contribution, tier, and current status." %}
+                {% elif cl.opts.model_name == "statushistory" %}
+                    {% translate "Review the chronological record of partnership status changes." %}
+                {% else %}
+                    {% translate "Review sponsor email activity, delivery results, and message details." %}
+                {% endif %}
+            </p>
+        </div>
+        <a class="sponsor-admin-back" href="{% url 'admin:app_list' app_label=cl.opts.app_label %}">
+            {% translate "Management overview" %}
+        </a>
+    </div>
+    <div class="sponsor-admin-list-meta">
+        <span>{% translate "Records" %}</span>
+        <strong>{{ cl.result_count }}</strong>
+        {% if cl.opts.model_name == "statushistory" or cl.opts.model_name == "sponsoremaillog" %}
+            <span class="sponsor-admin-readonly">{% translate "Read only" %}</span>
+        {% endif %}
+    </div>
+    {{ block.super }}
+{% endblock %}

@@ -65,6 +65,10 @@ INSTALLED_APPS = [
     # Local apps
     "accounts",
     "core",
+    # TEMPORAIRE : stub Hackathon pour dev local — NE PAS inclure dans la PR sponsors
+    "hackathons",
+    # Module sponsors (Gestion des Sponsors)
+    "sponsors",
 ]
 
 MIDDLEWARE = [
@@ -187,6 +191,11 @@ EMAIL_BACKEND = os.getenv(
     ),
 )
 
+# Optional future role sources; both integrations stay disabled until the
+# project role system is available.
+SPONSORS_USE_PROFILE_ROLE = env_bool("SPONSORS_USE_PROFILE_ROLE", False)
+SPONSORS_USE_GROUP_ROLES = env_bool("SPONSORS_USE_GROUP_ROLES", False)
+
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
@@ -195,6 +204,10 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# Fichiers uploadés (logos sponsors, etc.)
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},

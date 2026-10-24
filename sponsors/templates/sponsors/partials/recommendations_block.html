@@ -1,0 +1,116 @@
+<!-- Bloc Recommandations Intelligentes de Sponsors (Étape 8 - IA TF-IDF & Cosine Similarity) -->
+<div class="rounded-2xl border border-border/80 bg-card p-6 shadow-sm">
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-border/70 pb-4">
+        <div class="flex items-center gap-3">
+            <div class="flex size-9 items-center justify-center rounded-lg bg-primary/15 text-primary border border-primary/30">
+                <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-base font-semibold text-foreground flex items-center gap-2">
+                    Sponsors Recommandés par IA
+                    <span class="rounded bg-primary/10 border border-primary/20 px-2 py-0.5 text-[10px] font-mono text-primary font-medium">
+                        TF-IDF & Cosinus
+                    </span>
+                </h3>
+                <p class="text-xs text-muted-foreground">
+                    {% if target_hackathon %}
+                    Suggestions d'affinité pour <strong class="text-foreground">{{ target_hackathon.name }}</strong> ({{ target_hackathon.theme|default:"Général" }})
+                    {% else %}
+                    Sélectionnez un hackathon pour découvrir les entreprises les plus compatibles
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        {% if target_hackathon and ai_recommendations %}
+        <span class="text-xs font-mono text-muted-foreground">
+            Top {{ ai_recommendations|length }} opportunités
+        </span>
+        {% endif %}
+    </div>
+
+    <div class="mt-4">
+        {% if ai_recommendations %}
+        <div class="grid gap-3 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {% for rec in ai_recommendations %}
+            <div class="group relative rounded-xl border border-border/70 bg-background/60 p-4 transition-all hover:border-primary/50 hover:shadow-md flex flex-col justify-between">
+                <div>
+                    <!-- Entête carte sponsor -->
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            {% if rec.sponsor.logo %}
+                            <img src="{{ rec.sponsor.logo.url }}" alt="{{ rec.sponsor.name }}" class="size-10 object-contain rounded-lg bg-background p-1 border border-border/60">
+                            {% else %}
+                            <div class="flex size-10 items-center justify-center rounded-lg bg-primary/15 text-sm font-bold text-primary border border-primary/30">
+                                {{ rec.sponsor.name|slice:":2"|upper }}
+                            </div>
+                            {% endif %}
+                            <div>
+                                <h4 class="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
+                                    {{ rec.sponsor.name }}
+                                </h4>
+                                <span class="text-[11px] font-mono text-muted-foreground">
+                                    {{ rec.sponsor.get_sector_display }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Badge Score -->
+                        <div class="flex flex-col items-end">
+                            <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold font-mono
+                                {% if rec.score >= 70 %}bg-emerald-500/15 text-emerald-400 border border-emerald-500/30
+                                {% elif rec.score >= 40 %}bg-amber-500/15 text-amber-400 border border-amber-500/30
+                                {% else %}bg-blue-500/15 text-blue-400 border border-blue-500/30{% endif %}">
+                                {{ rec.score }}%
+                            </span>
+                            <span class="text-[9px] font-mono text-muted-foreground mt-0.5">affinité</span>
+                        </div>
+                    </div>
+
+                    <!-- Bonus historique si applicable -->
+                    {% if rec.has_history_bonus %}
+                    <div class="mt-2.5 inline-flex items-center gap-1 rounded bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] text-emerald-400 font-medium">
+                        <span>★</span>
+                        <span>Partenaire fidèle (+10% bonus)</span>
+                    </div>
+                    {% endif %}
+
+                    <!-- Mots-clés explicatifs (Jury) -->
+                    <div class="mt-3">
+                        <span class="text-[10px] font-mono uppercase tracking-wider text-muted-foreground block mb-1">
+                            Facteurs d'affinité :
+                        </span>
+                        <div class="flex flex-wrap gap-1">
+                            {% for kw in rec.keywords %}
+                            <span class="rounded bg-muted/60 border border-border/60 px-1.5 py-0.5 text-[10px] font-mono text-foreground">
+                                #{{ kw }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Créer un partenariat -->
+                <div class="mt-4 pt-3 border-t border-border/50 flex items-center justify-between">
+                    <a href="{% url 'sponsors:sponsor_detail' rec.sponsor.pk %}" class="text-xs text-muted-foreground hover:text-foreground">
+                        Fiche sponsor →
+                    </a>
+                    {% if target_hackathon %}
+                    <a href="{% url 'sponsors:sponsorship_create' %}?sponsor_id={{ rec.sponsor.pk }}&hackathon_id={{ target_hackathon.pk }}"
+                       class="rounded-lg bg-primary/10 border border-primary/30 px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground transition-colors">
+                        + Solliciter
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="rounded-xl border border-dashed border-border/70 p-6 text-center text-xs text-muted-foreground">
+            {{ ai_recommendations_message|default:"Aucune recommandation disponible pour l'instant." }}
+        </div>
+        {% endif %}
+    </div>
+</div>

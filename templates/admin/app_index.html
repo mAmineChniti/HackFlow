@@ -1,0 +1,71 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+    {% if app_label == "sponsors" %}
+        <div class="sponsor-admin-page">
+            <header class="sponsor-admin-hero">
+                <div>
+                    <p class="sponsor-admin-eyebrow">{% translate "Operations workspace" %}</p>
+                    <h1>{% translate "Sponsor Management" %}</h1>
+                    <p class="sponsor-admin-intro">
+                        {% translate "Manage sponsor profiles, hackathon partnerships, and communication records from one place." %}
+                    </p>
+                </div>
+                <a class="sponsor-admin-back" href="{% url 'admin:index' %}">
+                    <span aria-hidden="true">&larr;</span> {% translate "All administration" %}
+                </a>
+            </header>
+
+            <section class="sponsor-admin-grid" aria-label="{% translate 'Sponsor management sections' %}">
+                {% for app in app_list %}
+                    {% for model in app.models %}
+                        <article class="sponsor-admin-card">
+                            <div class="sponsor-admin-card-top">
+                                <span class="sponsor-admin-icon" aria-hidden="true">
+                                    {% if model.object_name == "Sponsor" %}SP
+                                    {% elif model.object_name == "Sponsorship" %}PA
+                                    {% elif model.object_name == "StatusHistory" %}SH
+                                    {% else %}EM{% endif %}
+                                </span>
+                                {% if model.admin_url %}
+                                    <a class="sponsor-admin-open" href="{{ model.admin_url }}">{% translate "Open" %}</a>
+                                {% endif %}
+                            </div>
+                            <h2>
+                                {% if model.admin_url %}
+                                    <a href="{{ model.admin_url }}">{{ model.name }}</a>
+                                {% else %}
+                                    {{ model.name }}
+                                {% endif %}
+                            </h2>
+                            <p class="sponsor-admin-card-description">
+                                {% if model.object_name == "Sponsor" %}
+                                    {% translate "Company profiles, sectors, websites, and contact details." %}
+                                {% elif model.object_name == "Sponsorship" %}
+                                    {% translate "Partnerships by hackathon, contribution, tier, and status." %}
+                                {% elif model.object_name == "StatusHistory" %}
+                                    {% translate "A read-only history of partnership status changes." %}
+                                {% else %}
+                                    {% translate "A read-only record of sponsor email activity." %}
+                                {% endif %}
+                            </p>
+                            <div class="sponsor-admin-card-actions">
+                                {% if model.admin_url %}
+                                    <a href="{{ model.admin_url }}">{% translate "View and manage" %}</a>
+                                {% endif %}
+                                {% if model.add_url %}
+                                    <a class="sponsor-admin-add" href="{{ model.add_url }}">+ {% translate "Add new" %}</a>
+                                {% endif %}
+                            </div>
+                        </article>
+                    {% endfor %}
+                {% endfor %}
+            </section>
+        </div>
+    {% else %}
+        <div id="content-main">
+            {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+        </div>
+    {% endif %}
+{% endblock %}

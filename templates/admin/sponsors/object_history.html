@@ -1,0 +1,18 @@
+{% extends "admin/object_history.html" %}
+{% load i18n %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+    <div class="sponsor-admin-section-heading">
+        <div>
+            <p class="sponsor-admin-eyebrow">{% translate "Sponsor Management" %}</p>
+            <h1>{% translate "Change history" %}</h1>
+            <p>{{ object|truncatewords:18 }}</p>
+        </div>
+        <a class="sponsor-admin-back" href="{% url 'admin:app_list' app_label=opts.app_label %}">
+            {% translate "Management overview" %}
+        </a>
+    </div>
+    {{ block.super }}
+{% endblock %}

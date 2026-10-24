@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% load sponsor_tags %}
+
+{% can_export user as user_can_export %}
+{% can_manage_sponsors user as user_can_manage_sponsors %}
+
+{% block title %}Gestion des Sponsors & Partenariats — HackFlow{% endblock %}
+
+{% block content %}
+<div class="container-page py-8 lg:py-12">
+    <!-- Header with Breadcrumbs & Action -->
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <div class="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+                <a href="{% url 'sponsors:dashboard' %}" class="hover:text-foreground">Dashboard</a>
+                <span>/</span>
+                <span class="text-primary font-semibold">Gestion & Annuaire</span>
+            </div>
+            <h1 class="mt-2 text-3xl font-bold tracking-tight text-foreground">
+                Partenariats & Entreprises
+            </h1>
+            <p class="text-sm text-muted-foreground mt-1">
+                Recherchez et filtrez en temps réel parmi les entreprises et leurs conventions de sponsoring.
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2.5">
+            {% if user_can_export %}
+            <a href="{% url 'sponsors:sponsor_export_excel' %}?{{ request.GET.urlencode }}"
+               title="Exporter la sélection active au format Excel (.xlsx)"
+               class="inline-flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3.5 py-2 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20 transition-colors">
+                <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Exporter en Excel
+            </a>
+            {% endif %}
+            {% if user_can_manage_sponsors %}
+            <a href="{% url 'sponsors:sponsor_create' %}"
+               class="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-accent transition-colors">
+                <svg class="size-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                + Nouveau Sponsor
+            </a>
+            <a href="{% url 'sponsors:sponsorship_create' %}"
+               class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors">
+                <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                + Associer Partenariat
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- HTMX Live Filter Form -->
+    <form method="get"
+          action="{% url 'sponsors:sponsor_list' %}"
+          hx-get="{% url 'sponsors:sponsor_list' %}"
+          hx-target="#sponsors-results"
+          hx-push-url="true"
+          class="mt-6 rounded-2xl border border-border/80 bg-card p-4 sm:p-5 shadow-sm space-y-4">
+        
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <!-- 1. Recherche par nom (keyup changed delay:300ms) -->
+            <div class="lg:col-span-1">
+                <label class="block text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
+                    Recherche
+                </label>
+                <div class="relative">
+                    <input type="text"
+                           name="q"
+                           value="{{ query }}"
+                           placeholder="Nom, contact..."
+                           hx-get="{% url 'sponsors:sponsor_list' %}"
+                           hx-trigger="keyup changed delay:300ms"
+                           hx-target="#sponsors-results"
+                           hx-push-url="true"
+                           hx-include="closest form"
+                           class="w-full rounded-lg border border-border/80 bg-background/60 pl-8 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none">
+                    <svg class="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- 2. Filtre Secteur -->
+            <div>
+                <label class="block text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
+                    Secteur
+                </label>
+                <select name="sector"
+                        hx-get="{% url 'sponsors:sponsor_list' %}"
+                        hx-trigger="change"
+                        hx-target="#sponsors-results"
+                        hx-push-url="true"
+                        hx-include="closest form"
+                        class="w-full rounded-lg border border-border/80 bg-background/80 px-2.5 py-2 text-xs text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer">
+                    <option value="">Tous les secteurs</option>
+                    {% for code, label in sectors %}
+                    <option value="{{ code }}" {% if selected_sector == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- 3. Filtre Tier -->
+            <div>
+                <label class="block text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
+                    Niveau (Tier)
+                </label>
+                <select name="tier"
+                        hx-get="{% url 'sponsors:sponsor_list' %}"
+                        hx-trigger="change"
+                        hx-target="#sponsors-results"
+                        hx-push-url="true"
+                        hx-include="closest form"
+                        class="w-full rounded-lg border border-border/80 bg-background/80 px-2.5 py-2 text-xs text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer">
+                    <option value="">Tous les tiers</option>
+                    {% for code, label in tiers %}
+                    <option value="{{ code }}" {% if selected_tier == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- 4. Filtre Statut -->
+            <div>
+                <label class="block text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
+                    Statut Dossier
+                </label>
+                <select name="status"
+                        hx-get="{% url 'sponsors:sponsor_list' %}"
+                        hx-trigger="change"
+                        hx-target="#sponsors-results"
+                        hx-push-url="true"
+                        hx-include="closest form"
+                        class="w-full rounded-lg border border-border/80 bg-background/80 px-2.5 py-2 text-xs text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer">
+                    <option value="">Tous les statuts</option>
+                    {% for code, label in statuses %}
+                    <option value="{{ code }}" {% if selected_status == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- 5. Filtre Hackathon -->
+            <div>
+                <label class="block text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
+                    Hackathon
+                </label>
+                <select name="hackathon"
+                        hx-get="{% url 'sponsors:sponsor_list' %}"
+                        hx-trigger="change"
+                        hx-target="#sponsors-results"
+                        hx-push-url="true"
+                        hx-include="closest form"
+                        class="w-full rounded-lg border border-border/80 bg-background/80 px-2.5 py-2 text-xs text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer">
+                    <option value="">Tous les hackathons</option>
+                    {% for h in hackathons %}
+                    <option value="{{ h.pk }}" {% if selected_hackathon == h.pk|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        {% if query or selected_sector or selected_tier or selected_status or selected_hackathon %}
+        <div class="flex items-center justify-end pt-1">
+            <a href="{% url 'sponsors:sponsor_list' %}"
+               hx-get="{% url 'sponsors:sponsor_list' %}"
+               hx-target="#sponsors-results"
+               hx-push-url="true"
+               class="text-xs text-muted-foreground hover:text-primary transition-colors">
+                ↺ Réinitialiser les filtres
+            </a>
+        </div>
+        {% endif %}
+    </form>
+
+    <!-- Table + Pagination (HTMX target) -->
+    <div class="mt-6">
+        {% include "sponsors/partials/sponsors_table.html" %}
+    </div>
+</div>
+{% endblock %}

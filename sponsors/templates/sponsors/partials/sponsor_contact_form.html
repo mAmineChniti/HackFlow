@@ -1,0 +1,43 @@
+<!-- Partial pour le rechargement dynamique des champs objet & message lors du changement de modèle ou génération IA -->
+{{ form.ai_generated }}
+
+{% if ai_notice %}
+<div class="rounded-xl border p-3.5 text-xs flex items-center gap-2.5
+    {% if ai_generated %}bg-primary/10 border-primary/30 text-primary
+    {% else %}bg-amber-500/10 border-amber-500/30 text-amber-300{% endif %}">
+    <div class="flex size-6 items-center justify-center rounded-md {% if ai_generated %}bg-primary/20{% else %}bg-amber-500/20{% endif %}">
+        {% if ai_generated %}✨{% else %}ℹ️{% endif %}
+    </div>
+    <div class="flex-1 font-medium">
+        {{ ai_notice }}
+    </div>
+    {% if ai_generated %}
+    <span class="rounded bg-primary/20 px-2 py-0.5 text-[10px] font-mono font-semibold uppercase tracking-wider">
+        IA Active
+    </span>
+    {% endif %}
+</div>
+{% endif %}
+
+<div>
+    <label for="id_subject" class="block text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
+        Objet de l'email <span class="text-rose-400">*</span>
+    </label>
+    {{ form.subject }}
+    {% if form.subject.errors %}
+    <p class="mt-1 text-xs text-rose-400">{{ form.subject.errors.0 }}</p>
+    {% endif %}
+</div>
+
+<div>
+    <label for="id_message" class="block text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
+        Contenu du message <span class="text-rose-400">*</span>
+    </label>
+    {{ form.message }}
+    {% if form.message.errors %}
+    <p class="mt-1 text-xs text-rose-400">{{ form.message.errors.0 }}</p>
+    {% endif %}
+    <p class="mt-1.5 text-xs text-muted-foreground">
+        Vous pouvez relire et personnaliser librement le texte ci-dessus avant l'envoi officiel.
+    </p>
+</div>
