@@ -1,0 +1,82 @@
+<c-sheet class="lg:hidden">
+    <c-sheet.content side="right" class="w-[88%] max-w-sm">
+        <c-sheet.header>
+            <a href="{% url 'core:home' %}" class="flex items-center gap-2.5">
+                <span class="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true">
+                        <path d="m5 7 5 5-5 5"/>
+                        <path d="M13 17h6"/>
+                    </svg>
+                </span>
+                <span class="text-lg font-semibold tracking-tight">Hack<span class="text-primary">Flow</span></span>
+            </a>
+            <c-sheet.description class="pt-2">Hackathons, challenges and a community of builders shipping what's next.</c-sheet.description>
+        </c-sheet.header>
+
+        {% if user.is_authenticated %}
+        <div class="mt-6 flex items-center gap-3 rounded-xl border border-border/70 bg-card/50 p-3">
+            <span class="flex size-10 items-center justify-center rounded-full bg-primary/15 font-mono text-xs font-medium uppercase text-primary">
+                {{ user.username|slice:":2" }}
+            </span>
+            <div class="min-w-0">
+                <p class="truncate text-sm font-medium">{{ user.username }}</p>
+                <p class="truncate text-xs text-muted-foreground">{{ user.email|default:"No email on file" }}</p>
+                <span class="mt-1.5 inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider
+                    {% if user.profile.email_verified %}border-primary/25 bg-primary/10 text-primary{% else %}border-amber-600/30 bg-amber-500/10 text-amber-700 dark:text-amber-300{% endif %}">
+                    <span class="size-1.5 rounded-full {% if user.profile.email_verified %}bg-primary{% else %}bg-amber-500{% endif %}"></span>
+                    {% if user.profile.email_verified %}Email verified{% else %}Verify email{% endif %}
+                </span>
+            </div>
+        </div>
+        {% endif %}
+
+        <nav class="mt-6 flex flex-col gap-1" aria-label="Mobile navigation">
+            <a href="{% url 'core:home' %}#hackathons" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Hackathons</a>
+            <a href="{% url 'core:home' %}#challenges" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Challenges</a>
+            <a href="{% url 'core:home' %}#leaderboard" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Leaderboard</a>
+            <a href="{% url 'core:home' %}#organizers" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">For organizers</a>
+            <a href="{% url 'core:home' %}#faq" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">FAQ</a>
+        </nav>
+
+        <c-separator class="my-6" />
+
+        <div class="flex flex-col gap-2">
+            {% if user.is_authenticated %}
+            <c-button_link href="{% url 'core:home' %}#hackathons" class="w-full" @click="hideSheet()">
+                Start hacking
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                </svg>
+            </c-button_link>
+            <c-button_link href="{% url 'accounts:profile' %}" variant="outline" class="w-full" @click="hideSheet()">
+                Account settings
+            </c-button_link>
+            <form method="post" action="{% url 'accounts:logout' %}">
+                {% csrf_token %}
+                <c-button type="submit" variant="outline" class="w-full">Sign out</c-button>
+            </form>
+            {% else %}
+            <c-button_link href="{% url 'accounts:signup' %}" class="w-full" @click="hideSheet()">
+                Create free account
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                </svg>
+            </c-button_link>
+            <c-button_link href="{% url 'accounts:login' %}" variant="outline" class="w-full" @click="hideSheet()">
+                Log in
+            </c-button_link>
+            {% endif %}
+            <button
+                type="button"
+                onclick="toggleTheme()"
+                class="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-input px-4 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+                Toggle theme
+            </button>
+        </div>
+
+        <p class="mt-8 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            120k+ builders · 190 countries
+        </p>
+    </c-sheet.content>
+</c-sheet>

@@ -1,0 +1,828 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}HackFlow — Where hackers build what's next{% endblock %}
+
+{% block content %}
+<!-- ======================================================================== -->
+<!-- Hero                                                                     -->
+<!-- ======================================================================== -->
+<section class="relative overflow-hidden">
+    <div class="pointer-events-none absolute inset-0 bg-grid-pattern opacity-[0.25] [mask-image:radial-gradient(ellipse_at_top,black,transparent_72%)]"></div>
+    <div class="pointer-events-none absolute -top-48 left-1/2 h-[560px] w-[900px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]"></div>
+
+    <div class="container-page relative">
+        <div class="grid items-center gap-16 py-20 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12 lg:py-28">
+            <!-- Copy -->
+            <div class="max-w-2xl">
+                <a href="#hackathons" class="group inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/15">
+                    <span class="relative flex size-1.5">
+                        <span class="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-75"></span>
+                        <span class="relative inline-flex size-1.5 rounded-full bg-primary"></span>
+                    </span>
+                    Season 4 is live — $250k in prizes
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3 transition-transform group-hover:translate-x-0.5" aria-hidden="true">
+                        <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                    </svg>
+                </a>
+
+                <h1 class="mt-6 text-4xl font-semibold leading-[1.05] tracking-tight text-balance sm:text-5xl lg:text-6xl">
+                    Where hackers build
+                    <span class="text-gradient">what's next.</span>
+                </h1>
+
+                <p class="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+                    HackFlow runs world-class hackathons, always-on challenges and a
+                    community of builders shipping the things they wish existed. Join
+                    an event, find your team, put something real on the internet.
+                </p>
+
+                <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+                    {% if user.is_authenticated %}
+                    <c-button_link href="#hackathons" size="lg">
+                        Start hacking free
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                        </svg>
+                    </c-button_link>
+                    {% else %}
+                    <c-button_link href="{% url 'accounts:signup' %}" size="lg">
+                        Start hacking free
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                        </svg>
+                    </c-button_link>
+                    {% endif %}
+                    <c-button_link href="#challenges" size="lg" variant="outline">
+                        Explore challenges
+                    </c-button_link>
+                </div>
+
+                <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs text-muted-foreground">
+                    <span class="inline-flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 text-primary" aria-hidden="true">
+                            <path d="M20 6 9 17l-5-5"/>
+                        </svg>
+                        Free forever for builders
+                    </span>
+                    <span class="inline-flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 text-primary" aria-hidden="true">
+                            <path d="M20 6 9 17l-5-5"/>
+                        </svg>
+                        Remote-first events
+                    </span>
+                    <span class="inline-flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 text-primary" aria-hidden="true">
+                            <path d="M20 6 9 17l-5-5"/>
+                        </svg>
+                        Beginner friendly
+                    </span>
+                </div>
+
+                <div class="mt-10 flex flex-wrap items-center gap-4">
+                    <div class="flex -space-x-2">
+                        <span class="flex size-8 items-center justify-center rounded-full border-2 border-background bg-lime-400/20 font-mono text-[10px] font-medium text-lime-300">OC</span>
+                        <span class="flex size-8 items-center justify-center rounded-full border-2 border-background bg-sky-400/20 font-mono text-[10px] font-medium text-sky-300">NP</span>
+                        <span class="flex size-8 items-center justify-center rounded-full border-2 border-background bg-fuchsia-400/20 font-mono text-[10px] font-medium text-fuchsia-300">SS</span>
+                        <span class="flex size-8 items-center justify-center rounded-full border-2 border-background bg-amber-400/20 font-mono text-[10px] font-medium text-amber-300">KP</span>
+                        <span class="flex size-8 items-center justify-center rounded-full border-2 border-background bg-muted font-mono text-[10px] font-medium text-muted-foreground">+</span>
+                    </div>
+                    <p class="text-sm text-muted-foreground">
+                        <span class="font-medium text-foreground">120,000+ builders</span>
+                        already shipping
+                    </p>
+                </div>
+            </div>
+
+            <!-- Product preview -->
+            <div class="relative mx-auto w-full max-w-xl lg:max-w-none">
+                <div class="absolute -inset-8 -z-10 rounded-[2.5rem] bg-primary/10 blur-3xl"></div>
+
+                <div class="relative overflow-hidden rounded-2xl border border-border/70 bg-card/75 shadow-2xl backdrop-blur">
+                    <!-- Window chrome -->
+                    <div class="flex items-center gap-2 border-b border-border/60 bg-muted/40 px-4 py-3">
+                        <span class="terminal-dot bg-rose-400/80"></span>
+                        <span class="terminal-dot bg-amber-400/80"></span>
+                        <span class="terminal-dot bg-emerald-400/80"></span>
+                        <div class="ml-3 hidden flex-1 items-center gap-2 rounded-md border border-border/60 bg-background/60 px-2.5 py-1 font-mono text-[11px] text-muted-foreground sm:flex">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3" aria-hidden="true">
+                                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                            </svg>
+                            hackflow.dev/events/neon-nights
+                        </div>
+                        <c-badge class="ml-auto gap-1.5 font-mono text-[10px] uppercase tracking-wider">
+                            <span class="size-1.5 animate-pulse rounded-full bg-primary-foreground"></span>
+                            Live
+                        </c-badge>
+                    </div>
+
+                    <div class="p-5 sm:p-6">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="font-mono text-[10px] uppercase tracking-[0.2em] text-primary">Featured hackathon</p>
+                                <h2 class="mt-1 text-lg font-semibold tracking-tight sm:text-xl">Neon Nights 2026</h2>
+                                <p class="mt-0.5 text-xs text-muted-foreground sm:text-sm">48 hours · 2,418 builders · $50,000 prize pool</p>
+                            </div>
+                            <div class="hidden text-right sm:block">
+                                <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Starts in</p>
+                                <p class="mt-1 font-mono text-sm font-medium">12d 04h</p>
+                            </div>
+                        </div>
+
+                        <c-tabs default_value="leaderboard" class="mt-5">
+                            <c-tabs.list class="grid w-full grid-cols-2">
+                                <c-tabs.trigger value="leaderboard">Leaderboard</c-tabs.trigger>
+                                <c-tabs.trigger value="submissions">Submissions</c-tabs.trigger>
+                            </c-tabs.list>
+
+                            <c-tabs.content value="leaderboard" class="mt-3 space-y-1">
+                                {% for row in leaderboard|slice:":4" %}
+                                <div class="flex items-center gap-3 rounded-lg px-2.5 py-2 {% if forloop.first %}bg-primary/10{% else %}hover:bg-accent/40{% endif %}">
+                                    <span class="w-5 text-center font-mono text-[11px] {% if forloop.first %}text-primary{% else %}text-muted-foreground{% endif %}">{{ forloop.counter|stringformat:"02d" }}</span>
+                                    <span class="flex size-7 items-center justify-center rounded-full font-mono text-[10px] {% if forloop.first %}bg-primary text-primary-foreground{% else %}bg-muted text-muted-foreground{% endif %}">{{ row.initials }}</span>
+                                    <p class="min-w-0 flex-1 truncate text-xs font-medium">{{ row.name }}</p>
+                                    <span class="font-mono text-xs {% if forloop.first %}text-primary{% else %}text-muted-foreground{% endif %}">{{ row.points }}</span>
+                                </div>
+                                {% endfor %}
+                            </c-tabs.content>
+
+                            <c-tabs.content value="submissions" class="mt-3">
+                                <div class="space-y-2">
+                                    <div class="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/40 px-3 py-2.5">
+                                        <div class="min-w-0">
+                                            <p class="truncate text-xs font-medium">Aegis</p>
+                                            <p class="truncate text-[11px] text-muted-foreground">Autonomous threat triage</p>
+                                        </div>
+                                        <span class="shrink-0 rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 font-mono text-[10px] text-amber-300">Judging</span>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/40 px-3 py-2.5">
+                                        <div class="min-w-0">
+                                            <p class="truncate text-xs font-medium">Lumen</p>
+                                            <p class="truncate text-[11px] text-muted-foreground">RAG over 10M documents</p>
+                                        </div>
+                                        <span class="shrink-0 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 font-mono text-[10px] text-emerald-300">Submitted</span>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/40 px-3 py-2.5">
+                                        <div class="min-w-0">
+                                            <p class="truncate text-xs font-medium">Rift</p>
+                                            <p class="truncate text-[11px] text-muted-foreground">Realtime collaborative canvas</p>
+                                        </div>
+                                        <span class="shrink-0 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 font-mono text-[10px] text-emerald-300">Submitted</span>
+                                    </div>
+                                </div>
+                            </c-tabs.content>
+                        </c-tabs>
+
+                        <div class="mt-4 rounded-lg border border-border/60 bg-background/40 p-3">
+                            <div class="flex items-center justify-between text-[11px]">
+                                <span class="font-mono uppercase tracking-[0.16em] text-muted-foreground">Season progress</span>
+                                <span class="font-mono text-foreground">68%</span>
+                            </div>
+                            <c-progress value="68" max="100" class="mt-2" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ======================================================================== -->
+<!-- Stats                                                                    -->
+<!-- ======================================================================== -->
+<section class="border-y border-border/60 bg-card/20">
+    <div class="container-page">
+        <div class="grid grid-cols-2 gap-px bg-border/60 lg:grid-cols-4">
+            <div class="bg-background px-6 py-8 sm:py-10">
+                <p class="text-3xl font-semibold tracking-tight sm:text-4xl">120K+</p>
+                <p class="mt-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Builders in the community</p>
+            </div>
+            <div class="bg-background px-6 py-8 sm:py-10">
+                <p class="text-3xl font-semibold tracking-tight sm:text-4xl">850+</p>
+                <p class="mt-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Hackathons hosted</p>
+            </div>
+            <div class="bg-background px-6 py-8 sm:py-10">
+                <p class="text-3xl font-semibold tracking-tight sm:text-4xl">$4.2M</p>
+                <p class="mt-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Prizes awarded</p>
+            </div>
+            <div class="bg-background px-6 py-8 sm:py-10">
+                <p class="text-3xl font-semibold tracking-tight sm:text-4xl">190</p>
+                <p class="mt-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Countries represented</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ======================================================================== -->
+<!-- Trusted by                                                               -->
+<!-- ======================================================================== -->
+<section class="border-b border-border/60 py-12">
+    <div class="container-page">
+        <p class="text-center font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+            Powering events for teams at
+        </p>
+        <div class="mt-7 flex flex-wrap items-center justify-center gap-x-10 gap-y-5 text-lg font-semibold tracking-tight text-muted-foreground/60">
+            <span>Vercel</span>
+            <span>GitHub</span>
+            <span>Stripe</span>
+            <span>Supabase</span>
+            <span>Figma</span>
+            <span>Notion</span>
+        </div>
+    </div>
+</section>
+
+<!-- ======================================================================== -->
+<!-- Features                                                                 -->
+<!-- ======================================================================== -->
+<section class="py-20 sm:py-24">
+    <div class="container-page">
+        <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <div class="max-w-2xl">
+                <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-primary">// Why HackFlow</p>
+                <h2 class="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+                    Everything you need to go from idea to demo day.
+                </h2>
+                <p class="mt-4 text-muted-foreground">
+                    Hackathons, challenges, teams and judging — one platform instead of
+                    six spreadsheets and a very tired Discord server.
+                </p>
+            </div>
+            <c-badge variant="outline" class="w-fit border-border/70 font-mono text-[10px] uppercase tracking-[0.16em]">
+                For hackers + organizers
+            </c-badge>
+        </div>
+
+        <div class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <c-card class="card-hover group relative border-border/70 bg-card/50 p-6">
+                <span class="absolute right-5 top-5 font-mono text-[10px] text-muted-foreground/50">01</span>
+                <span class="flex size-10 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true">
+                        <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+                        <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
+                        <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
+                        <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
+                    </svg>
+                </span>
+                <h3 class="mt-5 text-sm font-semibold">Launch in minutes</h3>
+                <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    Spin up a branded hackathon page, open registration and start
+                    collecting teams before your coffee gets cold.
+                </p>
+            </c-card>
+
+            <c-card class="card-hover group relative border-border/70 bg-card/50 p-6">
+                <span class="absolute right-5 top-5 font-mono text-[10px] text-muted-foreground/50">02</span>
+                <span class="flex size-10 items-center justify-center rounded-lg border border-sky-400/20 bg-sky-400/10 text-sky-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"/>
+                        <circle cx="12" cy="12" r="6"/>
+                        <circle cx="12" cy="12" r="2"/>
+                    </svg>
+                </span>
+                <h3 class="mt-5 text-sm font-semibold">Challenges that ship</h3>
+                <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    Always-on CTF, build and AI challenges with automated tests, clear
+                    scoring and write-ups when the dust settles.
+                </p>
+            </c-card>
+
+            <c-card class="card-hover group relative border-border/70 bg-card/50 p-6">
+                <span class="absolute right-5 top-5 font-mono text-[10px] text-muted-foreground/50">03</span>
+                <span class="flex size-10 items-center justify-center rounded-lg border border-amber-400/20 bg-amber-400/10 text-amber-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true">
+                        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                        <path d="M4 22h16"/>
+                        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+                        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+                        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+                    </svg>
+                </span>
+                <h3 class="mt-5 text-sm font-semibold">Live leaderboards</h3>
+                <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    Real-time rankings, transparent point breakdowns and anti-cheat
+                    signals so the top of the board actually means something.
+                </p>
+            </c-card>
+
+            <c-card class="card-hover group relative border-border/70 bg-card/50 p-6">
+                <span class="absolute right-5 top-5 font-mono text-[10px] text-muted-foreground/50">04</span>
+                <span class="flex size-10 items-center justify-center rounded-lg border border-fuchsia-400/20 bg-fuchsia-400/10 text-fuchsia-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                </span>
+                <h3 class="mt-5 text-sm font-semibold">Teams that click</h3>
+                <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    Go solo or match with designers, engineers and storytellers by
+                    skills, timezone and what you actually want to build.
+                </p>
+            </c-card>
+
+            <c-card class="card-hover group relative border-border/70 bg-card/50 p-6">
+                <span class="absolute right-5 top-5 font-mono text-[10px] text-muted-foreground/50">05</span>
+                <span class="flex size-10 items-center justify-center rounded-lg border border-emerald-400/20 bg-emerald-400/10 text-emerald-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true">
+                        <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+                        <path d="m9 12 2 2 4-4"/>
+                    </svg>
+                </span>
+                <h3 class="mt-5 text-sm font-semibold">Judging you can trust</h3>
+                <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    Rubric-based scoring, judge assignments and conflict-of-interest
+                    checks. Published criteria, zero mystery winners.
+                </p>
+            </c-card>
+
+            <c-card class="card-hover group relative border-border/70 bg-card/50 p-6">
+                <span class="absolute right-5 top-5 font-mono text-[10px] text-muted-foreground/50">06</span>
+                <span class="flex size-10 items-center justify-center rounded-lg border border-rose-400/20 bg-rose-400/10 text-rose-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true">
+                        <path d="M3 3v16a2 2 0 0 0 2 2h16"/>
+                        <path d="M18 17V9"/>
+                        <path d="M13 17V5"/>
+                        <path d="M8 17v-3"/>
+                    </svg>
+                </span>
+                <h3 class="mt-5 text-sm font-semibold">Insights that matter</h3>
+                <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    Participation, retention, submission quality and sponsor ROI —
+                    the numbers you need to prove the event worked.
+                </p>
+            </c-card>
+        </div>
+    </div>
+</section>
+
+<!-- ======================================================================== -->
+<!-- Hackathons                                                               -->
+<!-- ======================================================================== -->
+<section id="hackathons" class="border-t border-border/60 py-20 sm:py-24">
+    <div class="container-page">
+        <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+            <div class="max-w-2xl">
+                <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-primary">// Open events</p>
+                <h2 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Upcoming hackathons</h2>
+                <p class="mt-4 text-muted-foreground">
+                    Pick a weekend. Find a team. Ship something you're proud of.
+                </p>
+            </div>
+            <c-button_link href="#join" variant="outline" size="sm" class="w-fit">
+                View all events
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                </svg>
+            </c-button_link>
+        </div>
+
+        <div class="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {% for event in hackathons %}
+            <c-card class="group flex flex-col overflow-hidden border-border/70 bg-card/50 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40">
+                <div class="relative h-28 overflow-hidden border-b border-border/60 bg-gradient-to-br {{ event.gradient }}">
+                    <div class="absolute inset-0 bg-grid-pattern opacity-30"></div>
+                    <div class="relative flex h-full flex-col justify-between p-5">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{{ event.category }}</span>
+                            <c-badge variant="{{ event.badge_variant }}" class="shrink-0 backdrop-blur-sm">{{ event.status }}</c-badge>
+                        </div>
+                        <p class="font-mono text-[11px] text-muted-foreground">{{ event.code }}</p>
+                    </div>
+                </div>
+
+                <c-card.header class="pb-3">
+                    <c-card.title class="text-lg">{{ event.name }}</c-card.title>
+                    <c-card.description>{{ event.tagline }}</c-card.description>
+                </c-card.header>
+
+                <c-card.content class="flex-1 space-y-4 pt-0">
+                    <div class="grid grid-cols-2 gap-x-3 gap-y-2.5 text-xs">
+                        <div class="flex items-center gap-2 text-muted-foreground">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 shrink-0" aria-hidden="true">
+                                <path d="M8 2v4M16 2v4"/>
+                                <rect width="18" height="18" x="3" y="4" rx="2"/>
+                                <path d="M3 10h18"/>
+                            </svg>
+                            {{ event.dates }}
+                        </div>
+                        <div class="flex items-center gap-2 text-muted-foreground">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 shrink-0" aria-hidden="true">
+                                <path d="M20 10c0 4.99-5.54 10.19-7.4 11.8a1 1 0 0 1-1.2 0C9.54 20.19 4 14.99 4 10a8 8 0 0 1 16 0"/>
+                                <circle cx="12" cy="10" r="3"/>
+                            </svg>
+                            {{ event.mode }}
+                        </div>
+                        <div class="flex items-center gap-2 text-muted-foreground">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 shrink-0" aria-hidden="true">
+                                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                                <path d="M4 22h16"/>
+                                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+                                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+                                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+                            </svg>
+                            <span class="font-medium text-foreground">{{ event.prize }}</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-muted-foreground">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 shrink-0" aria-hidden="true">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                            {{ event.registered|intcomma }} registered
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between text-[11px] text-muted-foreground">
+                            <span>{{ event.registered|intcomma }} / {{ event.capacity|intcomma }} spots</span>
+                            <span class="font-mono">{% widthratio event.registered event.capacity 100 %}%</span>
+                        </div>
+                        <c-progress value="{{ event.registered }}" max="{{ event.capacity }}" />
+                    </div>
+                </c-card.content>
+
+                <c-card.footer class="pt-0">
+                    <c-button_link href="#join" variant="outline" size="sm" class="w-full">
+                        {% if event.badge_variant == "outline" %}Join waitlist{% else %}Register interest{% endif %}
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                        </svg>
+                    </c-button_link>
+                </c-card.footer>
+            </c-card>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- ======================================================================== -->
+<!-- Challenges + leaderboard                                                 -->
+<!-- ======================================================================== -->
+<section id="challenges" class="border-t border-border/60 py-20 sm:py-24">
+    <div class="container-page">
+        <div class="max-w-2xl">
+            <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-primary">// Always on</p>
+            <h2 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Challenges between events</h2>
+            <p class="mt-4 text-muted-foreground">
+                Keep your edge sharp. Solve real problems, earn points and climb the
+                season leaderboard — no weekend required.
+            </p>
+        </div>
+
+        <div class="mt-10 grid gap-10 lg:grid-cols-[1.45fr_1fr] lg:items-start">
+            <div>
+                <div class="overflow-hidden rounded-xl border border-border/70 bg-card/50">
+                    {% for challenge in challenges %}
+                    <a href="#join" class="group flex items-center gap-4 border-b border-border/60 p-5 transition-colors last:border-b-0 hover:bg-accent/40">
+                        <span class="flex size-11 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background/60 font-mono text-xs text-primary">{{ challenge.glyph }}</span>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h3 class="truncate text-sm font-medium">{{ challenge.title }}</h3>
+                                {% if challenge.tag %}
+                                <c-badge class="px-2 py-0 font-mono text-[9px] uppercase tracking-wider">{{ challenge.tag }}</c-badge>
+                                {% endif %}
+                            </div>
+                            <p class="mt-1 text-xs text-muted-foreground">{{ challenge.category }} · {{ challenge.solves }} solves</p>
+                        </div>
+                        <div class="flex shrink-0 flex-col items-end gap-1.5">
+                            <span class="font-mono text-sm font-medium">{{ challenge.points }} <span class="text-[10px] text-muted-foreground">pts</span></span>
+                            <span class="rounded-full border px-2 py-0.5 font-mono text-[10px] {{ challenge.difficulty_class }}">{{ challenge.difficulty }}</span>
+                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 sm:block" aria-hidden="true">
+                            <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                        </svg>
+                    </a>
+                    {% endfor %}
+                </div>
+                <p class="mt-3 flex items-center gap-2 font-mono text-[11px] text-muted-foreground">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 text-primary" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 16v-4"/><path d="M12 8h.01"/>
+                    </svg>
+                    New challenges drop every Monday at 09:00 UTC
+                </p>
+            </div>
+
+            <div id="leaderboard">
+                <c-card class="border-border/70 bg-card/50">
+                    <c-card.header>
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <c-card.title class="flex items-center gap-2 text-base">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 text-primary" aria-hidden="true">
+                                        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                                        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                                        <path d="M4 22h16"/>
+                                        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+                                        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+                                        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+                                    </svg>
+                                    Season leaderboard
+                                </c-card.title>
+                                <c-card.description>Week 6 · global</c-card.description>
+                            </div>
+                            <c-badge class="gap-1.5 font-mono text-[10px] uppercase tracking-wider">
+                                <span class="size-1.5 animate-pulse rounded-full bg-primary-foreground"></span>
+                                Live
+                            </c-badge>
+                        </div>
+                    </c-card.header>
+
+                    <c-card.content class="pt-0">
+                        <div class="space-y-1">
+                            {% for row in leaderboard %}
+                            <div class="flex items-center gap-3 rounded-lg px-2 py-2.5 {% if forloop.first %}bg-primary/10 ring-1 ring-primary/20{% else %}hover:bg-accent/40{% endif %}">
+                                <span class="w-5 text-center font-mono text-[11px] {% if forloop.first %}text-primary{% else %}text-muted-foreground{% endif %}">{{ forloop.counter|stringformat:"02d" }}</span>
+                                <span class="flex size-8 items-center justify-center rounded-full font-mono text-[10px] {% if forloop.first %}bg-primary text-primary-foreground{% else %}bg-muted text-muted-foreground{% endif %}">{{ row.initials }}</span>
+                                <div class="min-w-0 flex-1">
+                                    <p class="truncate text-xs font-medium">{{ row.name }}</p>
+                                    <p class="truncate text-[10px] text-muted-foreground">{{ row.handle }}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-mono text-xs font-medium">{{ row.points }}</p>
+                                    <p class="font-mono text-[10px] text-primary">{{ row.delta }}</p>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </c-card.content>
+
+                    <c-card.footer class="pt-0">
+                        <c-button_link href="#join" variant="outline" size="sm" class="w-full">View full leaderboard</c-button_link>
+                    </c-card.footer>
+                </c-card>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ======================================================================== -->
+<!-- Organizers                                                               -->
+<!-- ======================================================================== -->
+<section id="organizers" class="border-t border-border/60 py-20 sm:py-24">
+    <div class="container-page">
+        <div class="grid gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:gap-16">
+            <div>
+                <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-primary">// For organizers</p>
+                <h2 class="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+                    Run a hackathon people actually remember.
+                </h2>
+                <p class="mt-4 text-muted-foreground">
+                    Skip the spreadsheet archaeology. HackFlow handles the logistics
+                    so your team can focus on the builders.
+                </p>
+
+                <ul class="mt-8 space-y-4">
+                    <li class="flex gap-3">
+                        <span class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="size-3" aria-hidden="true">
+                                <path d="M20 6 9 17l-5-5"/>
+                            </svg>
+                        </span>
+                        <div>
+                            <p class="text-sm font-medium">Branded event pages and registration</p>
+                            <p class="mt-0.5 text-sm text-muted-foreground">Your brand, your rules, zero setup code.</p>
+                        </div>
+                    </li>
+                    <li class="flex gap-3">
+                        <span class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="size-3" aria-hidden="true">
+                                <path d="M20 6 9 17l-5-5"/>
+                            </svg>
+                        </span>
+                        <div>
+                            <p class="text-sm font-medium">Team management and submissions</p>
+                            <p class="mt-0.5 text-sm text-muted-foreground">Invites, roles, project pages and deadlines in one place.</p>
+                        </div>
+                    </li>
+                    <li class="flex gap-3">
+                        <span class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="size-3" aria-hidden="true">
+                                <path d="M20 6 9 17l-5-5"/>
+                            </svg>
+                        </span>
+                        <div>
+                            <p class="text-sm font-medium">Judging, scoring and live results</p>
+                            <p class="mt-0.5 text-sm text-muted-foreground">Rubrics, judge assignments and public score breakdowns.</p>
+                        </div>
+                    </li>
+                </ul>
+
+                <c-button_link href="mailto:hello@hackflow.dev?subject=Host%20a%20hackathon%20on%20HackFlow" size="lg" class="mt-8">
+                    Host on HackFlow
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                    </svg>
+                </c-button_link>
+            </div>
+
+            <div class="relative">
+                <div class="absolute -inset-6 -z-10 rounded-[2rem] bg-primary/5 blur-2xl"></div>
+                <div class="relative rounded-2xl border border-border/70 bg-card/60 p-6 shadow-xl backdrop-blur sm:p-8">
+                    <div class="flex items-center justify-between">
+                        <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">// Event control room</p>
+                        <c-badge variant="outline" class="gap-1.5 font-mono text-[10px] uppercase tracking-wider">
+                            <span class="size-1.5 rounded-full bg-primary"></span>
+                            On track
+                        </c-badge>
+                    </div>
+
+                    <div class="mt-7">
+                        <div class="flex items-end justify-between">
+                            <div>
+                                <p class="text-sm font-medium">Neon Nights 2026</p>
+                                <p class="mt-1 text-xs text-muted-foreground">2,418 of 3,000 spots filled</p>
+                            </div>
+                            <span class="font-mono text-sm text-primary">81%</span>
+                        </div>
+                        <c-progress value="81" max="100" class="mt-3" />
+                    </div>
+
+                    <div class="mt-6 grid grid-cols-3 gap-3">
+                        <div class="rounded-lg border border-border/60 bg-background/40 p-3">
+                            <p class="font-mono text-lg font-medium">412</p>
+                            <p class="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">Projects</p>
+                        </div>
+                        <div class="rounded-lg border border-border/60 bg-background/40 p-3">
+                            <p class="font-mono text-lg font-medium">96</p>
+                            <p class="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">Judges</p>
+                        </div>
+                        <div class="rounded-lg border border-border/60 bg-background/40 p-3">
+                            <p class="font-mono text-lg font-medium">$50k</p>
+                            <p class="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">Prizes</p>
+                        </div>
+                    </div>
+
+                    <c-separator class="my-6" />
+
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-3">
+                            <span class="mt-1 flex size-2 shrink-0 rounded-full bg-primary ring-4 ring-primary/15"></span>
+                            <div class="flex-1">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-xs font-medium">Registration</p>
+                                    <span class="font-mono text-[10px] text-primary">Live</span>
+                                </div>
+                                <p class="mt-0.5 text-[11px] text-muted-foreground">Closes in 12 days</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <span class="mt-1 flex size-2 shrink-0 rounded-full bg-muted-foreground/40"></span>
+                            <div class="flex-1">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-xs font-medium text-muted-foreground">Submission window</p>
+                                    <span class="font-mono text-[10px] text-muted-foreground">Nov 14</span>
+                                </div>
+                                <p class="mt-0.5 text-[11px] text-muted-foreground">48-hour build</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <span class="mt-1 flex size-2 shrink-0 rounded-full bg-muted-foreground/40"></span>
+                            <div class="flex-1">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-xs font-medium text-muted-foreground">Judging + demo day</p>
+                                    <span class="font-mono text-[10px] text-muted-foreground">Nov 17</span>
+                                </div>
+                                <p class="mt-0.5 text-[11px] text-muted-foreground">Live streamed finals</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ======================================================================== -->
+<!-- Testimonials                                                             -->
+<!-- ======================================================================== -->
+<section id="testimonials" class="border-t border-border/60 py-20 sm:py-24">
+    <div class="container-page">
+        <div class="mx-auto max-w-2xl text-center">
+            <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-primary">// From the community</p>
+            <h2 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Built by people who ship</h2>
+            <p class="mt-4 text-muted-foreground">
+                Founders, maintainers and first-time hackers — same leaderboard.
+            </p>
+        </div>
+
+        <div class="mt-12 grid gap-4 md:grid-cols-3">
+            {% for testimonial in testimonials %}
+            <c-card class="flex flex-col border-border/70 bg-card/50 p-6">
+                <div class="flex gap-1 text-primary" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-3.5"><path d="M12 2l2.9 6.26 6.6.56-5 4.36 1.5 6.45L12 16.9 5.99 19.63l1.5-6.45-5-4.36 6.6-.56L12 2z"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-3.5"><path d="M12 2l2.9 6.26 6.6.56-5 4.36 1.5 6.45L12 16.9 5.99 19.63l1.5-6.45-5-4.36 6.6-.56L12 2z"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-3.5"><path d="M12 2l2.9 6.26 6.6.56-5 4.36 1.5 6.45L12 16.9 5.99 19.63l1.5-6.45-5-4.36 6.6-.56L12 2z"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-3.5"><path d="M12 2l2.9 6.26 6.6.56-5 4.36 1.5 6.45L12 16.9 5.99 19.63l1.5-6.45-5-4.36 6.6-.56L12 2z"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-3.5"><path d="M12 2l2.9 6.26 6.6.56-5 4.36 1.5 6.45L12 16.9 5.99 19.63l1.5-6.45-5-4.36 6.6-.56L12 2z"/></svg>
+                </div>
+                <blockquote class="mt-5 flex-1 text-sm leading-relaxed text-muted-foreground">
+                    “{{ testimonial.quote }}”
+                </blockquote>
+                <div class="mt-6 flex items-center gap-3">
+                    <span class="flex size-9 items-center justify-center rounded-full font-mono text-[10px] font-medium {{ testimonial.accent }}">{{ testimonial.initials }}</span>
+                    <div>
+                        <p class="text-xs font-medium">{{ testimonial.name }}</p>
+                        <p class="text-[11px] text-muted-foreground">{{ testimonial.role }}</p>
+                    </div>
+                </div>
+            </c-card>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- ======================================================================== -->
+<!-- FAQ                                                                      -->
+<!-- ======================================================================== -->
+<section id="faq" class="border-t border-border/60 py-20 sm:py-24">
+    <div class="container-page">
+        <div class="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+            <div>
+                <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-primary">// FAQ</p>
+                <h2 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Questions, answered.</h2>
+                <p class="mt-4 text-muted-foreground">
+                    Everything you need to know before your first event. Still stuck?
+                    We're a quick email away.
+                </p>
+
+                <c-card class="mt-8 border-border/70 bg-card/50 p-5">
+                    <p class="text-sm font-medium">Still have questions?</p>
+                    <p class="mt-1 text-sm text-muted-foreground">
+                        The team reads every message.
+                    </p>
+                    <c-button_link href="mailto:hello@hackflow.dev" variant="outline" size="sm" class="mt-4 w-fit">
+                        Email us
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect width="20" height="16" x="2" y="4" rx="2"/>
+                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                        </svg>
+                    </c-button_link>
+                </c-card>
+            </div>
+
+            <div>
+                <c-accordion collapsible="true" class="rounded-xl border border-border/70 bg-card/50 px-5">
+                    {% for faq in faqs %}
+                    <c-accordion.item value="{{ faq.value }}" class="{% if forloop.last %}border-b-0{% endif %}">
+                        <c-accordion.trigger value="{{ faq.value }}">{{ faq.question }}</c-accordion.trigger>
+                        <c-accordion.content value="{{ faq.value }}">
+                            <p class="text-sm leading-relaxed text-muted-foreground">{{ faq.answer }}</p>
+                        </c-accordion.content>
+                    </c-accordion.item>
+                    {% endfor %}
+                </c-accordion>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ======================================================================== -->
+<!-- Final CTA                                                                -->
+<!-- ======================================================================== -->
+<section id="join" class="pb-20 sm:pb-24">
+    <div class="container-page">
+        <div class="relative overflow-hidden rounded-3xl border border-border/70 bg-card/60 px-6 py-16 text-center sm:px-12 sm:py-20">
+            <div class="pointer-events-none absolute inset-0 bg-grid-pattern opacity-30 [mask-image:radial-gradient(ellipse_at_center,black,transparent_72%)]"></div>
+            <div class="pointer-events-none absolute -top-28 left-1/2 h-64 w-[600px] -translate-x-1/2 rounded-full bg-primary/15 blur-[100px]"></div>
+
+            <div class="relative mx-auto max-w-2xl">
+                <c-badge variant="outline" class="gap-2 border-primary/30 bg-primary/10 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+                    <span class="size-1.5 animate-pulse rounded-full bg-primary"></span>
+                    Season 4 · registration open
+                </c-badge>
+
+                <h2 class="mt-6 text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
+                    Your next build starts here.
+                </h2>
+                <p class="mx-auto mt-4 max-w-xl text-muted-foreground">
+                    Join a hackathon this weekend or start with a challenge tonight.
+                    Either way, you'll ship something real.
+                </p>
+
+                <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+                    <c-button_link href="#hackathons" size="lg">
+                        Explore hackathons
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                        </svg>
+                    </c-button_link>
+                    <c-button_link href="mailto:hello@hackflow.dev?subject=Host%20a%20hackathon%20on%20HackFlow" size="lg" variant="outline">
+                        Host a hackathon
+                    </c-button_link>
+                </div>
+
+                <p class="mt-6 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                    Free forever for builders · no credit card
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

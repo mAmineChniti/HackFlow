@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block navbar %}
+<header class="border-b border-border/60 bg-background/80 header-blur">
+    <div class="container-page flex h-16 items-center justify-between gap-4">
+        <a href="{% url 'core:home' %}" class="flex items-center gap-2.5">
+            <span class="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-[0_0_24px_-6px_var(--primary)]">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true">
+                    <path d="m5 7 5 5-5 5"/>
+                    <path d="M13 17h6"/>
+                </svg>
+            </span>
+            <span class="text-lg font-semibold tracking-tight">Hack<span class="text-primary">Flow</span></span>
+        </a>
+
+        <div class="flex items-center gap-1.5">
+            <c-button_link href="{% url 'core:home' %}" variant="ghost" size="sm" class="hidden sm:inline-flex">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
+                </svg>
+                Back to home
+            </c-button_link>
+            <button
+                type="button"
+                onclick="toggleTheme()"
+                class="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-ring"
+                aria-label="Toggle color theme"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 dark:hidden" aria-hidden="true">
+                    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden size-4 dark:block" aria-hidden="true">
+                    <circle cx="12" cy="12" r="4"/>
+                    <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</header>
+{% endblock %}
+
+{% block footer %}{% endblock %}
+{% block mobile_menu %}{% endblock %}
+{% block verification_banner %}{% endblock %}
+
+{% block content %}
+<div class="relative overflow-hidden">
+    <div class="pointer-events-none absolute inset-0 bg-grid-pattern opacity-[0.2] [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)]"></div>
+    <div class="pointer-events-none absolute -top-40 left-1/2 h-[420px] w-[760px] -translate-x-1/2 rounded-full bg-primary/10 blur-[110px]"></div>
+
+    <div class="container-page relative">
+        <div class="grid min-h-[calc(100svh-4rem)] items-center gap-14 py-12 lg:grid-cols-[1fr_0.9fr] lg:gap-20 lg:py-16">
+            <!-- Brand / social proof -->
+            <div class="hidden lg:block">
+                <div class="max-w-lg">
+                    <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-primary">// HackFlow accounts</p>
+                    <h1 class="mt-4 text-4xl font-semibold leading-[1.08] tracking-tight xl:text-5xl">
+                        Build. Break.<br>
+                        <span class="text-gradient">Ship. Repeat.</span>
+                    </h1>
+                    <p class="mt-5 max-w-md text-muted-foreground">
+                        One account for hackathons, always-on challenges, teams and
+                        every leaderboard you're about to climb.
+                    </p>
+
+                    <div class="mt-9 grid grid-cols-3 gap-3">
+                        <div class="rounded-xl border border-border/70 bg-card/50 p-4">
+                            <p class="font-mono text-xl font-medium">120K+</p>
+                            <p class="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">Builders</p>
+                        </div>
+                        <div class="rounded-xl border border-border/70 bg-card/50 p-4">
+                            <p class="font-mono text-xl font-medium">850+</p>
+                            <p class="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">Events</p>
+                        </div>
+                        <div class="rounded-xl border border-border/70 bg-card/50 p-4">
+                            <p class="font-mono text-xl font-medium">$4.2M</p>
+                            <p class="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">Prizes</p>
+                        </div>
+                    </div>
+
+                    <div class="relative mt-10 rounded-2xl border border-border/70 bg-card/50 p-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6 text-primary/60" aria-hidden="true">
+                            <path d="M9.5 5.5c-2.5 1.4-4.2 3.7-4.7 6.6-.3 1.7 0 3.3.8 4.6.8 1.4 2 2.2 3.5 2.2 1.9 0 3.3-1.3 3.3-3.1 0-1.7-1.2-3-2.9-3-.3 0-.7 0-1 .1.3-1.3 1.4-2.5 3-3.4l-2-4Zm9.3 0c-2.5 1.4-4.2 3.7-4.7 6.6-.3 1.7 0 3.3.8 4.6.8 1.4 2 2.2 3.5 2.2 1.9 0 3.3-1.3 3.3-3.1 0-1.7-1.2-3-2.9-3-.3 0-.7 0-1 .1.3-1.3 1.4-2.5 3-3.4l-2-4Z"/>
+                        </svg>
+                        <blockquote class="mt-3 text-sm leading-relaxed text-muted-foreground">
+                            “HackFlow is where our team met. Two hackathons later we had a
+                            working prototype, a design partner and a seed round.”
+                        </blockquote>
+                        <div class="mt-5 flex items-center gap-3">
+                            <span class="flex size-8 items-center justify-center rounded-full bg-lime-400/15 font-mono text-[10px] text-lime-300">MC</span>
+                            <div>
+                                <p class="text-xs font-medium">Maya Chen</p>
+                                <p class="text-[11px] text-muted-foreground">Co-founder, Loopline</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="mt-6 inline-flex items-center gap-2 font-mono text-[11px] text-muted-foreground">
+                        <span class="size-1.5 rounded-full bg-primary"></span>
+                        Trusted by builders in 190 countries
+                    </p>
+                </div>
+            </div>
+
+            <!-- Auth card -->
+            <div class="mx-auto w-full max-w-md lg:mx-0 lg:justify-self-end">
+                {% block auth_card %}{% endblock %}
+                <p class="mt-6 text-center text-xs text-muted-foreground">
+                    Need a hand? <a href="mailto:hello@hackflow.dev" class="font-medium text-foreground hover:text-primary">hello@hackflow.dev</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

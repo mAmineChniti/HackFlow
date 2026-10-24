@@ -1,0 +1,12 @@
+Hi {{ user.get_username }},
+
+Welcome to HackFlow. Confirm your email address to finish setting up your
+account:
+
+{{ verification_url }}
+
+This link expires in {{ expires_days }} days. If you didn't create a HackFlow
+account, you can safely ignore this email.
+
+— HackFlow
+https://hackflow.dev

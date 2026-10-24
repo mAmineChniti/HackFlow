@@ -1,0 +1,165 @@
+{% extends "accounts/_settings_layout.html" %}
+
+{% block title %}Profile — HackFlow{% endblock %}
+{% block settings_title %}Profile{% endblock %}
+{% block settings_description %}Manage the details people see when they meet you across HackFlow.{% endblock %}
+
+{% block settings_content %}
+<div class="space-y-6">
+    {% if not profile.email_verified %}
+    <div class="rounded-xl border border-amber-600/30 bg-amber-500/[0.07] p-5 dark:border-amber-500/25">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex items-start gap-3">
+                <span class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border border-amber-600/30 bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4" aria-hidden="true">
+                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                        <path d="M12 9v4"/>
+                        <path d="M12 17h.01"/>
+                    </svg>
+                </span>
+                <div>
+                    <p class="text-sm font-medium text-foreground">Verify your email address</p>
+                    <p class="mt-1 max-w-lg text-sm leading-relaxed text-muted-foreground">
+                        {% if user.email %}
+                        We sent a verification link to
+                        <span class="font-medium text-foreground">{{ user.email }}</span>.
+                        Verifying keeps your account secure and lets you recover access.
+                        {% else %}
+                        Add an email address below, then save your profile to receive a
+                        verification link.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            {% if user.email %}
+            <form method="post" action="{% url 'accounts:resend_verification' %}" class="shrink-0">
+                {% csrf_token %}
+                <c-button type="submit" variant="outline" size="sm">Resend email</c-button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <c-card class="border-border/70 bg-card/60">
+        <c-card.header>
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <c-card.title>Profile details</c-card.title>
+                    <c-card.description class="mt-1">
+                        Your public handle and the contact address tied to your account.
+                    </c-card.description>
+                </div>
+                {% if profile.email_verified %}
+                <span class="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-primary">
+                    <span class="size-1.5 rounded-full bg-primary"></span>
+                    Verified
+                </span>
+                {% else %}
+                <span class="inline-flex items-center gap-1.5 rounded-full border border-amber-600/30 bg-amber-500/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                    <span class="size-1.5 rounded-full bg-amber-500"></span>
+                    Unverified
+                </span>
+                {% endif %}
+            </div>
+        </c-card.header>
+        <c-card.content>
+            {% if form.non_field_errors %}
+            <div class="mb-5 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post" action="{% url 'accounts:profile' %}" class="space-y-5">
+                {% csrf_token %}
+
+                <div class="grid gap-5 sm:grid-cols-2">
+                    {% include "accounts/_form_field.html" with field=form.first_name %}
+                    {% include "accounts/_form_field.html" with field=form.last_name %}
+                </div>
+
+                {% include "accounts/_form_field.html" with field=form.username %}
+                {% include "accounts/_form_field.html" with field=form.email %}
+
+                <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                    {% if profile.email_verified %}
+                    <span class="size-1.5 rounded-full bg-primary"></span>
+                    This email address is verified.
+                    {% else %}
+                    <span class="size-1.5 rounded-full bg-amber-500"></span>
+                    This email address isn't verified yet. Check your inbox.
+                    {% endif %}
+                </div>
+
+                <div class="flex flex-wrap items-center gap-4 border-t border-border/60 pt-5">
+                    <c-button type="submit">Save changes</c-button>
+                    <a href="{% url 'core:home' %}" class="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </c-card.content>
+    </c-card>
+
+    <c-card class="border-border/70 bg-card/60">
+        <c-card.header>
+            <c-card.title>Security</c-card.title>
+            <c-card.description class="mt-1">
+                Keep your account locked down with a strong, unique password.
+            </c-card.description>
+        </c-card.header>
+        <c-card.content>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div class="rounded-lg border border-border/70 bg-background/40 p-4">
+                    <div class="flex items-center gap-2 text-sm font-medium">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 text-muted-foreground" aria-hidden="true">
+                            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        Password
+                    </div>
+                    <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        Choose a password you don't use on any other site.
+                    </p>
+                    <c-button_link href="{% url 'accounts:password_change' %}" variant="outline" size="sm" class="mt-3">
+                        Change password
+                    </c-button_link>
+                </div>
+                <div class="rounded-lg border border-border/70 bg-background/40 p-4">
+                    <p class="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                        Last sign-in
+                    </p>
+                    <p class="mt-1 text-sm font-medium">
+                        {{ user.last_login|date:"M j, Y H:i"|default:"This is your first session" }}
+                    </p>
+                    <p class="mt-1 text-xs text-muted-foreground">
+                        Member since {{ user.date_joined|date:"M j, Y" }}
+                    </p>
+                </div>
+            </div>
+        </c-card.content>
+    </c-card>
+
+    <c-card class="border-destructive/30 bg-destructive/[0.03]">
+        <c-card.header>
+            <c-card.title class="text-destructive">Danger zone</c-card.title>
+            <c-card.description class="mt-1">
+                This action can't be undone once you confirm it.
+            </c-card.description>
+        </c-card.header>
+        <c-card.content>
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <p class="max-w-lg text-sm leading-relaxed text-muted-foreground">
+                    Deleting your account permanently removes your profile, submissions,
+                    team memberships and access to HackFlow.
+                </p>
+                <c-button_link href="{% url 'accounts:delete_account' %}" variant="destructive" class="shrink-0">
+                    Delete account
+                </c-button_link>
+            </div>
+        </c-card.content>
+    </c-card>
+</div>
+{% endblock %}

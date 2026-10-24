@@ -1,0 +1,307 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Explicit source globs so Tailwind sees templates and view data classes. */
+@source "../../templates/**/*.html";
+@source "../../core/**/*.py";
+
+/* ---------------------------------------------------------------------------
+   Geist font family - the signature shadcn/ui typeface
+--------------------------------------------------------------------------- */
+@font-face {
+    font-family: "Geist";
+    src: url("../fonts/Geist-Regular.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Geist";
+    src: url("../fonts/Geist-Medium.woff2") format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Geist";
+    src: url("../fonts/Geist-SemiBold.woff2") format("woff2");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Geist";
+    src: url("../fonts/Geist-Bold.woff2") format("woff2");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Geist Mono";
+    src: url("../fonts/GeistMono-Regular.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Geist Mono";
+    src: url("../fonts/GeistMono-Medium.woff2") format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* ---------------------------------------------------------------------------
+   Design tokens
+--------------------------------------------------------------------------- */
+:root {
+    --background: oklch(0.99 0.002 140);
+    --foreground: oklch(0.18 0.02 255);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.18 0.02 255);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.18 0.02 255);
+    --primary: oklch(0.53 0.16 145);
+    --primary-foreground: oklch(0.99 0.005 140);
+    --secondary: oklch(0.96 0.008 145);
+    --secondary-foreground: oklch(0.22 0.02 255);
+    --muted: oklch(0.96 0.005 250);
+    --muted-foreground: oklch(0.52 0.015 255);
+    --accent: oklch(0.95 0.02 140);
+    --accent-foreground: oklch(0.25 0.05 145);
+    --destructive: oklch(0.58 0.22 27);
+    --destructive-foreground: oklch(0.99 0 0);
+    --border: oklch(0.9 0.008 250);
+    --input: oklch(0.9 0.008 250);
+    --ring: oklch(0.62 0.16 145);
+    --chart-1: oklch(0.62 0.17 145);
+    --chart-2: oklch(0.6 0.12 195);
+    --chart-3: oklch(0.55 0.2 285);
+    --chart-4: oklch(0.78 0.16 80);
+    --chart-5: oklch(0.62 0.22 20);
+    --radius: 0.75rem;
+    --sidebar: oklch(0.985 0.002 140);
+    --sidebar-foreground: oklch(0.18 0.02 255);
+    --sidebar-primary: oklch(0.53 0.16 145);
+    --sidebar-primary-foreground: oklch(0.99 0.005 140);
+    --sidebar-accent: oklch(0.95 0.02 140);
+    --sidebar-accent-foreground: oklch(0.25 0.05 145);
+    --sidebar-border: oklch(0.9 0.008 250);
+    --sidebar-ring: oklch(0.62 0.16 145);
+
+    /* Font families */
+    --font-sans: "Geist", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.dark {
+    --background: oklch(0.13 0.012 260);
+    --foreground: oklch(0.97 0.003 250);
+    --card: oklch(0.17 0.012 260);
+    --card-foreground: oklch(0.97 0.003 250);
+    --popover: oklch(0.17 0.012 260);
+    --popover-foreground: oklch(0.97 0.003 250);
+    --primary: oklch(0.88 0.22 130);
+    --primary-foreground: oklch(0.16 0.03 130);
+    --secondary: oklch(0.24 0.012 260);
+    --secondary-foreground: oklch(0.97 0 0);
+    --muted: oklch(0.22 0.01 260);
+    --muted-foreground: oklch(0.68 0.01 260);
+    --accent: oklch(0.25 0.02 260);
+    --accent-foreground: oklch(0.97 0 0);
+    --destructive: oklch(0.62 0.23 25);
+    --destructive-foreground: oklch(0.99 0 0);
+    --border: oklch(0.27 0.012 260);
+    --input: oklch(0.3 0.012 260);
+    --ring: oklch(0.88 0.22 130);
+    --chart-1: oklch(0.88 0.22 130);
+    --chart-2: oklch(0.75 0.13 195);
+    --chart-3: oklch(0.72 0.18 295);
+    --chart-4: oklch(0.82 0.17 85);
+    --chart-5: oklch(0.72 0.2 20);
+    --sidebar: oklch(0.16 0.012 260);
+    --sidebar-foreground: oklch(0.97 0 0);
+    --sidebar-primary: oklch(0.88 0.22 130);
+    --sidebar-primary-foreground: oklch(0.16 0.03 130);
+    --sidebar-accent: oklch(0.25 0.02 260);
+    --sidebar-accent-foreground: oklch(0.97 0 0);
+    --sidebar-border: oklch(0.27 0.012 260);
+    --sidebar-ring: oklch(0.88 0.22 130);
+}
+
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+    --font-sans: var(--font-sans);
+    --font-mono: var(--font-mono);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        @apply bg-background text-foreground font-sans antialiased;
+    }
+
+    /* Hide Alpine-controlled elements until Alpine initializes. */
+    [x-cloak] {
+        display: none !important;
+    }
+
+    /* Sticky header offset for in-page anchors. */
+    [id] {
+        scroll-margin-top: 5.5rem;
+    }
+
+    ::selection {
+        @apply bg-primary/25 text-foreground;
+    }
+
+    code,
+    kbd,
+    pre {
+        font-family: var(--font-mono);
+    }
+}
+
+@layer components {
+    .container-page {
+        @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+    }
+
+    /* Subtle dot grid used behind the hero and CTA. */
+    .bg-grid-pattern {
+        background-image: radial-gradient(
+            circle,
+            color-mix(in oklch, var(--foreground) 14%, transparent) 1px,
+            transparent 1px
+        );
+        background-size: 26px 26px;
+    }
+
+    /* Radial hazy glow. */
+    .bg-glow {
+        background: radial-gradient(
+            ellipse 70% 55% at 50% 0%,
+            color-mix(in oklch, var(--primary) 16%, transparent),
+            transparent 72%
+        );
+    }
+
+    .header-blur {
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+    }
+
+    .text-gradient {
+        @apply bg-gradient-to-r from-primary via-lime-300 to-emerald-400 bg-clip-text text-transparent;
+    }
+
+    .card-hover {
+        @apply transition-colors duration-200 hover:border-primary/40 hover:bg-card/90;
+    }
+
+    /* Terminal-style window chrome for the hero preview. */
+    .terminal-dot {
+        @apply size-2.5 rounded-full;
+    }
+
+    a {
+        @apply transition-colors duration-200;
+    }
+
+    .focus-ring {
+        @apply focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+    }
+}
+
+@layer utilities {
+    .text-balance {
+        text-wrap: balance;
+    }
+
+    .animate-float {
+        animation: float 7s ease-in-out infinite;
+    }
+
+    .animate-float-delayed {
+        animation: float 7s ease-in-out 2s infinite;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+}
+
+@keyframes float {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    .animate-float,
+    .animate-float-delayed {
+        animation: none;
+    }
+}

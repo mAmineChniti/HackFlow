@@ -1,0 +1,92 @@
+{% extends "accounts/_settings_layout.html" %}
+
+{% block title %}Delete account — HackFlow{% endblock %}
+{% block settings_title %}Delete account{% endblock %}
+{% block settings_description %}Permanently remove your HackFlow account and everything attached to it.{% endblock %}
+
+{% block settings_content %}
+<div class="max-w-2xl">
+    <c-card class="border-destructive/40 bg-destructive/[0.04]">
+        <c-card.header>
+            <c-card.title class="text-destructive">This action is permanent</c-card.title>
+            <c-card.description class="mt-1">
+                Once your account is deleted, it can't be restored.
+            </c-card.description>
+        </c-card.header>
+        <c-card.content>
+            <div class="rounded-lg border border-destructive/25 bg-background/40 p-4">
+                <p class="text-sm font-medium text-foreground">Deleting your account will:</p>
+                <ul class="mt-3 space-y-2 text-sm text-muted-foreground">
+                    <li class="flex items-start gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden="true">
+                            <path d="M18 6 6 18M6 6l12 12"/>
+                        </svg>
+                        Remove your profile, username and sign-in access.
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden="true">
+                            <path d="M18 6 6 18M6 6l12 12"/>
+                        </svg>
+                        Delete your submissions, team memberships and event history.
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden="true">
+                            <path d="M18 6 6 18M6 6l12 12"/>
+                        </svg>
+                        Sign you out of this device immediately.
+                    </li>
+                </ul>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="mt-5 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post" action="{% url 'accounts:delete_account' %}" class="mt-6 space-y-5">
+                {% csrf_token %}
+
+                {% include "accounts/_form_field.html" with field=form.password %}
+
+                <div class="space-y-2">
+                    <label for="id_confirm" class="flex cursor-pointer items-start gap-3 rounded-lg border border-border/70 bg-background/40 p-4 text-sm">
+                        <input
+                            type="checkbox"
+                            name="confirm"
+                            id="id_confirm"
+                            {% if form.confirm.value %}checked{% endif %}
+                            required
+                            class="mt-0.5 size-4 shrink-0 rounded-sm border border-primary bg-primary accent-primary text-primary-foreground ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                        <span class="leading-relaxed text-muted-foreground">
+                            I understand that deleting my account is permanent and
+                            cannot be undone.
+                        </span>
+                    </label>
+                    {% for error in form.confirm.errors %}
+                    <p class="text-xs font-medium text-destructive">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <div class="flex flex-wrap items-center gap-4 border-t border-border/60 pt-5">
+                    <c-button type="submit" variant="destructive">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 6h18"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            <path d="M10 11v6M14 11v6"/>
+                        </svg>
+                        Delete my account
+                    </c-button>
+                    <a href="{% url 'accounts:profile' %}" class="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+                        Keep my account
+                    </a>
+                </div>
+            </form>
+        </c-card.content>
+    </c-card>
+</div>
+{% endblock %}

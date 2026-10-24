@@ -1,26 +1,59 @@
 #!/bin/sh
 set -e
 
-# Wait for MySQL (skip when DATABASE_URL points to external managed DB)
-if [ -z "$DATABASE_URL" ]; then
-  echo "Waiting for MySQL at ${MYSQL_HOST:-db}:${MYSQL_PORT:-3306}..."
-  python - <<'PY'
-import os, socket, time
-host = os.getenv("MYSQL_HOST", "db")
-port = int(os.getenv("MYSQL_PORT", "3306"))
-for i in range(60):
-    try:
-        with socket.create_connection((host, port), timeout=2):
-            print("MySQL reachable")
-            break
-    except OSError:
-        time.sleep(1)
+# Wait for PostgreSQL before running migrations. Supports both a full
+# DATABASE_URL and the split POSTGRES_* variables used by docker-compose.
+python - <<'PY'
+import os
+import sys
+import time
+
+import psycopg
+
+database_url = os.getenv("DATABASE_URL", "").strip()
+
+if database_url and not database_url.startswith(("postgres://", "postgresql://")):
+    print("DATABASE_URL is not PostgreSQL; skipping readiness wait")
+    sys.exit(0)
+
+if database_url:
+    def connect():
+        return psycopg.connect(database_url, connect_timeout=2)
+
+    target = "DATABASE_URL"
 else:
-    print("MySQL not reachable after 60s, continuing anyway")
+    host = os.getenv("POSTGRES_HOST", "db")
+    port = int(os.getenv("POSTGRES_PORT", "5432"))
+    dbname = os.getenv("POSTGRES_DB", "hackflow")
+    user = os.getenv("POSTGRES_USER", "hackflow")
+    password = os.getenv("POSTGRES_PASSWORD", "")
+
+    def connect():
+        return psycopg.connect(
+            host=host,
+            port=port,
+            dbname=dbname,
+            user=user,
+            password=password,
+            connect_timeout=2,
+        )
+
+    target = f"{host}:{port}/{dbname}"
+
+print(f"Waiting for PostgreSQL at {target}...")
+for attempt in range(1, 61):
+    try:
+        with connect():
+            print("PostgreSQL reachable")
+            break
+    except psycopg.OperationalError as exc:
+        if attempt == 60:
+            print(f"PostgreSQL not reachable after 60s: {exc}", file=sys.stderr)
+            sys.exit(1)
+        time.sleep(1)
 PY
-fi
 
 python manage.py migrate --noinput
-python manage.py collectstatic --noinput || true
+python manage.py collectstatic --noinput
 
 exec "$@"

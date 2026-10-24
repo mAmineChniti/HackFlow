@@ -1,0 +1,15 @@
+{
+  "name": "hackflow",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HackFlow UI - Django + Tailwind CSS + shadcn/ui components",
+  "scripts": {
+    "css:build": "tailwindcss -i ./assets/css/input.css -o ./static/css/output.css --minify",
+    "css:watch": "tailwindcss -i ./assets/css/input.css -o ./static/css/output.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.0",
+    "tailwindcss": "^4.1.0",
+    "tw-animate-css": "^1.2.5"
+  }
+}

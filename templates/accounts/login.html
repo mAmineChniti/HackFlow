@@ -1,0 +1,72 @@
+{% extends "accounts/_auth_base.html" %}
+
+{% block title %}Sign in — HackFlow{% endblock %}
+
+{% block auth_card %}
+<c-card class="border-border/70 bg-card/80 shadow-2xl backdrop-blur">
+    <c-card.header class="space-y-1.5">
+        <div class="flex items-center justify-between gap-3">
+            <c-card.title class="text-xl">Welcome back</c-card.title>
+            <c-badge variant="outline" class="gap-1.5 border-primary/25 bg-primary/5 font-mono text-[10px] uppercase tracking-wider text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3" aria-hidden="true">
+                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                Secure
+            </c-badge>
+        </div>
+        <c-card.description>Sign in to pick up where you left off.</c-card.description>
+    </c-card.header>
+
+    <c-card.content>
+        {% if form.non_field_errors %}
+        <c-alert variant="destructive" class="mb-5">
+            <c-alert.description>
+                {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+                {% endfor %}
+            </c-alert.description>
+        </c-alert>
+        {% endif %}
+
+        <form method="post" action="{% url 'accounts:login' %}" class="space-y-4">
+            {% csrf_token %}
+            {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+            {% include "accounts/_form_field.html" with field=form.username %}
+            {% include "accounts/_form_field.html" with field=form.password %}
+
+            <div class="flex items-center justify-between gap-4 pt-1">
+                <label for="id_remember_me" class="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+                    <input
+                        type="checkbox"
+                        name="remember_me"
+                        id="id_remember_me"
+                        {% if form.remember_me.value %}checked{% endif %}
+                        class="size-4 shrink-0 rounded-sm border border-primary bg-primary accent-primary text-primary-foreground ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                    Remember me
+                </label>
+                <a href="{% url 'accounts:password_reset' %}" class="text-sm font-medium text-primary hover:underline">
+                    Forgot password?
+                </a>
+            </div>
+
+            <c-button type="submit" size="lg" class="w-full">
+                Sign in
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                </svg>
+            </c-button>
+        </form>
+    </c-card.content>
+
+    <c-card.footer class="flex-col items-stretch pt-0">
+        <c-separator class="mb-5" />
+        <p class="text-center text-sm text-muted-foreground">
+            New to HackFlow?
+            <a href="{% url 'accounts:signup' %}" class="font-medium text-primary hover:underline">Create an account</a>
+        </p>
+    </c-card.footer>
+</c-card>
+{% endblock %}

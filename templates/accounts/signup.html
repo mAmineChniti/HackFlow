@@ -1,0 +1,59 @@
+{% extends "accounts/_auth_base.html" %}
+
+{% block title %}Create an account — HackFlow{% endblock %}
+
+{% block auth_card %}
+<c-card class="border-border/70 bg-card/80 shadow-2xl backdrop-blur">
+    <c-card.header class="space-y-1.5">
+        <div class="flex items-center justify-between gap-3">
+            <c-card.title class="text-xl">Create your account</c-card.title>
+            <c-badge variant="outline" class="border-primary/25 bg-primary/5 font-mono text-[10px] uppercase tracking-wider text-primary">
+                Free forever
+            </c-badge>
+        </div>
+        <c-card.description>Start hacking in under two minutes.</c-card.description>
+    </c-card.header>
+
+    <c-card.content>
+        {% if form.non_field_errors %}
+        <c-alert variant="destructive" class="mb-5">
+            <c-alert.description>
+                {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+                {% endfor %}
+            </c-alert.description>
+        </c-alert>
+        {% endif %}
+
+        <form method="post" action="{% url 'accounts:signup' %}" class="space-y-4">
+            {% csrf_token %}
+
+            {% include "accounts/_form_field.html" with field=form.username %}
+            {% include "accounts/_form_field.html" with field=form.email %}
+            {% include "accounts/_form_field.html" with field=form.password1 %}
+            {% include "accounts/_form_field.html" with field=form.password2 %}
+
+            <c-button type="submit" size="lg" class="w-full">
+                Create account
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                </svg>
+            </c-button>
+
+            <p class="text-center text-[11px] leading-relaxed text-muted-foreground">
+                By creating an account you agree to our
+                <a href="#" class="text-foreground hover:text-primary">Terms</a> and
+                <a href="#" class="text-foreground hover:text-primary">Privacy Policy</a>.
+            </p>
+        </form>
+    </c-card.content>
+
+    <c-card.footer class="flex-col items-stretch pt-0">
+        <c-separator class="mb-5" />
+        <p class="text-center text-sm text-muted-foreground">
+            Already have an account?
+            <a href="{% url 'accounts:login' %}" class="font-medium text-primary hover:underline">Sign in</a>
+        </p>
+    </c-card.footer>
+</c-card>
+{% endblock %}
