@@ -44,9 +44,7 @@
             {% if user.is_authenticated %}
             <c-button_link href="{% url 'core:home' %}#hackathons" class="w-full" @click="hideSheet()">
                 Start hacking
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-                </svg>
+                <c-lucideicon.arrow-right />
             </c-button_link>
             <c-button_link href="{% url 'accounts:profile' %}" variant="outline" class="w-full" @click="hideSheet()">
                 Account settings
@@ -58,9 +56,7 @@
             {% else %}
             <c-button_link href="{% url 'accounts:signup' %}" class="w-full" @click="hideSheet()">
                 Create free account
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-                </svg>
+                <c-lucideicon.arrow-right />
             </c-button_link>
             <c-button_link href="{% url 'accounts:login' %}" variant="outline" class="w-full" @click="hideSheet()">
                 Log in
@@ -69,6 +65,7 @@
             <button
                 type="button"
                 onclick="toggleTheme()"
+                data-theme-toggle
                 class="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-input px-4 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
             >
                 Toggle theme

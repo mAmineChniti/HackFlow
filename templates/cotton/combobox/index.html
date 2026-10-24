@@ -106,19 +106,13 @@
       >
         <span x-text="buttonText"></span>
         <!-- ChevronsUpDown Icon -->
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2 h-4 w-4 shrink-0 opacity-50">
-          <path d="m7 15 5 5 5-5"></path>
-          <path d="m7 9 5-5 5 5"></path>
-        </svg>
+        <c-lucideicon.chevrons-up-down class="ml-2 h-4 w-4 shrink-0 opacity-50" />
       </c-button>
     </c-popover.trigger>
     <c-popover.content class="{{ width }} p-0">
       <!-- Search input -->
       <div class="flex items-center border-b px-3">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 h-4 w-4 shrink-0 opacity-50">
-          <circle cx="11" cy="11" r="8"></circle>
-          <path d="m21 21-4.3-4.3"></path>
-        </svg>
+        <c-lucideicon.search class="mr-2 h-4 w-4 shrink-0 opacity-50" />
         <input
           x-model="search"
           x-ref="searchInput"
@@ -155,21 +149,7 @@
             }"
           >
             <!-- Check Icon -->
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="mr-2 h-4 w-4"
-              x-bind:class="value === option.value ? 'opacity-100' : 'opacity-0'"
-            >
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
+            <c-lucideicon.check class="mr-2 h-4 w-4" x-bind:class="value === option.value ? 'opacity-100' : 'opacity-0'" />
             <span x-text="option.label"></span>
           </div>
         </template>

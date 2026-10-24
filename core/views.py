@@ -12,7 +12,7 @@ HACKATHONS = [
         "prize": "$50,000",
         "registered": 2418,
         "capacity": 3000,
-        "gradient": "from-lime-400/20 via-emerald-500/10 to-transparent",
+        "gradient": "event-gradient-lime",
         "code": "// 48 hours · ship or ship",
     },
     {
@@ -26,7 +26,7 @@ HACKATHONS = [
         "prize": "$15,000",
         "registered": 1204,
         "capacity": 2000,
-        "gradient": "from-sky-400/20 via-cyan-500/10 to-transparent",
+        "gradient": "event-gradient-sky",
         "code": "// one week · real maintainers",
     },
     {
@@ -40,7 +40,7 @@ HACKATHONS = [
         "prize": "$25,000",
         "registered": 3102,
         "capacity": 3200,
-        "gradient": "from-fuchsia-400/20 via-purple-500/10 to-transparent",
+        "gradient": "event-gradient-fuchsia",
         "code": "// 72 hours · capture the flag",
     },
 ]
@@ -51,7 +51,7 @@ CHALLENGES = [
         "category": "Web Security",
         "glyph": "</>",
         "difficulty": "Hard",
-        "difficulty_class": "border-rose-400/30 bg-rose-400/10 text-rose-300",
+        "difficulty_class": "tone-rose",
         "points": "500",
         "solves": "1,284",
         "tag": "New",
@@ -61,7 +61,7 @@ CHALLENGES = [
         "category": "AI / ML",
         "glyph": "{ }",
         "difficulty": "Intermediate",
-        "difficulty_class": "border-amber-400/30 bg-amber-400/10 text-amber-300",
+        "difficulty_class": "tone-amber",
         "points": "750",
         "solves": "642",
         "tag": "",
@@ -71,7 +71,7 @@ CHALLENGES = [
         "category": "Systems",
         "glyph": "0x1",
         "difficulty": "Hard",
-        "difficulty_class": "border-rose-400/30 bg-rose-400/10 text-rose-300",
+        "difficulty_class": "tone-rose",
         "points": "1000",
         "solves": "231",
         "tag": "",
@@ -145,7 +145,7 @@ TESTIMONIALS = [
         "name": "Maya Chen",
         "role": "Co-founder, Loopline",
         "initials": "MC",
-        "accent": "bg-lime-400/15 text-lime-300",
+        "accent": "tone-lime",
     },
     {
         "quote": (
@@ -155,7 +155,7 @@ TESTIMONIALS = [
         "name": "Dev Patel",
         "role": "Staff Engineer, Vercel",
         "initials": "DP",
-        "accent": "bg-sky-400/15 text-sky-300",
+        "accent": "tone-sky",
     },
     {
         "quote": (
@@ -165,7 +165,7 @@ TESTIMONIALS = [
         "name": "Ana Souza",
         "role": "OSS maintainer, Rift",
         "initials": "AS",
-        "accent": "bg-fuchsia-400/15 text-fuchsia-300",
+        "accent": "tone-fuchsia",
     },
 ]
 

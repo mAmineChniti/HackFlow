@@ -9,9 +9,11 @@
                     </svg>
                 </span>
                 <span class="text-lg font-semibold tracking-tight">Hack<span class="text-primary">Flow</span></span>
-                <c-badge variant="outline" class="hidden border-primary/30 bg-primary/10 font-mono text-[10px] uppercase tracking-[0.18em] text-primary sm:inline-flex">
-                    beta
-                </c-badge>
+                <span class="hidden sm:inline-flex">
+                    <c-badge variant="outline" class="border-primary/30 bg-primary/10 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+                        beta
+                    </c-badge>
+                </span>
             </a>
 
             <nav class="hidden items-center gap-1 lg:flex" aria-label="Main navigation">
@@ -26,16 +28,12 @@
             <button
                 type="button"
                 onclick="toggleTheme()"
+                data-theme-toggle
                 class="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-ring"
                 aria-label="Toggle color theme"
             >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 dark:hidden" aria-hidden="true">
-                    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
-                </svg>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden size-4 dark:block" aria-hidden="true">
-                    <circle cx="12" cy="12" r="4"/>
-                    <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
-                </svg>
+                <c-lucideicon.moon class="size-4 dark:hidden" />
+                <c-lucideicon.sun class="hidden size-4 dark:block" />
             </button>
 
             {% if user.is_authenticated %}
@@ -46,9 +44,7 @@
                             {{ user.username|slice:":2" }}
                         </span>
                         <span class="hidden max-w-28 truncate lg:inline">{{ user.username }}</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 text-muted-foreground" aria-hidden="true">
-                            <path d="m6 9 6 6 6-6"/>
-                        </svg>
+                        <c-lucideicon.chevron-down class="size-3.5 text-muted-foreground" />
                     </button>
                 </c-dropdown_menu.trigger>
 
@@ -65,40 +61,26 @@
                     <c-dropdown_menu.separator />
                     <c-dropdown_menu.item>
                         <a href="{% url 'accounts:profile' %}" class="flex w-full items-center gap-2 text-foreground">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 text-muted-foreground" aria-hidden="true">
-                                <circle cx="12" cy="8" r="4"/>
-                                <path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2"/>
-                            </svg>
+                            <c-lucideicon.user class="size-4 text-muted-foreground" />
                             Account settings
                         </a>
                     </c-dropdown_menu.item>
                     <c-dropdown_menu.item>
                         <a href="{% url 'core:home' %}#hackathons" class="flex w-full items-center gap-2 text-foreground">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 text-muted-foreground" aria-hidden="true">
-                                <path d="M8 2v4M16 2v4"/>
-                                <rect width="18" height="18" x="3" y="4" rx="2"/>
-                                <path d="M3 10h18"/>
-                            </svg>
+                            <c-lucideicon.calendar class="size-4 text-muted-foreground" />
                             Browse events
                         </a>
                     </c-dropdown_menu.item>
                     <c-dropdown_menu.item>
                         <a href="{% url 'core:home' %}#challenges" class="flex w-full items-center gap-2 text-foreground">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 text-muted-foreground" aria-hidden="true">
-                                <path d="m18 16 4-4-4-4"/>
-                                <path d="m6 8-4 4 4 4"/>
-                                <path d="m14.5 4-5 16"/>
-                            </svg>
+                            <c-lucideicon.code-xml class="size-4 text-muted-foreground" />
                             Solve a challenge
                         </a>
                     </c-dropdown_menu.item>
                     {% if user.is_staff %}
                     <c-dropdown_menu.item>
                         <a href="{% url 'admin:index' %}" class="flex w-full items-center gap-2 text-foreground">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 text-muted-foreground" aria-hidden="true">
-                                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
-                                <circle cx="12" cy="12" r="3"/>
-                            </svg>
+                            <c-lucideicon.settings class="size-4 text-muted-foreground" />
                             Admin
                         </a>
                     </c-dropdown_menu.item>
@@ -108,10 +90,7 @@
                         <form method="post" action="{% url 'accounts:logout' %}" class="w-full">
                             {% csrf_token %}
                             <button type="submit" class="flex w-full items-center gap-2 px-2 py-1.5 text-left text-sm text-destructive">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4" aria-hidden="true">
-                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                                    <path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>
-                                </svg>
+                                <c-lucideicon.log-out class="size-4" />
                                 Sign out
                             </button>
                         </form>
@@ -119,15 +98,15 @@
                 </c-dropdown_menu.content>
             </c-dropdown_menu>
             {% else %}
-            <c-button_link href="{% url 'accounts:login' %}" variant="ghost" size="sm" class="hidden sm:inline-flex">
-                Log in
-            </c-button_link>
-            <c-button_link href="{% url 'accounts:signup' %}" size="sm" class="hidden sm:inline-flex">
-                Sign up free
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-                </svg>
-            </c-button_link>
+            <div class="hidden items-center gap-1.5 sm:flex">
+                <c-button_link href="{% url 'accounts:login' %}" variant="ghost" size="sm">
+                    Log in
+                </c-button_link>
+                <c-button_link href="{% url 'accounts:signup' %}" size="sm">
+                    Sign up free
+                    <c-lucideicon.arrow-right />
+                </c-button_link>
+            </div>
             {% endif %}
 
             <button
@@ -137,9 +116,7 @@
                 class="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-ring lg:hidden"
                 aria-label="Open navigation menu"
             >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true">
-                    <path d="M4 6h16M4 12h16M4 18h16"/>
-                </svg>
+                <c-lucideicon.menu class="size-5" />
             </button>
         </div>
     </div>
