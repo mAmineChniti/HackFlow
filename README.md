@@ -28,7 +28,7 @@ Migrations and `collectstatic` run automatically through `docker-entrypoint.sh`.
 
 ## Local (no Docker)
 
-Requires Python 3.12+ and PostgreSQL 16+.
+Requires Python 3.10+ and PostgreSQL 16+.
 
 ```bash
 python -m venv .venv
@@ -64,6 +64,16 @@ python manage.py migrate
 ## Frontend assets
 
 Templates use the shadcn-django components copied into `templates/cotton/`.
+Icons come from [Lucide](https://lucide.dev/) through `cotton-icons`, so they
+stay consistent and can be dropped in anywhere Cotton components work:
+
+```html
+<c-lucideicon.arrow-right class="size-4" />
+```
+
+The custom HackFlow prompt logo and brand social marks remain local SVGs because
+Lucide does not ship brand icons.
+
 Tailwind CSS is compiled with the standalone v4 CLI:
 
 ```bash

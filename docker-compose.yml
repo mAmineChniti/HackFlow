@@ -27,11 +27,6 @@ services:
     env_file:
       - .env
     environment:
-      DJANGO_DEBUG: "True"
-      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,[::1]"
-      POSTGRES_DB: ${POSTGRES_DB:-hackflow}
-      POSTGRES_USER: ${POSTGRES_USER:-hackflow}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hackflow}
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"
     depends_on:

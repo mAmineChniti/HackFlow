@@ -58,7 +58,10 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
     # UI: shadcn-style components (django-cotton) + HTMX support
     "django_cotton",
+    "cotton_icons",
     "django_htmx",
+    # CORS support (enable when adding API endpoints)
+    # "corsheaders",
     # Local apps
     "accounts",
     "core",
@@ -74,9 +77,15 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_htmx.middleware.HtmxMiddleware",
+    # CORS middleware (uncomment when enabling corsheaders in INSTALLED_APPS)
+    # "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = "HackFlow.urls"
+
+# CORS settings (configure when adding API endpoints)
+# CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "")
+# CORS_ALLOW_CREDENTIALS = env_bool("CORS_ALLOW_CREDENTIALS", False)
 
 TEMPLATES = [
     {
@@ -143,6 +152,23 @@ EMAIL_VERIFICATION_RESEND_COOLDOWN = int(
     os.getenv("EMAIL_VERIFICATION_RESEND_COOLDOWN", "60")
 )
 
+# Cache: local-memory for development, Redis for production with multiple workers.
+# Login throttling and email verification cooldowns require a shared cache in multi-worker setups.
+REDIS_URL = os.getenv("REDIS_URL", "").strip()
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        }
+    }
+
 # Email: console backend in development. Set EMAIL_HOST (and friends) for SMTP.
 EMAIL_HOST = os.getenv("EMAIL_HOST", "")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
@@ -187,5 +213,53 @@ CSRF_COOKIE_SECURE = env_bool("DJANGO_SECURE_COOKIES", not DEBUG)
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
 SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", False)
+# HSTS is only effective when SSL is enabled and in production
+if not DEBUG and env_bool("DJANGO_SECURE_SSL_REDIRECT", False):
+    SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "31536000"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", True)
+    SECURE_HSTS_PRELOAD = env_bool("SECURE_HSTS_PRELOAD", True)
+
+# Logging: structured JSON in production, readable text in development.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose" if DEBUG else "simple",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO" if DEBUG else "WARNING",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO" if DEBUG else "WARNING",
+            "propagate": False,
+        },
+        "django.security": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        "accounts": {
+            "handlers": ["console"],
+            "level": "INFO" if DEBUG else "WARNING",
+            "propagate": False,
+        },
+    },
+}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
