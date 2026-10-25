@@ -29,17 +29,17 @@ class TierChoices(models.TextChoices):
 class StatusChoices(models.TextChoices):
     """Étapes du pipeline de prospection d'un sponsor."""
     PROSPECT = "prospect", _("Prospect")
-    CONTACTE = "contacté", _("Contacté")
-    NEGOCIATION = "négociation", _("Négociation")
-    CONFIRME = "confirmé", _("Confirmé")
-    REFUSE = "refusé", _("Refusé")
+    CONTACTE = "contacté", _("Contacted")
+    NEGOCIATION = "négociation", _("Negotiating")
+    CONFIRME = "confirmé", _("Confirmed")
+    REFUSE = "refusé", _("Declined")
 
 
 class ContributionTypeChoices(models.TextChoices):
     """Nature de la contribution apportée par le sponsor."""
-    FINANCIER = "financier", _("Financier")
-    MATERIEL = "matériel", _("Matériel")
-    PRIX = "prix", _("Prix / Récompenses")
+    FINANCIER = "financier", _("Financial")
+    MATERIEL = "matériel", _("Equipment")
+    PRIX = "prix", _("Prizes / Rewards")
     MENTORS = "mentors", _("Mentors / Experts")
 
 
@@ -48,15 +48,15 @@ class ContributionTypeChoices(models.TextChoices):
 # ---------------------------------------------------------------------------
 
 SECTOR_CHOICES = [
-    ("tech", _("Technologie / Informatique")),
-    ("finance", _("Finance / Banque")),
-    ("sante", _("Santé / Biotech")),
-    ("education", _("Éducation / Formation")),
-    ("energie", _("Énergie / Environnement")),
-    ("industrie", _("Industrie / Manufacturing")),
-    ("media", _("Médias / Communication")),
-    ("retail", _("Commerce / Distribution")),
-    ("autre", _("Autre")),
+    ("tech", _("Technology / IT")),
+    ("finance", _("Finance / Banking")),
+    ("sante", _("Healthcare / Biotech")),
+    ("education", _("Education / Training")),
+    ("energie", _("Energy / Environment")),
+    ("industrie", _("Industry / Manufacturing")),
+    ("media", _("Media / Communications")),
+    ("retail", _("Retail / Distribution")),
+    ("autre", _("Other")),
 ]
 
 
@@ -81,41 +81,41 @@ class Sponsor(models.Model):
     name = models.CharField(
         max_length=255,
         unique=True,
-        verbose_name=_("Nom de l'entreprise"),
+        verbose_name=_("Company name"),
     )
     logo = models.ImageField(
         upload_to=logo_upload_path,
         blank=True,
         null=True,
         verbose_name=_("Logo"),
-        help_text=_("Format recommandé : PNG/SVG, fond transparent, max 2 Mo."),
+        help_text=_("Recommended format: PNG or SVG with a transparent background, max 2 MB."),
     )
     website = models.URLField(
         blank=True,
-        verbose_name=_("Site web"),
+        verbose_name=_("Website"),
     )
     sector = models.CharField(
         max_length=50,
         choices=SECTOR_CHOICES,
         default="tech",
-        verbose_name=_("Secteur d'activité"),
+        verbose_name=_("Industry"),
     )
     description = models.TextField(
         blank=True,
         verbose_name=_("Description"),
-        help_text=_("Présentation courte utilisée sur la page publique."),
+        help_text=_("A short description shown on the public page."),
     )
     contact_name = models.CharField(
         max_length=255,
         blank=True,
-        verbose_name=_("Nom du contact"),
+        verbose_name=_("Contact name"),
     )
     contact_email = models.EmailField(
         blank=True,
-        verbose_name=_("Email du contact"),
+        verbose_name=_("Contact email"),
     )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Créé le"))
-    updated_at = models.DateTimeField(auto_now=True, verbose_name=_("Modifié le"))
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Created at"))
+    updated_at = models.DateTimeField(auto_now=True, verbose_name=_("Updated at"))
 
     class Meta:
         verbose_name = _("Sponsor")
@@ -160,39 +160,39 @@ class Sponsorship(models.Model):
         max_length=20,
         choices=TierChoices.choices,
         default=TierChoices.BRONZE,
-        verbose_name=_("Niveau (tier)"),
+        verbose_name=_("Tier"),
     )
     amount = models.DecimalField(
         max_digits=12,
         decimal_places=3,
         default=0,
         validators=[MinValueValidator(0)],
-        verbose_name=_("Montant (DT)"),
-        help_text=_("Montant financier de la contribution en DT (ex: 2500.000 DT). 0 si non-financier."),
+        verbose_name=_("Amount (DT)"),
+        help_text=_("Financial contribution amount in DT (e.g. 2500.000 DT). Use 0 for non-financial contributions."),
     )
     status = models.CharField(
         max_length=20,
         choices=StatusChoices.choices,
         default=StatusChoices.PROSPECT,
-        verbose_name=_("Statut"),
+        verbose_name=_("Status"),
     )
     contribution_type = models.CharField(
         max_length=20,
         choices=ContributionTypeChoices.choices,
         default=ContributionTypeChoices.FINANCIER,
-        verbose_name=_("Type de contribution"),
+        verbose_name=_("Contribution type"),
     )
     notes = models.TextField(
         blank=True,
-        verbose_name=_("Notes internes"),
-        help_text=_("Remarques visibles uniquement par l'équipe organisatrice."),
+        verbose_name=_("Internal notes"),
+        help_text=_("Notes visible only to authorized organizers."),
     )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Créé le"))
-    updated_at = models.DateTimeField(auto_now=True, verbose_name=_("Modifié le"))
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Created at"))
+    updated_at = models.DateTimeField(auto_now=True, verbose_name=_("Updated at"))
 
     class Meta:
-        verbose_name = _("Partenariat (Sponsorship)")
-        verbose_name_plural = _("Partenariats (Sponsorships)")
+        verbose_name = _("Partnership")
+        verbose_name_plural = _("Partnerships")
         ordering = ["tier", "sponsor__name"]
         # Un sponsor ne peut être lié qu'une seule fois à un hackathon donné
         unique_together = [("sponsor", "hackathon")]
@@ -224,33 +224,33 @@ class StatusHistory(models.Model):
         Sponsorship,
         on_delete=models.CASCADE,
         related_name="history",
-        verbose_name=_("Partenariat"),
+        verbose_name=_("Partnership"),
     )
     old_status = models.CharField(
         max_length=20,
         choices=StatusChoices.choices,
-        verbose_name=_("Ancien statut"),
+        verbose_name=_("Previous status"),
     )
     new_status = models.CharField(
         max_length=20,
         choices=StatusChoices.choices,
-        verbose_name=_("Nouveau statut"),
+        verbose_name=_("New status"),
     )
     changed_by = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
         null=True,
         related_name="sponsorship_status_changes",
-        verbose_name=_("Modifié par"),
+        verbose_name=_("Changed by"),
     )
     changed_at = models.DateTimeField(
         default=timezone.now,
-        verbose_name=_("Date du changement"),
+        verbose_name=_("Changed at"),
     )
 
     class Meta:
-        verbose_name = _("Historique de statut")
-        verbose_name_plural = _("Historiques de statut")
+        verbose_name = _("Status history")
+        verbose_name_plural = _("Status history")
         ordering = ["-changed_at"]
 
     def __str__(self):
@@ -282,38 +282,37 @@ class SponsorEmailLog(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         related_name="sponsor_emails_sent",
-        verbose_name=_("Envoyé par"),
+        verbose_name=_("Sent by"),
     )
     subject = models.CharField(
         max_length=255,
-        verbose_name=_("Objet"),
+        verbose_name=_("Subject"),
     )
     body = models.TextField(
         verbose_name=_("Message"),
     )
     sent_at = models.DateTimeField(
         default=timezone.now,
-        verbose_name=_("Date d'envoi"),
+        verbose_name=_("Sent at"),
     )
     success = models.BooleanField(
         default=True,
-        verbose_name=_("Succès"),
+        verbose_name=_("Successful"),
     )
     ai_generated = models.BooleanField(
         default=False,
-        verbose_name=_("Généré par IA"),
+        verbose_name=_("AI generated"),
     )
     error_message = models.TextField(
         blank=True,
-        verbose_name=_("Erreur éventuelle"),
+        verbose_name=_("Error message"),
     )
 
     class Meta:
-        verbose_name = _("Journal d'email sponsor")
-        verbose_name_plural = _("Journaux d'emails sponsors")
+        verbose_name = _("Sponsor email log")
+        verbose_name_plural = _("Sponsor email logs")
         ordering = ["-sent_at"]
 
     def __str__(self):
-        status_str = "OK" if self.success else "Échec"
+        status_str = "Sent" if self.success else "Failed"
         return f"[{status_str}] {self.sponsor.name} : {self.subject} ({self.sent_at:%d/%m/%Y %H:%M})"
-

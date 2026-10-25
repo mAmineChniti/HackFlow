@@ -51,13 +51,12 @@ except ImportError:
 
 
 # ==============================================================================
-# VUE PUBLIQUE (accessible à tous les visiteurs)
+# Public sponsor pages
 # ==============================================================================
 
 class PublicSponsorListView(TemplateView):
     """
-    Vitrine publique des sponsors confirmés de HackFlow.
-    Organisée par paliers de partenariat (Platinum, Gold, Silver, Bronze).
+    Public showcase of confirmed HackFlow sponsors, grouped by sponsorship tier.
     """
 
     template_name = "sponsors/public_list.html"
@@ -100,13 +99,12 @@ class PublicSponsorListView(TemplateView):
 
 
 # ==============================================================================
-# STAFF-FACING DASHBOARD (SponsorPermissionRequiredMixin)
+# Staff dashboard
 # ==============================================================================
 
 class SponsorDashboardView(SponsorPermissionRequiredMixin, TemplateView):
     """
-    Tableau de bord de pilotage pour l'équipe organisatrice.
-    Affiche les KPIs financiers, le pipeline de prospection et l'historique récent.
+    Organizer dashboard with financial KPIs, prospecting pipeline, and recent history.
     """
 
     template_name = "sponsors/dashboard.html"
@@ -171,7 +169,7 @@ class SponsorDashboardView(SponsorPermissionRequiredMixin, TemplateView):
                 user=self.request.user,
             )
             if target_hackathon
-            else {"recommendations": [], "message": "Aucun hackathon disponible pour calculer des affinités."}
+            else {"recommendations": [], "message": "No hackathons are available to calculate matches."}
         )
 
         context.update({
@@ -308,7 +306,7 @@ class SponsorCreateView(SponsorPermissionRequiredMixin, CreateView):
     required_permission = "manage"
 
     def form_valid(self, form):
-        messages.success(self.request, f"Le sponsor « {form.instance.name} » a été ajouté avec succès.")
+        messages.success(self.request, f'Sponsor "{form.instance.name}" was created successfully.')
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -327,7 +325,7 @@ class SponsorUpdateView(SponsorPermissionRequiredMixin, UpdateView):
         return sponsors_visible_to(self.request.user)
 
     def form_valid(self, form):
-        messages.success(self.request, f"Le sponsor « {form.instance.name} » a été mis à jour.")
+        messages.success(self.request, f'Sponsor "{form.instance.name}" was updated.')
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -361,7 +359,7 @@ class SponsorDeleteView(SponsorPermissionRequiredMixin, DeleteView):
         return sponsor
 
     def form_valid(self, form):
-        messages.success(self.request, f"Le sponsor « {self.object.name} » a été supprimé.")
+        messages.success(self.request, f'Sponsor "{self.object.name}" was deleted.')
         return super().form_valid(form)
 
 
@@ -398,7 +396,7 @@ class SponsorshipCreateView(SponsorPermissionRequiredMixin, CreateView):
         )
         messages.success(
             self.request,
-            f"Partenariat « {self.object.sponsor.name} » associé au hackathon « {self.object.hackathon.name} »."
+            f'Sponsorship for "{self.object.sponsor.name}" was linked to hackathon "{self.object.hackathon.name}".'
         )
         return response
 
@@ -425,7 +423,7 @@ class SponsorshipUpdateView(SponsorPermissionRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        messages.success(self.request, "Les informations du partenariat ont été enregistrées.")
+        messages.success(self.request, "Sponsorship details were saved.")
         return response
 
     def get_success_url(self):
@@ -450,7 +448,7 @@ class SponsorshipDeleteView(SponsorPermissionRequiredMixin, DeleteView):
         return obj
 
     def form_valid(self, form):
-        messages.success(self.request, "Le partenariat a été retiré.")
+        messages.success(self.request, "The sponsorship was removed.")
         return super().form_valid(form)
 
 
@@ -478,7 +476,7 @@ class SponsorshipChangeStatusView(SponsorPermissionRequiredMixin, View):
             sponsorship.change_status(new_status=new_status, changed_by=request.user)
             messages.success(
                 request,
-                f"Statut mis à jour : {sponsorship.sponsor.name} est maintenant « {sponsorship.get_status_display()} »."
+                f'Status updated: {sponsorship.sponsor.name} is now "{sponsorship.get_status_display()}".'
             )
 
         # Si requête HTMX, on renvoie le snippet mis à jour
@@ -568,13 +566,13 @@ class SponsorContactView(SponsorPermissionRequiredMixin, View):
             if success:
                 messages.success(
                     request,
-                    f"Email envoyé avec succès au contact de « {sponsor.name} » ({sponsor.contact_email})."
+                    f'Email sent successfully to "{sponsor.name}" ({sponsor.contact_email}).'
                 )
                 return redirect("sponsors:sponsor_detail", pk=sponsor.pk)
             else:
                 messages.error(
                     request,
-                    f"Impossible d'envoyer l'email : {log.error_message}"
+                    f"Unable to send email: {log.error_message}"
                 )
 
         return render(

@@ -7,6 +7,7 @@ import json
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 import openpyxl
+from django.contrib import admin
 from django.contrib.auth.models import User
 from django.core import mail
 from django.core.cache import cache
@@ -44,12 +45,12 @@ from sponsors.templatetags.sponsor_tags import get_confirmed_sponsors
 
 class SponsorAdminInterfaceTests(TestCase):
     def setUp(self):
-        admin_user = User.objects.create_superuser(
+        self.admin_user = User.objects.create_superuser(
             username="sponsor_admin",
             email="admin@example.com",
             password="test-password",
         )
-        self.client.force_login(admin_user)
+        self.client.force_login(self.admin_user)
         self.sponsor = Sponsor.objects.create(name="Admin Template Sponsor")
         self.hackathon = Hackathon.objects.create(
             name="Admin Template Hackathon",
@@ -67,19 +68,38 @@ class SponsorAdminInterfaceTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "admin/app_index.html")
-        self.assertContains(response, "Operations workspace")
         self.assertContains(response, "Sponsor Management")
-        self.assertContains(response, "Company profiles, sectors, websites, and contact details.")
+        self.assertContains(response, "Records")
+        self.assertContains(response, "Overview")
         self.assertContains(response, reverse("admin:sponsors_sponsor_changelist"))
         self.assertContains(response, reverse("admin:sponsors_sponsorship_changelist"))
+
+    def test_admin_home_groups_sponsors_without_styling_other_apps(self):
+        response = self.client.get(reverse("admin:index"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "admin/index.html")
+        self.assertContains(response, "Sponsor Management")
+        self.assertContains(response, reverse("admin:sponsors_sponsor_changelist"))
+        self.assertContains(response, "/static/css/admin.css")
+        self.assertContains(response, "/static/sponsors/admin/admin_sponsors.css")
+        self.assertContains(response, "/admin/auth/user/")
+        self.assertContains(response, '<html lang="en-us"', html=False)
+        self.assertContains(response, 'id="nav-sidebar"', html=False)
+        self.assertContains(response, "/admin/auth/user/")
+        self.assertContains(response, "/admin/auth/group/")
+        self.assertContains(response, "/admin/accounts/profile/")
 
     def test_sponsor_model_pages_use_hackflow_admin_theme(self):
         response = self.client.get(reverse("admin:sponsors_sponsor_changelist"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "/static/css/admin.css")
+        self.assertContains(response, "/static/sponsors/admin/admin_sponsors.css")
         self.assertTemplateUsed(response, "admin/sponsors/change_list.html")
-        self.assertContains(response, "Review company profiles")
+        self.assertContains(response, "Sponsor Management")
+        self.assertContains(response, "Records")
+        self.assertContains(response, "Overview")
+        self.assertContains(response, '<html lang="en-us"', html=False)
 
     def test_sponsor_add_edit_delete_and_history_use_custom_templates(self):
         pages = (
@@ -111,18 +131,156 @@ class SponsorAdminInterfaceTests(TestCase):
                 response = self.client.get(reverse(route_name, kwargs=kwargs))
                 self.assertEqual(response.status_code, 200)
                 self.assertTemplateUsed(response, template_name)
+                if route_name.endswith(("_add", "_change")):
+                    self.assertContains(
+                        response,
+                        "/static/sponsors/admin/admin_sponsors.css",
+                    )
+                    self.assertContains(response, "Sponsor Management")
+                    self.assertContains(response, "Records")
+                    self.assertContains(response, "Cancel")
+                    self.assertContains(response, "Save")
 
     def test_all_sponsor_model_lists_use_custom_template(self):
-        for route_name in (
-            "admin:sponsors_sponsor_changelist",
-            "admin:sponsors_sponsorship_changelist",
-            "admin:sponsors_statushistory_changelist",
-            "admin:sponsors_sponsoremaillog_changelist",
-        ):
+        templates = {
+            "admin:sponsors_sponsor_changelist": "admin/sponsors/change_list.html",
+            "admin:sponsors_sponsorship_changelist": (
+                "admin/sponsors/sponsorship_change_list.html"
+            ),
+            "admin:sponsors_statushistory_changelist": "admin/sponsors/change_list.html",
+            "admin:sponsors_sponsoremaillog_changelist": "admin/sponsors/change_list.html",
+        }
+        for route_name, template_name in templates.items():
             with self.subTest(route=route_name):
                 response = self.client.get(reverse(route_name))
                 self.assertEqual(response.status_code, 200)
-                self.assertTemplateUsed(response, "admin/sponsors/change_list.html")
+                self.assertTemplateUsed(response, template_name)
+                self.assertContains(
+                    response,
+                    "/static/sponsors/admin/admin_sponsors.css",
+                )
+                self.assertContains(response, "Sponsor Management")
+                self.assertContains(response, "Overview")
+                self.assertContains(response, "Records")
+                if route_name.endswith("changelist"):
+                    self.assertContains(response, "Search")
+                    self.assertContains(response, "Show counts")
+
+    def test_admin_and_public_site_use_english_language(self):
+        admin_response = self.client.get(reverse("admin:index"))
+        public_response = self.client.get(reverse("sponsors:public_list"))
+
+        self.assertContains(admin_response, '<html lang="en-us"', html=False)
+        self.assertContains(public_response, '<html lang="en"', html=False)
+
+    def test_sponsor_lists_do_not_expose_contact_emails_or_internal_notes(self):
+        self.sponsor.contact_email = "private-contact@example.com"
+        self.sponsor.save(update_fields=("contact_email",))
+        self.sponsorship.notes = "Confidential negotiation note"
+        self.sponsorship.save(update_fields=("notes",))
+
+        sponsor_response = self.client.get(reverse("admin:sponsors_sponsor_changelist"))
+        sponsorship_response = self.client.get(
+            reverse("admin:sponsors_sponsorship_changelist")
+        )
+
+        self.assertNotContains(sponsor_response, "private-contact@example.com")
+        self.assertNotContains(sponsorship_response, "private-contact@example.com")
+        self.assertNotContains(sponsorship_response, "Confidential negotiation note")
+
+    def test_sponsorship_admin_actions_use_status_service_and_record_history(self):
+        actions = (
+            ("mark_contacted", StatusChoices.CONTACTE),
+            ("mark_negotiation", StatusChoices.NEGOCIATION),
+            ("mark_confirmed", StatusChoices.CONFIRME),
+            ("mark_refused", StatusChoices.REFUSE),
+        )
+        url = reverse("admin:sponsors_sponsorship_changelist")
+
+        for action, expected_status in actions:
+            with self.subTest(action=action):
+                response = self.client.post(
+                    url,
+                    {
+                        "action": action,
+                        "_selected_action": [str(self.sponsorship.pk)],
+                        "index": 0,
+                        "post": "yes",
+                    },
+                )
+                self.assertEqual(response.status_code, 302)
+                self.sponsorship.refresh_from_db()
+                self.assertEqual(self.sponsorship.status, expected_status)
+
+        self.assertEqual(
+            StatusHistory.objects.filter(sponsorship=self.sponsorship).count(),
+            len(actions),
+        )
+        self.assertEqual(
+            StatusHistory.objects.filter(sponsorship=self.sponsorship)
+            .order_by("changed_at")
+            .last()
+            .new_status,
+            StatusChoices.REFUSE,
+        )
+
+    def test_status_and_email_logs_are_read_only_in_admin(self):
+        response = self.client.get(
+            reverse("admin:sponsors_statushistory_changelist")
+        )
+        request = response.wsgi_request
+        for model in (StatusHistory, SponsorEmailLog):
+            model_admin = admin.site._registry[model]
+            with self.subTest(model=model.__name__):
+                self.assertFalse(model_admin.has_add_permission(request))
+                self.assertFalse(model_admin.has_change_permission(request))
+                self.assertFalse(model_admin.has_delete_permission(request))
+
+    def test_non_confidential_roles_cannot_open_sponsor_admin(self):
+        staff_user = User.objects.create_superuser(
+            username="sponsor_admin_student_role",
+            email="student-role@example.com",
+            password="test-password",
+        )
+        self.client.force_login(staff_user)
+
+        with patch("sponsors.permissions.get_user_roles", return_value={"etudiant"}):
+            response = self.client.get(
+                reverse("admin:sponsors_sponsor_changelist")
+            )
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_sponsor_admin_css_does_not_load_on_other_app_admin(self):
+        for route_name in (
+            "admin:auth_user_changelist",
+            "admin:auth_group_changelist",
+            "admin:accounts_profile_changelist",
+        ):
+            with self.subTest(route=route_name):
+                response = self.client.get(reverse(route_name))
+
+                self.assertEqual(response.status_code, 200)
+                self.assertNotContains(
+                    response,
+                    "/static/sponsors/admin/admin_sponsors.css",
+                )
+                self.assertContains(response, "/static/css/admin.css")
+                self.assertContains(response, 'id="nav-sidebar"', html=False)
+                self.assertContains(response, '<html lang="en-us"', html=False)
+
+    def test_status_history_equal_statuses_show_creation_badge(self):
+        history = StatusHistory.objects.create(
+            sponsorship=self.sponsorship,
+            old_status=StatusChoices.PROSPECT,
+            new_status=StatusChoices.PROSPECT,
+            changed_by=self.admin_user,
+        )
+        response = self.client.get(reverse("admin:sponsors_statushistory_changelist"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Created")
+        self.assertNotContains(response, "Prospect → Prospect")
 
 
 class SponsorModelAndViewsTest(TestCase):
@@ -174,7 +332,7 @@ class SponsorModelAndViewsTest(TestCase):
         response = self.client.get(reverse("sponsors:public_list"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Alpha Corp")
-        self.assertContains(response, "Partenaires Platinum")
+        self.assertContains(response, "Platinum partners")
 
     def test_dashboard_requires_staff(self):
         """Le dashboard doit refuser les utilisateurs anonymes et non-staff."""
@@ -193,7 +351,7 @@ class SponsorModelAndViewsTest(TestCase):
         self.client.login(username="staff_user", password="password123")
         response = self.client.get(reverse("sponsors:dashboard"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Campagne de Sponsoring")
+        self.assertContains(response, "Sponsorship campaign")
         self.assertContains(response, "5,000")
 
     def test_sponsorship_change_status_records_history(self):
@@ -301,7 +459,7 @@ class SponsorModelAndViewsTest(TestCase):
 
         response = self.client.get(reverse("core:home"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Bientôt : nos partenaires")
+        self.assertContains(response, "Coming soon: our partners")
         self.assertNotContains(response, "Alpha Corp")
 
     def test_sponsorship_form_post_update_with_status_does_not_change_status_and_no_history(self):
@@ -482,7 +640,7 @@ class SponsorModelAndViewsTest(TestCase):
         # 1. GET affiche le formulaire avec modèle prérempli
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Contacter Alpha Corp")
+        self.assertContains(response, "Contact Alpha Corp")
         self.assertContains(response, self.sponsor.contact_email)
 
         # 2. POST envoi d'email
@@ -547,7 +705,7 @@ class SponsorModelAndViewsTest(TestCase):
         # Le 6ème envoi dans la même minute doit être rejeté par la limite
         res_6 = self.client.post(url, {"subject": "Email #6", "message": "Trop de messages"})
         self.assertEqual(res_6.status_code, 200)  # Re-rendu de la page avec message d'erreur
-        self.assertContains(res_6, "Limite anti-abus dépassée")
+        self.assertContains(res_6, "Rate limit exceeded")
 
         # Pas de 6ème email envoyé
         self.assertEqual(len(mail.outbox), 5)
@@ -555,7 +713,7 @@ class SponsorModelAndViewsTest(TestCase):
         # Trace enregistrée avec success=False
         last_log = SponsorEmailLog.objects.filter(sponsor=self.sponsor).latest("sent_at")
         self.assertFalse(last_log.success)
-        self.assertIn("anti-abus", last_log.error_message)
+        self.assertIn("Rate limit", last_log.error_message)
 
     def test_sponsor_contact_handles_failure_gracefully(self):
         """En cas d'échec d'envoi réseau/SMTP, l'application ne crashe pas et enregistre l'erreur."""
@@ -651,7 +809,7 @@ class SponsorModelAndViewsTest(TestCase):
 
         data = recommend_sponsors_for_hackathon(empty_hackathon, use_cache=False)
         self.assertEqual(data["recommendations"], [])
-        self.assertIn("insuffisants", data["message"].lower())
+        self.assertIn("insufficient", data["message"].lower())
 
     def test_ai_recommendations_view_non_staff_rejected(self):
         """L'accès à l'endpoint de recommandations requiert les privilèges Staff."""
@@ -689,9 +847,9 @@ class SponsorModelAndViewsTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         # Vérifier que le corps correspond au modèle standard d'invitation
-        self.assertContains(response, "Invitation à soutenir le hackathon")
+        self.assertContains(response, "Invitation to support")
         # Notice explicative
-        self.assertContains(response, "clé API non configurée")
+        self.assertContains(response, "API key is not configured")
 
     def test_ai_email_generation_with_mocked_api_success(self):
         """Avec une clé API et une réponse API valide mockée, le texte IA est injecté."""
@@ -701,7 +859,7 @@ class SponsorModelAndViewsTest(TestCase):
         fake_api_response = json.dumps({
             "content": [
                 {
-                    "text": "OBJET: Partenariat d'excellence avec Alpha Corp — ESPRIT Hack 2026\n\nCher Karim,\nRejoignez le Hackathon 2026."
+                    "text": "SUBJECT: Excellence in partnership with Alpha Corp — ESPRIT Hack 2026\n\nDear Karim,\nJoin Hackathon 2026."
                 }
             ]
         }).encode("utf-8")
@@ -718,9 +876,9 @@ class SponsorModelAndViewsTest(TestCase):
                 )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Partenariat d&#x27;excellence avec Alpha Corp")
-        self.assertContains(response, "Rejoignez le Hackathon 2026.")
-        self.assertContains(response, "IA Active")
+        self.assertContains(response, "Excellence in partnership with Alpha Corp")
+        self.assertContains(response, "Join Hackathon 2026.")
+        self.assertContains(response, "AI enabled")
 
     def test_ai_email_generation_api_error_falls_back_gracefully(self):
         """En cas d'erreur réseau ou timeout avec le fournisseur IA, repli immédiat sans crash."""
@@ -736,8 +894,8 @@ class SponsorModelAndViewsTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         # Repli sur le modèle relance
-        self.assertContains(response, "Suivi de notre proposition")
-        self.assertContains(response, "service momentanément injoignable")
+        self.assertContains(response, "Following up on our sponsorship proposal")
+        self.assertContains(response, "AI is temporarily unavailable")
 
     def test_ai_email_generation_payload_never_leaks_confidential_fields(self):
         """Le payload envoyé à l'IA ne contient JAMAIS amount, notes, contact_name ni contact_email."""
@@ -804,13 +962,13 @@ class SponsorModelAndViewsTest(TestCase):
 
         # Ouverture et vérification du contenu avec openpyxl
         wb = openpyxl.load_workbook(io.BytesIO(response.content))
-        self.assertEqual(wb.sheetnames, ["Partenariats", "Résumé"])
+        self.assertEqual(wb.sheetnames, ["Sponsorships", "Summary"])
 
         # Vérifier la feuille 1
-        ws_data = wb["Partenariats"]
+        ws_data = wb["Sponsorships"]
         headers = [cell.value for cell in ws_data[1]]
         self.assertIn("Sponsor", headers)
-        self.assertIn("Montant (DT)", headers)
+        self.assertIn("Amount (DT)", headers)
         self.assertIn("Hackathon", headers)
 
         # Vérifier la ligne de données
@@ -820,8 +978,8 @@ class SponsorModelAndViewsTest(TestCase):
         self.assertIn(5000.0, row_2_values)
 
         # Vérifier la feuille 2
-        ws_summary = wb["Résumé"]
-        self.assertIn("Synthèse Financière et Opérationnelle des Partenariats", ws_summary["A1"].value)
+        ws_summary = wb["Summary"]
+        self.assertIn("Financial and operational sponsorship summary", ws_summary["A1"].value)
 
     def test_excel_export_respects_active_filters(self):
         """L'export Excel applique fidèlement les filtres passés en paramètres GET."""
@@ -843,7 +1001,7 @@ class SponsorModelAndViewsTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         wb = openpyxl.load_workbook(io.BytesIO(response.content))
-        ws_data = wb["Partenariats"]
+        ws_data = wb["Sponsorships"]
 
         sponsor_names = [ws_data.cell(row=r, column=1).value for r in range(2, ws_data.max_row + 1)]
         self.assertIn("Alpha Corp", sponsor_names)
@@ -871,7 +1029,7 @@ class SponsorModelAndViewsTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         wb = openpyxl.load_workbook(io.BytesIO(response.content))
-        ws_data = wb["Partenariats"]
+        ws_data = wb["Sponsorships"]
 
         # Recherche de la ligne du sponsor malveillant et vérification de la neutralisation
         found_cell = False

@@ -4,7 +4,7 @@
 
 {% can_manage_sponsors user as user_can_manage_sponsors %}
 
-{% block title %}Dashboard Gestion des Sponsors — HackFlow{% endblock %}
+{% block title %}Sponsor Management Dashboard — HackFlow{% endblock %}
 
 {% block content %}
 <div class="container-page py-8 lg:py-12">
@@ -16,21 +16,21 @@
                 <div class="flex items-center gap-2 text-xs font-mono text-muted-foreground">
                     <a href="{% url 'sponsors:public_list' %}" class="transition-colors hover:text-foreground">Sponsors</a>
                     <span class="text-border">/</span>
-                    <span class="text-primary">Espace organisateur</span>
+                    <span class="text-primary">Organizer workspace</span>
                 </div>
                 <div class="mt-5 flex items-center gap-3">
                     <span class="flex size-11 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-primary">
                         <c-lucideicon.handshake class="size-5" />
                     </span>
                     <div>
-                        <p class="font-mono text-[10px] uppercase tracking-[0.2em] text-primary">Gestion des partenaires</p>
+                        <p class="font-mono text-[10px] uppercase tracking-[0.2em] text-primary">Partner management</p>
                         <h1 class="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                            Campagne de Sponsoring
+                            Sponsorship campaign
                         </h1>
                     </div>
                 </div>
                 <p class="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                    Suivez les partenariats, les engagements financiers et les prochaines actions depuis un espace unique.
+                    Track partnerships, financial commitments, and next steps in one place.
                 </p>
             </div>
 
@@ -38,20 +38,20 @@
             <a href="{% url 'sponsors:sponsor_list' %}"
                class="inline-flex items-center gap-2 rounded-lg border border-border bg-background/70 px-3.5 py-2.5 text-xs font-semibold text-foreground transition-colors hover:bg-accent">
                 <c-lucideicon.building-2 class="size-4 text-muted-foreground" />
-                Annuaire
+                Directory
             </a>
 
             {% if user_can_manage_sponsors %}
             <a href="{% url 'sponsors:sponsor_create' %}"
                class="inline-flex items-center gap-2 rounded-lg border border-border bg-background/70 px-3.5 py-2.5 text-xs font-semibold text-foreground transition-colors hover:bg-accent">
                 <c-lucideicon.plus class="size-4 text-primary" />
-                Nouveau sponsor
+                New sponsor
             </a>
 
             <a href="{% url 'sponsors:sponsorship_create' %}"
                class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md">
                 <c-lucideicon.file-plus-2 class="size-4" />
-                Nouveau partenariat
+                New sponsorship
             </a>
             {% endif %}
             </div>
@@ -63,12 +63,12 @@
     <div class="mt-5 flex flex-col gap-3 rounded-xl border border-border/70 bg-card/40 p-4 sm:flex-row sm:items-center">
         <div class="flex shrink-0 items-center gap-2 text-xs font-medium text-muted-foreground">
             <c-lucideicon.list-filter class="size-4 text-primary" />
-            Périmètre
+            Scope
         </div>
         <div class="flex min-w-0 items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
             <a href="{% url 'sponsors:dashboard' %}"
                class="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors {% if not selected_hackathon %}bg-primary text-primary-foreground shadow-sm{% else %}border border-border bg-background/60 text-muted-foreground hover:text-foreground{% endif %}">
-                Tous les hackathons
+                All hackathons
             </a>
             {% for h in hackathons %}
             <a href="{% url 'sponsors:dashboard' %}?hackathon={{ h.pk }}"
@@ -80,7 +80,7 @@
         {% if selected_hackathon %}
         <span class="ml-auto hidden items-center gap-1.5 whitespace-nowrap text-[11px] text-muted-foreground sm:inline-flex">
             <span class="size-1.5 rounded-full bg-primary"></span>
-            Filtre actif
+            Active filter
         </span>
         {% endif %}
     </div>
@@ -90,11 +90,11 @@
     <!-- 4 KPI Cards                                                        -->
     <!-- ================================================================== -->
     <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <!-- 1. Fonds Confirmés -->
+        <!-- 1. Confirmed funds -->
         <div class="group relative overflow-hidden rounded-2xl border border-emerald-500/25 bg-card/70 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-500/40 hover:shadow-md">
             <div class="pointer-events-none absolute -right-8 -top-10 size-32 rounded-full bg-emerald-500/10 blur-2xl transition-colors group-hover:bg-emerald-500/15"></div>
             <div class="flex items-center justify-between">
-                <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Fonds confirmés</span>
+                <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Confirmed funds</span>
                 <span class="flex size-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
                     <c-lucideicon.badge-check class="size-4" />
                 </span>
@@ -105,7 +105,7 @@
             </div>
             <div class="mt-3 flex items-center gap-2 border-t border-border/60 pt-3 text-xs text-muted-foreground">
                 <span class="font-semibold text-emerald-400">{{ confirmed_count }}</span>
-                accords confirmés
+                confirmed agreements
             </div>
         </div>
 
@@ -123,15 +123,15 @@
                 <span class="font-mono text-xs text-muted-foreground">TND</span>
             </div>
             <div class="mt-3 flex items-center gap-2 border-t border-border/60 pt-3 text-xs text-muted-foreground">
-                Prospects, contacts et négociations
+                Prospects, contacted sponsors, and negotiations
             </div>
         </div>
 
-        <!-- 3. En Négociation -->
+        <!-- 3. Negotiating -->
         <div class="group relative overflow-hidden rounded-2xl border border-amber-500/25 bg-card/70 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-500/40 hover:shadow-md">
             <div class="pointer-events-none absolute -right-8 -top-10 size-32 rounded-full bg-amber-500/10 blur-2xl"></div>
             <div class="flex items-center justify-between">
-                <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">En négociation</span>
+                <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">In negotiation</span>
                 <span class="flex size-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400">
                     <c-lucideicon.messages-square class="size-4" />
                 </span>
@@ -141,14 +141,14 @@
                 <span class="text-xs text-muted-foreground">dossiers</span>
             </div>
             <div class="mt-3 flex items-center gap-2 border-t border-border/60 pt-3 text-xs text-muted-foreground">
-                À suivre activement
+                Needs active follow-up
             </div>
         </div>
 
         <!-- 4. Entreprises Partenaires -->
         <div class="group relative overflow-hidden rounded-2xl border border-border/80 bg-card/70 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-border hover:shadow-md">
             <div class="flex items-center justify-between">
-                <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Sponsors suivis</span>
+                <span class="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Sponsors tracked</span>
                 <span class="flex size-9 items-center justify-center rounded-xl bg-muted text-muted-foreground">
                     <c-lucideicon.building-2 class="size-4" />
                 </span>
@@ -169,8 +169,8 @@
     <div class="mt-6 overflow-hidden rounded-2xl border border-border/80 bg-card/60 shadow-sm">
         <div class="flex flex-col gap-2 border-b border-border/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <h2 class="text-sm font-semibold text-foreground">Pipeline de prospection</h2>
-                <p class="mt-1 text-xs text-muted-foreground">Répartition des dossiers et montants par statut</p>
+                <h2 class="text-sm font-semibold text-foreground">Prospecting pipeline</h2>
+                <p class="mt-1 text-xs text-muted-foreground">Sponsorship counts and amounts by status</p>
             </div>
             <span class="inline-flex w-fit items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-primary">
                 <span class="size-1.5 rounded-full bg-primary"></span>
@@ -196,7 +196,7 @@
     </div>
 
     <!-- ================================================================== -->
-    <!-- AI Sponsor Recommendations (Étape 8 - TF-IDF & Cosine Similarity)  -->
+    <!-- AI sponsor recommendations (TF-IDF and cosine similarity) -->
     <!-- ================================================================== -->
     <div class="mt-8">
         {% include "sponsors/partials/recommendations_block.html" %}
@@ -212,7 +212,7 @@
                 <div class="flex flex-col gap-3 border-b border-border/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h2 class="text-base font-semibold text-foreground">Partenariats Actifs</h2>
-                        <p class="mt-1 text-xs text-muted-foreground">Les dossiers les plus récemment mis à jour</p>
+                        <p class="mt-1 text-xs text-muted-foreground">Most recently updated sponsorships</p>
                     </div>
                     <span class="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
                         {{ total_partnerships_count }} accord(s)
@@ -226,9 +226,9 @@
                                 <th class="py-3 px-4">Sponsor</th>
                                 <th class="py-3 px-4">Hackathon</th>
                                 <th class="py-3 px-4">Tier</th>
-                                <th class="py-3 px-4">Montant</th>
+                                <th class="py-3 px-4">Amount</th>
                                 <th class="py-3 px-4">Type</th>
-                                <th class="py-3 px-4">Statut</th>
+                                <th class="py-3 px-4">Status</th>
                                 <th class="py-3 px-4 text-right">Actions</th>
                             </tr>
                         </thead>
@@ -238,11 +238,11 @@
                             {% empty %}
                             <tr>
                                 <td colspan="7" class="py-12 text-center text-sm text-muted-foreground">
-                                    Aucun partenariat enregistré pour le moment.
+                                    No sponsorships have been recorded yet.
                                     <div class="mt-3">
                                         {% if user_can_manage_sponsors %}
                                         <a href="{% url 'sponsors:sponsorship_create' %}" class="text-xs font-semibold text-primary hover:underline">
-                                            + Créer le premier partenariat
+                                            + Create the first sponsorship
                                         </a>
                                         {% endif %}
                                     </div>
@@ -262,7 +262,7 @@
                     <svg class="size-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <h2 class="text-sm font-semibold text-foreground">Historique des Transitions</h2>
+                    <h2 class="text-sm font-semibold text-foreground">Status change history</h2>
                 </div>
 
                 <div class="mt-4 space-y-4">
@@ -280,13 +280,13 @@
                             <span class="font-semibold text-primary">{{ h.get_new_status_display }}</span>
                         </div>
                         <div class="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
-                            <span>Par : {{ h.changed_by.username|default:"Système" }}</span>
+                            <span>By: {{ h.changed_by.username|default:"System" }}</span>
                             <span>{{ h.changed_at|date:"d/m H:i" }}</span>
                         </div>
                     </div>
                     {% empty %}
                     <div class="py-8 text-center text-xs text-muted-foreground">
-                        Aucun changement de statut tracé pour le moment.
+                        No status changes have been recorded yet.
                     </div>
                     {% endfor %}
                 </div>

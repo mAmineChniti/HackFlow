@@ -4,7 +4,7 @@
 {% can_export user as user_can_export %}
 {% can_manage_sponsors user as user_can_manage_sponsors %}
 
-{% block title %}Gestion des Sponsors & Partenariats — HackFlow{% endblock %}
+{% block title %}Sponsor & Sponsorship Management — HackFlow{% endblock %}
 
 {% block content %}
 <div class="container-page py-8 lg:py-12">
@@ -14,25 +14,25 @@
             <div class="flex items-center gap-2 text-xs text-muted-foreground font-mono">
                 <a href="{% url 'sponsors:dashboard' %}" class="hover:text-foreground">Dashboard</a>
                 <span>/</span>
-                <span class="text-primary font-semibold">Gestion & Annuaire</span>
+                <span class="text-primary font-semibold">Management & Directory</span>
             </div>
             <h1 class="mt-2 text-3xl font-bold tracking-tight text-foreground">
-                Partenariats & Entreprises
+                Sponsorships & Companies
             </h1>
             <p class="text-sm text-muted-foreground mt-1">
-                Recherchez et filtrez en temps réel parmi les entreprises et leurs conventions de sponsoring.
+                Search and filter companies and their sponsorship agreements in real time.
             </p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2.5">
             {% if user_can_export %}
             <a href="{% url 'sponsors:sponsor_export_excel' %}?{{ request.GET.urlencode }}"
-               title="Exporter la sélection active au format Excel (.xlsx)"
+               title="Export the active selection to Excel (.xlsx)"
                class="inline-flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3.5 py-2 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20 transition-colors">
                 <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                Exporter en Excel
+                Export to Excel
             </a>
             {% endif %}
             {% if user_can_manage_sponsors %}
@@ -41,14 +41,14 @@
                 <svg class="size-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                + Nouveau Sponsor
+                + New sponsor
             </a>
             <a href="{% url 'sponsors:sponsorship_create' %}"
                class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors">
                 <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                + Associer Partenariat
+                + Add sponsorship
             </a>
             {% endif %}
         </div>
@@ -63,16 +63,16 @@
           class="mt-6 rounded-2xl border border-border/80 bg-card p-4 sm:p-5 shadow-sm space-y-4">
         
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <!-- 1. Recherche par nom (keyup changed delay:300ms) -->
+            <!-- 1. Search by name (keyup changed delay:300ms) -->
             <div class="lg:col-span-1">
                 <label class="block text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
-                    Recherche
+                    Search
                 </label>
                 <div class="relative">
                     <input type="text"
                            name="q"
                            value="{{ query }}"
-                           placeholder="Nom, contact..."
+                           placeholder="Name, contact..."
                            hx-get="{% url 'sponsors:sponsor_list' %}"
                            hx-trigger="keyup changed delay:300ms"
                            hx-target="#sponsors-results"
@@ -85,10 +85,10 @@
                 </div>
             </div>
 
-            <!-- 2. Filtre Secteur -->
+            <!-- 2. Industry filter -->
             <div>
                 <label class="block text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
-                    Secteur
+                    Industry
                 </label>
                 <select name="sector"
                         hx-get="{% url 'sponsors:sponsor_list' %}"
@@ -97,14 +97,14 @@
                         hx-push-url="true"
                         hx-include="closest form"
                         class="w-full rounded-lg border border-border/80 bg-background/80 px-2.5 py-2 text-xs text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer">
-                    <option value="">Tous les secteurs</option>
+                    <option value="">All industries</option>
                     {% for code, label in sectors %}
                     <option value="{{ code }}" {% if selected_sector == code %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
 
-            <!-- 3. Filtre Tier -->
+            <!-- 3. Tier filter -->
             <div>
                 <label class="block text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
                     Niveau (Tier)
@@ -116,17 +116,17 @@
                         hx-push-url="true"
                         hx-include="closest form"
                         class="w-full rounded-lg border border-border/80 bg-background/80 px-2.5 py-2 text-xs text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer">
-                    <option value="">Tous les tiers</option>
+                    <option value="">All tiers</option>
                     {% for code, label in tiers %}
                     <option value="{{ code }}" {% if selected_tier == code %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
 
-            <!-- 4. Filtre Statut -->
+            <!-- 4. Status filter -->
             <div>
                 <label class="block text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
-                    Statut Dossier
+                    Pipeline status
                 </label>
                 <select name="status"
                         hx-get="{% url 'sponsors:sponsor_list' %}"
@@ -135,14 +135,14 @@
                         hx-push-url="true"
                         hx-include="closest form"
                         class="w-full rounded-lg border border-border/80 bg-background/80 px-2.5 py-2 text-xs text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer">
-                    <option value="">Tous les statuts</option>
+                    <option value="">All statuses</option>
                     {% for code, label in statuses %}
                     <option value="{{ code }}" {% if selected_status == code %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
 
-            <!-- 5. Filtre Hackathon -->
+            <!-- 5. Hackathon filter -->
             <div>
                 <label class="block text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
                     Hackathon
@@ -154,7 +154,7 @@
                         hx-push-url="true"
                         hx-include="closest form"
                         class="w-full rounded-lg border border-border/80 bg-background/80 px-2.5 py-2 text-xs text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer">
-                    <option value="">Tous les hackathons</option>
+                    <option value="">All hackathons</option>
                     {% for h in hackathons %}
                     <option value="{{ h.pk }}" {% if selected_hackathon == h.pk|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>
                     {% endfor %}
@@ -169,7 +169,7 @@
                hx-target="#sponsors-results"
                hx-push-url="true"
                class="text-xs text-muted-foreground hover:text-primary transition-colors">
-                ↺ Réinitialiser les filtres
+                ↺ Reset filters
             </a>
         </div>
         {% endif %}

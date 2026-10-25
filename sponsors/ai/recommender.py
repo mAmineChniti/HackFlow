@@ -29,13 +29,18 @@ from django.db.models import Q, QuerySet
 from sponsors.models import Sponsor, Sponsorship, StatusChoices
 from sponsors.permissions import sponsors_visible_to, sponsorships_visible_to
 
-# Stopwords français usuels pour filtrer les mots non signifiants sans dépendance externe
+# Keep both language stopword sets to support legacy descriptions as well as English content.
 FRENCH_STOPWORDS = [
     "de", "des", "du", "le", "la", "les", "un", "une", "et", "en", "pour", "par",
     "sur", "avec", "dans", "au", "aux", "ce", "cet", "cette", "ces", "qui", "que",
     "quoi", "dont", "ou", "mais", "donc", "or", "ni", "car", "plus", "moins", "tres",
     "très", "notre", "nos", "votre", "vos", "leur", "leurs", "son", "sa", "ses",
     "a", "à", "est", "sont", "être", "avoir", "faire", "tout", "tous", "toute", "toutes",
+]
+ENGLISH_STOPWORDS = [
+    "a", "an", "and", "are", "as", "at", "be", "by", "for", "from", "has", "have",
+    "in", "is", "it", "its", "of", "on", "or", "our", "that", "the", "their", "this",
+    "to", "was", "were", "will", "with", "you", "your",
 ]
 
 
@@ -97,7 +102,7 @@ def extract_top_keywords(
     fallback_words = [
         feature_names[idx] for idx in sponsor_indices if sponsor_vec[idx] > 0
     ][:top_k]
-    return fallback_words or ["affinité générale"]
+    return fallback_words or ["general match"]
 
 
 def recommend_sponsors_for_hackathon(
@@ -120,13 +125,13 @@ def recommend_sponsors_for_hackathon(
     if not hackathon:
         return {
             "recommendations": [],
-            "message": "Aucun hackathon spécifié.",
+            "message": "No hackathon was specified.",
         }
 
     if not SKLEARN_AVAILABLE:
         return {
             "recommendations": [],
-            "message": "Module d'analyse vectorielle (scikit-learn) non disponible sur cet environnement.",
+            "message": "The vector analysis module (scikit-learn) is unavailable in this environment.",
         }
 
     user_scope = getattr(user, "pk", "all") if user is not None else "all"
@@ -143,7 +148,7 @@ def recommend_sponsors_for_hackathon(
     if not hackathon_text.strip():
         return {
             "recommendations": [],
-            "message": "Les détails du hackathon (nom, thème) sont insuffisants pour calculer les affinités.",
+            "message": "The hackathon details (name and theme) are insufficient to calculate matches.",
         }
 
     # 1. Exclure les sponsors déjà liés à ce hackathon (en cours, refusés, ou confirmés)
@@ -170,7 +175,7 @@ def recommend_sponsors_for_hackathon(
     if len(eligible_sponsors) < 2:
         return {
             "recommendations": [],
-            "message": "Pas assez de sponsors disponibles pour générer des recommandations (au moins 2 sponsors non associés à ce hackathon requis).",
+            "message": "Not enough sponsors are available to generate recommendations (at least two sponsors not linked to this hackathon are required).",
         }
 
     # 2. Identifier les sponsors avec historique confirmé sur d'autres éditions (bonus fidélité)
@@ -184,7 +189,7 @@ def recommend_sponsors_for_hackathon(
     corpus = [hackathon_text] + [get_sponsor_text(sp) for sp in eligible_sponsors]
 
     vectorizer = TfidfVectorizer(
-        stop_words=FRENCH_STOPWORDS,
+        stop_words=FRENCH_STOPWORDS + ENGLISH_STOPWORDS,
         ngram_range=(1, 2),
         min_df=1,
         lowercase=True,
@@ -195,7 +200,7 @@ def recommend_sponsors_for_hackathon(
     except Exception:
         return {
             "recommendations": [],
-            "message": "Erreur lors de l'analyse textuelle TF-IDF.",
+            "message": "An error occurred during TF-IDF text analysis.",
         }
 
     feature_names = np.array(vectorizer.get_feature_names_out())

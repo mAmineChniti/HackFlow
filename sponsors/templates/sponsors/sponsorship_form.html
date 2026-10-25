@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if object %}Modifier Partenariat{% else %}Nouveau Partenariat{% endif %} — HackFlow{% endblock %}
+{% block title %}{% if object %}Edit sponsorship{% else %}New sponsorship{% endif %} — HackFlow{% endblock %}
 
 {% block content %}
 <div class="container-page py-8 lg:py-12">
@@ -9,16 +9,16 @@
         <div class="flex items-center gap-2 text-xs text-muted-foreground font-mono">
             <a href="{% url 'sponsors:dashboard' %}" class="hover:text-foreground">Dashboard</a>
             <span>/</span>
-            <span class="text-primary font-semibold">{% if object %}Éditer Partenariat{% else %}Nouveau Partenariat{% endif %}</span>
+            <span class="text-primary font-semibold">{% if object %}Edit sponsorship{% else %}New sponsorship{% endif %}</span>
         </div>
 
         <div class="mt-4 rounded-2xl border border-border/80 bg-card p-6 sm:p-8 shadow-sm">
             <div class="border-b border-border/70 pb-5">
                 <h1 class="text-2xl font-bold text-foreground">
-                    {% if object %}Modifier le partenariat{% else %}Associer un Sponsor à un Hackathon{% endif %}
+                    {% if object %}Edit sponsorship{% else %}Link a sponsor to a hackathon{% endif %}
                 </h1>
                 <p class="mt-1 text-xs text-muted-foreground">
-                    Configurez le niveau (Tier), la contribution financière et l'état d'avancement de la prospection.
+                    Set the tier, financial contribution, and prospecting status.
                 </p>
             </div>
 
@@ -35,7 +35,7 @@
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                            Entreprise Sponsor *
+                            Sponsor company *
                         </label>
                         {{ form.sponsor }}
                         {% if form.sponsor.errors %}
@@ -45,7 +45,7 @@
 
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                            Événement Hackathon *
+                            Hackathon event *
                         </label>
                         {{ form.hackathon }}
                         {% if form.hackathon.errors %}
@@ -58,7 +58,7 @@
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                            Niveau de Partenariat (Tier) *
+                            Sponsorship tier *
                         </label>
                         {{ form.tier }}
                         {% if form.tier.errors %}
@@ -68,7 +68,7 @@
 
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                            Type de Contribution *
+                            Contribution type *
                         </label>
                         {{ form.contribution_type }}
                         {% if form.contribution_type.errors %}
@@ -80,36 +80,36 @@
                 <!-- Amount -->
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                        Montant Financier (DT) *
+                        Financial amount (DT) *
                     </label>
                     {{ form.amount }}
                     {% if form.amount.errors %}
                     <p class="mt-1 text-xs text-rose-400">{{ form.amount.errors.0 }}</p>
                     {% endif %}
-                    <span class="mt-1 block text-[11px] text-muted-foreground">Indiquez 0 si don matériel ou logistique</span>
+                    <span class="mt-1 block text-[11px] text-muted-foreground">Enter 0 for an in-kind or logistical contribution.</span>
                 </div>
 
                 <!-- Notes internes -->
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                        Notes & Remarques Internes
+                        Internal notes
                     </label>
                     {{ form.notes }}
                     {% if form.notes.errors %}
                     <p class="mt-1 text-xs text-rose-400">{{ form.notes.errors.0 }}</p>
                     {% endif %}
-                    <span class="mt-1 block text-[11px] text-muted-foreground">Visible uniquement par l'équipe staff organisatrice.</span>
+                    <span class="mt-1 block text-[11px] text-muted-foreground">Visible only to the organizing staff.</span>
                 </div>
 
                 <!-- Submit buttons -->
                 <div class="flex items-center justify-end gap-3 pt-4 border-t border-border/70">
                     <a href="{% url 'sponsors:dashboard' %}"
                        class="rounded-lg border border-border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-accent transition-colors">
-                        Annuler
+                        Cancel
                     </a>
                     <button type="submit"
                             class="rounded-lg bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm">
-                        {% if object %}Enregistrer les modifications{% else %}Créer le partenariat{% endif %}
+                        {% if object %}Save changes{% else %}Create sponsorship{% endif %}
                     </button>
                 </div>
             </form>

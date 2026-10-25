@@ -17,8 +17,8 @@ from .models import Sponsor, Sponsorship, StatusHistory, StatusChoices, SponsorE
 
 logger = logging.getLogger(__name__)
 
-EMAIL_RATE_LIMIT_MAX = 5  # Max 5 emails par minute
-EMAIL_RATE_LIMIT_WINDOW = 60  # Fenêtre en secondes
+EMAIL_RATE_LIMIT_MAX = 5
+EMAIL_RATE_LIMIT_WINDOW = 60
 
 
 # ==============================================================================
@@ -43,7 +43,7 @@ def change_sponsorship_status(
     valid_statuses = dict(StatusChoices.choices)
     if new_status not in valid_statuses:
         raise ValueError(
-            f"Statut « {new_status} » non valide. Choix possibles : {list(valid_statuses.keys())}"
+            f'Invalid status "{new_status}". Valid choices: {list(valid_statuses.keys())}'
         )
 
     sponsorship_id = sponsorship.pk if isinstance(sponsorship, Sponsorship) else sponsorship
@@ -80,44 +80,44 @@ def change_sponsorship_status(
 
 EMAIL_TEMPLATES = {
     "invitation": {
-        "label": "Invitation à devenir sponsor",
-        "subject": "Invitation à soutenir le hackathon {hackathon_name} — HackFlow ESPRIT",
+        "label": "Sponsorship invitation",
+        "subject": "Invitation to support {hackathon_name} — HackFlow ESPRIT",
         "body": (
-            "Bonjour {contact_salutation},\n\n"
-            "Au nom du comité d'organisation du hackathon {hackathon_name}, nous serions très honorés "
-            "de compter {sponsor_name} parmi nos partenaires et sponsors officiels.\n\n"
-            "Cet événement réunira les talents les plus prometteurs d'ESPRIT autour de défis techniques d'envergure. "
-            "Plusieurs packs de sponsoring (Platinum, Gold, Silver, Bronze) sont à votre disposition pour vous offrir une visibilité "
-            "maximale et un accès privilégié à nos étudiants ingénieurs.\n\n"
-            "Seriez-vous disponible pour un court échange afin de vous présenter le dossier de partenariat ?\n\n"
-            "Bien cordialement,\n"
-            "L'équipe organisatrice HackFlow ESPRIT"
+            "Hello {contact_salutation},\n\n"
+            "On behalf of the organizing committee of {hackathon_name}, we would be honored "
+            "to welcome {sponsor_name} as an official partner and sponsor.\n\n"
+            "This event brings ESPRIT's most promising talent together to tackle substantial technical challenges. "
+            "Our Platinum, Gold, Silver, and Bronze sponsorship packages offer strong visibility "
+            "and opportunities to connect with our engineering students.\n\n"
+            "Would you be available for a brief call to discuss the partnership proposal?\n\n"
+            "Best regards,\n"
+            "The HackFlow ESPRIT organizing team"
         ),
     },
     "relance": {
-        "label": "Relance de proposition de partenariat",
-        "subject": "Suivi de notre proposition de partenariat pour {hackathon_name}",
+        "label": "Sponsorship proposal follow-up",
+        "subject": "Following up on our sponsorship proposal for {hackathon_name}",
         "body": (
-            "Bonjour {contact_salutation},\n\n"
-            "Nous nous permettons de vous relancer suite à notre précédente communication concernant le hackathon {hackathon_name}.\n\n"
-            "Les inscriptions avancent à grand pas et nous finalisons actuellement la liste des entreprises partenaires. "
-            "Nous serions ravis de concrétiser la participation de {sponsor_name}.\n\n"
-            "Restant à votre entière disposition pour tout complément d'information,\n\n"
-            "Excellente journée,\n"
-            "L'équipe HackFlow ESPRIT"
+            "Hello {contact_salutation},\n\n"
+            "I am following up on our previous message about {hackathon_name}.\n\n"
+            "Registration is progressing, and we are finalizing our list of partner companies. "
+            "We would be delighted to confirm {sponsor_name}'s participation.\n\n"
+            "Please let us know if you would like any additional information.\n\n"
+            "Have a great day,\n"
+            "The HackFlow ESPRIT team"
         ),
     },
     "remerciement": {
-        "label": "Remerciement pour le partenariat",
-        "subject": "Remerciements chaleureux pour votre soutien à {hackathon_name} !",
+        "label": "Partnership thank-you",
+        "subject": "Thank you for supporting {hackathon_name}!",
         "body": (
-            "Bonjour {contact_salutation},\n\n"
-            "Toute l'équipe de HackFlow tient à adresser ses plus vifs remerciements à {sponsor_name} "
-            "pour votre précieux soutien lors du hackathon {hackathon_name}.\n\n"
-            "Grâce à votre contribution, nos étudiants ont pu relever des défis formidables et donner vie à des projets innovants. "
-            "Nous espérons avoir le plaisir de renouveler ce partenariat lors de nos prochaines éditions !\n\n"
-            "Très sincèrement,\n"
-            "L'équipe HackFlow ESPRIT"
+            "Hello {contact_salutation},\n\n"
+            "The entire HackFlow team would like to thank {sponsor_name} "
+            "for your invaluable support of {hackathon_name}.\n\n"
+            "Your contribution helped our students tackle exciting challenges and bring innovative projects to life. "
+            "We hope to work together again at future events.\n\n"
+            "Sincerely,\n"
+            "The HackFlow ESPRIT team"
         ),
     },
 }
@@ -132,7 +132,7 @@ def compose_email(
     Génère un objet et un corps de message préremplis selon le modèle choisi.
     Cette fonction est conçue pour être branchée sur le service IA ultérieurement.
     """
-    hackathon_name = hackathon.name if hackathon else "notre prochain Hackathon"
+    hackathon_name = hackathon.name if hackathon else "our next hackathon"
     contact_salutation = sponsor.contact_name or sponsor.name
 
     template_data = EMAIL_TEMPLATES.get(template_key, EMAIL_TEMPLATES["invitation"])
@@ -195,7 +195,7 @@ def send_sponsor_contact_email(
             body=body,
             ai_generated=ai_generated,
             success=False,
-            error_message="Aucune adresse email de contact renseignée pour ce sponsor.",
+            error_message="No contact email address is provided for this sponsor.",
         )
         return log, False
 
@@ -208,7 +208,7 @@ def send_sponsor_contact_email(
             body=body,
             ai_generated=ai_generated,
             success=False,
-            error_message="Limite anti-abus dépassée (maximum 5 emails par minute).",
+            error_message="Rate limit exceeded (maximum 5 emails per minute).",
         )
         return log, False
 
@@ -233,7 +233,7 @@ def send_sponsor_contact_email(
         )
         return log, True
     except Exception as exc:
-        logger.exception("Échec d'envoi d'email au sponsor %s (%s)", sponsor.pk, recipient)
+        logger.exception("Failed to send email to sponsor %s (%s)", sponsor.pk, recipient)
         log = SponsorEmailLog.objects.create(
             sponsor=sponsor,
             sent_by=sent_by,

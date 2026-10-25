@@ -6,6 +6,9 @@
 {% block extrastyle %}
     {{ block.super }}
     <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+    {% if request.path == "/admin/" or request.path == "/admin/sponsors/" %}
+        <link rel="stylesheet" href="{% static 'sponsors/admin/admin_sponsors.css' %}">
+    {% endif %}
 {% endblock %}
 
 {% block branding %}

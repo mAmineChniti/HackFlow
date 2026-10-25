@@ -1,4 +1,4 @@
-<!-- Bloc Recommandations Intelligentes de Sponsors (Étape 8 - IA TF-IDF & Cosine Similarity) -->
+<!-- AI-powered sponsor recommendations (TF-IDF and cosine similarity) -->
 <div class="rounded-2xl border border-border/80 bg-card p-6 shadow-sm">
     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-border/70 pb-4">
         <div class="flex items-center gap-3">
@@ -9,16 +9,16 @@
             </div>
             <div>
                 <h3 class="text-base font-semibold text-foreground flex items-center gap-2">
-                    Sponsors Recommandés par IA
+                    AI-recommended sponsors
                     <span class="rounded bg-primary/10 border border-primary/20 px-2 py-0.5 text-[10px] font-mono text-primary font-medium">
                         TF-IDF & Cosinus
                     </span>
                 </h3>
                 <p class="text-xs text-muted-foreground">
                     {% if target_hackathon %}
-                    Suggestions d'affinité pour <strong class="text-foreground">{{ target_hackathon.name }}</strong> ({{ target_hackathon.theme|default:"Général" }})
+                    Suggested matches for <strong class="text-foreground">{{ target_hackathon.name }}</strong> ({{ target_hackathon.theme|default:"General" }})
                     {% else %}
-                    Sélectionnez un hackathon pour découvrir les entreprises les plus compatibles
+                    Select a hackathon to discover the best-matching companies.
                     {% endif %}
                 </p>
             </div>
@@ -26,7 +26,7 @@
 
         {% if target_hackathon and ai_recommendations %}
         <span class="text-xs font-mono text-muted-foreground">
-            Top {{ ai_recommendations|length }} opportunités
+            Top {{ ai_recommendations|length }} opportunities
         </span>
         {% endif %}
     </div>
@@ -37,7 +37,7 @@
             {% for rec in ai_recommendations %}
             <div class="group relative rounded-xl border border-border/70 bg-background/60 p-4 transition-all hover:border-primary/50 hover:shadow-md flex flex-col justify-between">
                 <div>
-                    <!-- Entête carte sponsor -->
+                    <!-- Sponsor card header -->
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex items-center gap-3">
                             {% if rec.sponsor.logo %}
@@ -65,7 +65,7 @@
                                 {% else %}bg-blue-500/15 text-blue-400 border border-blue-500/30{% endif %}">
                                 {{ rec.score }}%
                             </span>
-                            <span class="text-[9px] font-mono text-muted-foreground mt-0.5">affinité</span>
+                            <span class="text-[9px] font-mono text-muted-foreground mt-0.5">match</span>
                         </div>
                     </div>
 
@@ -73,14 +73,14 @@
                     {% if rec.has_history_bonus %}
                     <div class="mt-2.5 inline-flex items-center gap-1 rounded bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] text-emerald-400 font-medium">
                         <span>★</span>
-                        <span>Partenaire fidèle (+10% bonus)</span>
+                        <span>Returning partner (+10% bonus)</span>
                     </div>
                     {% endif %}
 
-                    <!-- Mots-clés explicatifs (Jury) -->
+                    <!-- Explanation keywords -->
                     <div class="mt-3">
                         <span class="text-[10px] font-mono uppercase tracking-wider text-muted-foreground block mb-1">
-                            Facteurs d'affinité :
+                            Matching factors:
                         </span>
                         <div class="flex flex-wrap gap-1">
                             {% for kw in rec.keywords %}
@@ -92,7 +92,7 @@
                     </div>
                 </div>
 
-                <!-- Action Créer un partenariat -->
+                <!-- Create sponsorship action -->
                 <div class="mt-4 pt-3 border-t border-border/50 flex items-center justify-between">
                     <a href="{% url 'sponsors:sponsor_detail' rec.sponsor.pk %}" class="text-xs text-muted-foreground hover:text-foreground">
                         Fiche sponsor →
@@ -109,7 +109,7 @@
         </div>
         {% else %}
         <div class="rounded-xl border border-dashed border-border/70 p-6 text-center text-xs text-muted-foreground">
-            {{ ai_recommendations_message|default:"Aucune recommandation disponible pour l'instant." }}
+            {{ ai_recommendations_message|default:"No recommendations are available yet." }}
         </div>
         {% endif %}
     </div>

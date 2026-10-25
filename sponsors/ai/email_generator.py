@@ -27,21 +27,21 @@ DEFAULT_AI_MODEL = "claude-haiku-5-5"
 API_TIMEOUT_SECONDS = 15
 
 PROMPT_SYSTEM_EMAIL = (
-    "Tu es le responsable des partenariats et du sponsoring de l'école d'ingénieurs ESPRIT (HackFlow). "
-    "Tu rédiges des propositions de sponsoring courtes, professionnelles, percutantes et bienveillantes. "
-    "CONSIGNES STRICTES :\n"
-    "- Reste concis (100 à 150 mots maximum).\n"
-    "- N'invente AUCUN chiffre financier, pack monétaire ou promesse commerciale non vérifiée.\n"
-    "- Mets en valeur l'affinité entre le domaine d'activité de l'entreprise et les défis du hackathon.\n"
-    "- Propose un court échange téléphonique ou visio pour présenter le dossier de partenariat.\n"
-    "- Réponds EXACTEMENT selon ce format :\n"
-    "OBJET: [Ton objet d'email accrocheur]\n\n"
-    "[Corps du message]"
+    "You are responsible for partnerships and sponsorships at ESPRIT engineering school (HackFlow). "
+    "Write concise, professional, compelling, and considerate sponsorship proposals. "
+    "STRICT GUIDELINES:\n"
+    "- Keep the message concise (100–150 words maximum).\n"
+    "- Do not invent financial figures, package details, or unverified commercial promises.\n"
+    "- Highlight the fit between the company's industry and the hackathon challenges.\n"
+    "- Suggest a brief call or video meeting to present the partnership proposal.\n"
+    "- Respond in EXACTLY this format:\n"
+    "SUBJECT: [A compelling email subject]\n\n"
+    "[Message body]"
 )
 
 
 def get_ai_config() -> tuple:
-    """Récupère la clé API et le modèle depuis l'environnement ou les settings Django."""
+    """Get the API key and model from the environment or Django settings."""
     api_key = os.getenv("ANTHROPIC_API_KEY", getattr(settings, "ANTHROPIC_API_KEY", "")).strip()
     model = os.getenv("AI_MODEL", getattr(settings, "AI_MODEL", DEFAULT_AI_MODEL)).strip() or DEFAULT_AI_MODEL
     return api_key, model
@@ -52,33 +52,35 @@ def build_sanitized_ai_payload(
     hackathon=None,
     tone: str = "professionnel",
 ) -> Dict[str, Any]:
-    """
-    Construit le payload destiné au LLM en garantissant l'exclusion totale
-    des données sensibles ou confidentielles (montants, notes internes, contacts).
-    """
-    hackathon_name = getattr(hackathon, "name", "") or "notre prochain Hackathon d'innovation"
-    hackathon_theme = getattr(hackathon, "theme", "") or "Innovation technologique et ingénierie logicielle"
+    """Build an LLM payload that excludes sensitive or confidential data."""
+    hackathon_name = getattr(hackathon, "name", "") or "our next innovation hackathon"
+    hackathon_theme = getattr(hackathon, "theme", "") or "Technology innovation and software engineering"
 
     dates = ""
     start_date = getattr(hackathon, "start_date", None)
     end_date = getattr(hackathon, "end_date", None)
     if start_date and end_date:
-        dates = f"du {start_date} au {end_date}"
+        dates = f"from {start_date} to {end_date}"
 
     sector_label = sponsor.get_sector_display() if hasattr(sponsor, "get_sector_display") else sponsor.sector
 
+    tone_labels = {
+        "professionnel": "formal and professional",
+        "amical": "friendly and energetic",
+    }
+    tone_description = tone_labels.get(tone, tone)
     user_instructions = (
-        f"Rédige une invitation de partenariat personnalisée avec un ton {tone}.\n\n"
-        f"Informations sur l'entreprise sponsor :\n"
-        f"- Nom : {sponsor.name}\n"
-        f"- Secteur : {sector_label}\n"
-        f"- Description publique : {sponsor.description or 'Entreprise leader de son secteur'}\n\n"
-        f"Informations sur l'événement :\n"
-        f"- Hackathon : {hackathon_name}\n"
-        f"- Thème : {hackathon_theme}\n"
+        f"Write a personalized sponsorship invitation in a {tone_description} tone.\n\n"
+        f"Sponsor company information:\n"
+        f"- Name: {sponsor.name}\n"
+        f"- Industry: {sector_label}\n"
+        f"- Public description: {sponsor.description or 'A leading company in its industry'}\n\n"
+        f"Event information:\n"
+        f"- Hackathon: {hackathon_name}\n"
+        f"- Theme: {hackathon_theme}\n"
     )
     if dates:
-        user_instructions += f"- Dates : {dates}\n"
+        user_instructions += f"- Dates: {dates}\n"
 
     return {
         "sponsor_name": sponsor.name,
@@ -91,8 +93,8 @@ def build_sanitized_ai_payload(
 
 
 def parse_llm_response(text: str) -> Tuple[str, str]:
-    """Extrait l'objet et le corps du message à partir de la réponse du LLM."""
-    subject = "Proposition de partenariat officiel — HackFlow ESPRIT"
+    """Extract the subject and body from an LLM response."""
+    subject = "Official sponsorship proposal — HackFlow ESPRIT"
     body = text.strip()
 
     lines = body.splitlines()
@@ -125,7 +127,7 @@ def generate_prospecting_email(
             "subject": fallback["subject"],
             "body": fallback["body"],
             "ai_generated": False,
-            "notice": "Limite d'appels atteinte (max 5/min) — modèle standard utilisé.",
+            "notice": "AI request limit reached (maximum 5 per minute); using the standard template.",
         }
 
     api_key, model = get_ai_config()
@@ -137,7 +139,7 @@ def generate_prospecting_email(
             "subject": fallback["subject"],
             "body": fallback["body"],
             "ai_generated": False,
-            "notice": "IA indisponible (clé API non configurée) — modèle standard utilisé.",
+            "notice": "AI is unavailable (API key is not configured); using the standard template.",
         }
 
     # 3. Préparation du payload filtré (RGPD / Confidentialité)
@@ -179,13 +181,13 @@ def generate_prospecting_email(
                     "subject": subject,
                     "body": body,
                     "ai_generated": True,
-                    "notice": f"Message généré avec succès par l'IA ({model}). Vous pouvez l'éditer avant l'envoi.",
+                    "notice": f"Message generated with AI ({model}). You can edit it before sending.",
                 }
     except Exception as exc:
         err_msg = str(exc)
         if api_key and api_key in err_msg:
             err_msg = err_msg.replace(api_key, "[REDACTED_API_KEY]")
-        logger.warning("Échec de la génération IA pour le sponsor %s: %s", sponsor.pk, err_msg)
+        logger.warning("AI email generation failed for sponsor %s: %s", sponsor.pk, err_msg)
 
     # Repli en cas d'exception ou timeout
     fallback = compose_email(sponsor=sponsor, hackathon=hackathon, template_key=template_key)
@@ -193,5 +195,5 @@ def generate_prospecting_email(
         "subject": fallback["subject"],
         "body": fallback["body"],
         "ai_generated": False,
-        "notice": "IA indisponible (service momentanément injoignable) — modèle standard utilisé.",
+        "notice": "AI is temporarily unavailable; using the standard template.",
     }

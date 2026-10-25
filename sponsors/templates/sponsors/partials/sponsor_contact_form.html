@@ -1,4 +1,4 @@
-<!-- Partial pour le rechargement dynamique des champs objet & message lors du changement de modèle ou génération IA -->
+<!-- Partial for dynamically reloading the subject and message when changing templates or generating with AI -->
 {{ form.ai_generated }}
 
 {% if ai_notice %}
@@ -13,7 +13,7 @@
     </div>
     {% if ai_generated %}
     <span class="rounded bg-primary/20 px-2 py-0.5 text-[10px] font-mono font-semibold uppercase tracking-wider">
-        IA Active
+        AI enabled
     </span>
     {% endif %}
 </div>
@@ -21,7 +21,7 @@
 
 <div>
     <label for="id_subject" class="block text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
-        Objet de l'email <span class="text-rose-400">*</span>
+        Email subject <span class="text-rose-400">*</span>
     </label>
     {{ form.subject }}
     {% if form.subject.errors %}
@@ -31,13 +31,13 @@
 
 <div>
     <label for="id_message" class="block text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
-        Contenu du message <span class="text-rose-400">*</span>
+        Message body <span class="text-rose-400">*</span>
     </label>
     {{ form.message }}
     {% if form.message.errors %}
     <p class="mt-1 text-xs text-rose-400">{{ form.message.errors.0 }}</p>
     {% endif %}
     <p class="mt-1.5 text-xs text-muted-foreground">
-        Vous pouvez relire et personnaliser librement le texte ci-dessus avant l'envoi officiel.
+        Review and customize the message above before sending it.
     </p>
 </div>

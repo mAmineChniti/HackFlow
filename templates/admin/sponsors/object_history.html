@@ -11,7 +11,7 @@
             <p>{{ object|truncatewords:18 }}</p>
         </div>
         <a class="sponsor-admin-back" href="{% url 'admin:app_list' app_label=opts.app_label %}">
-            {% translate "Management overview" %}
+            {% translate "Overview" %}
         </a>
     </div>
     {{ block.super }}

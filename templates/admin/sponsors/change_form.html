@@ -4,21 +4,24 @@
 {% block content_title %}{% endblock %}
 
 {% block content %}
-    <div class="sponsor-admin-section-heading">
-        <div>
-            <p class="sponsor-admin-eyebrow">{% translate "Sponsor Management" %}</p>
-            <h1>{% if add %}{% blocktranslate with name=opts.verbose_name %}Add {{ name }}{% endblocktranslate %}{% else %}{{ original|truncatewords:10 }}{% endif %}</h1>
-            <p>
-                {% if opts.model_name == "sponsor" %}
-                    {% translate "Maintain the company profile and its primary contact information." %}
-                {% else %}
-                    {% translate "Set up the partnership details and contribution for this hackathon." %}
-                {% endif %}
-            </p>
-        </div>
-        <a class="sponsor-admin-back" href="{% url opts|admin_urlname:'changelist' ?>">
-            {% blocktranslate with name=opts.verbose_name_plural %}Back to {{ name }}{% endblocktranslate %}
-        </a>
-    </div>
+    {% url 'admin:app_list' app_label="sponsors" as overview_url %}
+    {% if opts.model_name == "sponsor" %}
+        {% if add %}
+            {% include "admin/sponsors/includes/page_header.html" with title="Add sponsor" description="Enter the company profile and its contact information." record_count="0" back_url=overview_url %}
+        {% else %}
+            {% include "admin/sponsors/includes/page_header.html" with title=original description="Update the sponsor profile and review its partnerships." record_count="1" back_url=overview_url %}
+        {% endif %}
+    {% elif add %}
+        {% include "admin/sponsors/includes/page_header.html" with title="Add partnership" description="Link a sponsor to a hackathon and define the contract terms." record_count="0" back_url=overview_url %}
+    {% else %}
+        {% include "admin/sponsors/includes/page_header.html" with title=original description="Review the contract, internal notes, and status history." record_count="1" back_url=overview_url %}
+    {% endif %}
     {{ block.super }}
+{% endblock %}
+
+{% block submit_buttons_bottom %}
+    {{ block.super }}
+    <div class="sponsor-admin-form-cancel">
+        <a class="sponsor-admin-back" href="{% url opts|admin_urlname:'changelist' %}">Cancel</a>
+    </div>
 {% endblock %}

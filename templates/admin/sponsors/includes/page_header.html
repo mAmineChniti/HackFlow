@@ -1,0 +1,15 @@
+<header class="sponsor-admin-section-heading">
+    <div>
+        <p class="sponsor-admin-eyebrow">Sponsor Management</p>
+        <h1>{{ title }}</h1>
+        <p>{{ description }}</p>
+        <div class="sponsor-admin-list-meta">
+            <span>Records</span>
+            <strong>{{ record_count }}</strong>
+            {% if readonly_badge %}
+                <span class="sponsor-admin-readonly">Read only</span>
+            {% endif %}
+        </div>
+    </div>
+    <a class="sponsor-admin-back" href="{{ back_url }}">Overview</a>
+</header>

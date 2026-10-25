@@ -1,0 +1,43 @@
+<section class="sponsor-admin-grid" aria-label="Sponsor management">
+    {% for model in models %}
+        <article class="sponsor-admin-card">
+            <div class="sponsor-admin-card-top">
+                <span class="sponsor-admin-icon" aria-hidden="true">
+                    {% if model.object_name == "Sponsor" %}SP
+                    {% elif model.object_name == "Sponsorship" %}PA
+                    {% elif model.object_name == "StatusHistory" %}HS
+                    {% else %}EM{% endif %}
+                </span>
+                {% if model.view_only %}
+                    <span class="sponsor-admin-readonly">Read only</span>
+                {% endif %}
+            </div>
+            <h2>
+                {% if model.admin_url %}
+                    <a href="{{ model.admin_url }}">{{ model.name }}</a>
+                {% else %}
+                    {{ model.name }}
+                {% endif %}
+            </h2>
+            <p class="sponsor-admin-card-description">
+                {% if model.object_name == "Sponsor" %}
+                    Company profiles, sectors, and logos.
+                {% elif model.object_name == "Sponsorship" %}
+                    Contracts, contributions, and status by hackathon.
+                {% elif model.object_name == "StatusHistory" %}
+                    Immutable history of partnership status changes.
+                {% else %}
+                    Sponsor email activity, delivery results, and errors.
+                {% endif %}
+            </p>
+            <div class="sponsor-admin-card-actions">
+                {% if model.admin_url %}
+                    <a href="{{ model.admin_url }}">View records</a>
+                {% endif %}
+                {% if model.add_url %}
+                    <a class="sponsor-admin-add" href="{{ model.add_url }}">Add new</a>
+                {% endif %}
+            </div>
+        </article>
+    {% endfor %}
+</section>

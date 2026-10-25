@@ -1,8 +1,4 @@
-"""
-Formulaires pour le module Gestion des Sponsors — HackFlow ESPRIT.
-
-Formulaires modernes stylisés avec les classes Tailwind CSS de HackFlow.
-"""
+"""Modern Tailwind-styled forms for the HackFlow sponsorship module."""
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
@@ -36,7 +32,7 @@ FILE_CLASSES = (
 
 
 class SponsorForm(forms.ModelForm):
-    """Formulaire de création et modification d'une entreprise partenaire (Sponsor)."""
+    """Create or update a sponsor company."""
 
     class Meta:
         model = Sponsor
@@ -66,7 +62,7 @@ class SponsorForm(forms.ModelForm):
             "description": forms.Textarea(attrs={
                 "class": TEXTAREA_CLASSES,
                 "rows": 3,
-                "placeholder": "Courte description de l'entreprise et de son engagement tech/étudiant...",
+                "placeholder": "Briefly describe the company and its commitment to technology or students...",
             }),
             "contact_name": forms.TextInput(attrs={
                 "class": INPUT_CLASSES,
@@ -81,8 +77,8 @@ class SponsorForm(forms.ModelForm):
 
 class SponsorshipForm(forms.ModelForm):
     """
-    Formulaire pour créer ou modifier un partenariat spécifique à un hackathon.
-    Le champ 'status' est exclu pour forcer le passage par le workflow change_status().
+    Create or update a sponsorship for a specific hackathon.
+    The status field is excluded so status changes use the change_status() workflow.
     """
 
     class Meta:
@@ -109,13 +105,13 @@ class SponsorshipForm(forms.ModelForm):
             "notes": forms.Textarea(attrs={
                 "class": TEXTAREA_CLASSES,
                 "rows": 3,
-                "placeholder": "Détails de la négociation, contacts passés, contreparties convenues...",
+                "placeholder": "Negotiation details, previous contacts, and agreed benefits...",
             }),
         }
 
 
 class QuickStatusChangeForm(forms.Form):
-    """Formulaire rapide de changement de statut pour HTMX ou drag-and-drop."""
+    """Quick status change form for HTMX or drag-and-drop."""
     status = forms.ChoiceField(
         choices=StatusChoices.choices,
         widget=forms.Select(attrs={"class": "rounded-md border border-border bg-background px-2.5 py-1 text-xs"}),
@@ -123,36 +119,36 @@ class QuickStatusChangeForm(forms.Form):
 
 
 class SponsorContactForm(forms.Form):
-    """Formulaire d'envoi d'email à un sponsor avec choix de modèle."""
+    """Send an email to a sponsor using a selected template."""
 
     TEMPLATE_CHOICES = [
-        ("invitation", "Modèle : Invitation à sponsoriser"),
-        ("relance", "Modèle : Relance de proposition"),
-        ("remerciement", "Modèle : Remerciement"),
+        ("invitation", "Template: Sponsorship invitation"),
+        ("relance", "Template: Follow-up"),
+        ("remerciement", "Template: Thank you"),
     ]
 
     TONE_CHOICES = [
-        ("professionnel", "Ton formel & professionnel"),
-        ("amical", "Ton convivial & dynamique"),
+        ("professionnel", "Formal & professional"),
+        ("amical", "Friendly & energetic"),
     ]
 
     template_key = forms.ChoiceField(
         choices=TEMPLATE_CHOICES,
         required=False,
         widget=forms.Select(attrs={"class": SELECT_CLASSES}),
-        label=_("Modèle de message"),
+        label=_("Message template"),
     )
     tone = forms.ChoiceField(
         choices=TONE_CHOICES,
         required=False,
         widget=forms.Select(attrs={"class": SELECT_CLASSES}),
-        label=_("Ton de rédaction (IA)"),
+        label=_("AI writing tone"),
     )
     subject = forms.CharField(
         max_length=255,
         widget=forms.TextInput(attrs={
             "class": INPUT_CLASSES,
-            "placeholder": "Objet de votre message...",
+            "placeholder": "Your message subject...",
         }),
         label=_("Objet"),
     )
@@ -160,7 +156,7 @@ class SponsorContactForm(forms.Form):
         widget=forms.Textarea(attrs={
             "class": TEXTAREA_CLASSES,
             "rows": 8,
-            "placeholder": "Contenu du message envoyé au contact du sponsor...",
+            "placeholder": "Message to send to the sponsor contact...",
         }),
         label=_("Message"),
     )
@@ -168,4 +164,3 @@ class SponsorContactForm(forms.Form):
         required=False,
         widget=forms.HiddenInput(),
     )
-

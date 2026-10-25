@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if object %}Modifier {{ object.name }}{% else %}Nouveau Sponsor{% endif %} — HackFlow{% endblock %}
+{% block title %}{% if object %}Edit {{ object.name }}{% else %}New sponsor{% endif %} — HackFlow{% endblock %}
 
 {% block content %}
 <div class="container-page py-8 lg:py-12">
@@ -9,18 +9,18 @@
         <div class="flex items-center gap-2 text-xs text-muted-foreground font-mono">
             <a href="{% url 'sponsors:dashboard' %}" class="hover:text-foreground">Dashboard</a>
             <span>/</span>
-            <a href="{% url 'sponsors:sponsor_list' %}" class="hover:text-foreground">Annuaire</a>
+            <a href="{% url 'sponsors:sponsor_list' %}" class="hover:text-foreground">Directory</a>
             <span>/</span>
-            <span class="text-primary font-semibold">{% if object %}Éditer{% else %}Nouveau{% endif %}</span>
+            <span class="text-primary font-semibold">{% if object %}Edit{% else %}New{% endif %}</span>
         </div>
 
         <div class="mt-4 rounded-2xl border border-border/80 bg-card p-6 sm:p-8 shadow-sm">
             <div class="border-b border-border/70 pb-5">
                 <h1 class="text-2xl font-bold text-foreground">
-                    {% if object %}Modifier le sponsor « {{ object.name }} »{% else %}Ajouter une entreprise sponsor{% endif %}
+                    {% if object %}Edit sponsor “{{ object.name }}”{% else %}Add a sponsor company{% endif %}
                 </h1>
                 <p class="mt-1 text-xs text-muted-foreground">
-                    Renseignez les détails du partenaire. Les informations publiques apparaîtront sur la vitrine HackFlow.
+                    Enter the partner details. Public information will appear on the HackFlow sponsor page.
                 </p>
             </div>
 
@@ -36,7 +36,7 @@
                 <!-- Name -->
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                        Nom de l'entreprise *
+                        Company name *
                     </label>
                     {{ form.name }}
                     {% if form.name.errors %}
@@ -48,7 +48,7 @@
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                            Secteur d'activité *
+                            Industry *
                         </label>
                         {{ form.sector }}
                         {% if form.sector.errors %}
@@ -70,7 +70,7 @@
                 <!-- Website -->
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                        Site Internet officiel
+                        Official website
                     </label>
                     {{ form.website }}
                     {% if form.website.errors %}
@@ -81,7 +81,7 @@
                 <!-- Description -->
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                        Description / Présentation courte
+                        Description / Short introduction
                     </label>
                     {{ form.description }}
                     {% if form.description.errors %}
@@ -92,12 +92,12 @@
                 <!-- Contact details -->
                 <div class="rounded-xl border border-border/70 bg-background/50 p-4 space-y-4">
                     <span class="block text-xs font-mono font-semibold text-primary uppercase tracking-wider">
-                        Contact interne (Confidentiel)
+                        Internal contact (Confidential)
                     </span>
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div>
                             <label class="block text-xs font-medium text-muted-foreground mb-1">
-                                Nom du contact
+                                Contact name
                             </label>
                             {{ form.contact_name }}
                             {% if form.contact_name.errors %}
@@ -107,7 +107,7 @@
 
                         <div>
                             <label class="block text-xs font-medium text-muted-foreground mb-1">
-                                Email de contact
+                                Contact email
                             </label>
                             {{ form.contact_email }}
                             {% if form.contact_email.errors %}
@@ -121,11 +121,11 @@
                 <div class="flex items-center justify-end gap-3 pt-4 border-t border-border/70">
                     <a href="{% if object %}{% url 'sponsors:sponsor_detail' object.pk %}{% else %}{% url 'sponsors:sponsor_list' %}{% endif %}"
                        class="rounded-lg border border-border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-accent transition-colors">
-                        Annuler
+                        Cancel
                     </a>
                     <button type="submit"
                             class="rounded-lg bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm">
-                        {% if object %}Enregistrer les modifications{% else %}Créer le sponsor{% endif %}
+                        {% if object %}Save changes{% else %}Create sponsor{% endif %}
                     </button>
                 </div>
             </form>
