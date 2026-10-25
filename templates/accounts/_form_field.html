@@ -17,6 +17,7 @@
         id="{{ field.id_for_label }}"
         {% if field.field.required %}required{% endif %}
         {% if field.errors %}aria-invalid="true"{% endif %}
+        aria-describedby="{% if field.help_text %}{{ field.id_for_label }}-helptext{% endif %} {% if field.errors %}{{ field.id_for_label }}-error{% endif %}"
         class="flex h-9 w-full rounded-md border border-input bg-card text-foreground px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm {% if field.errors %}border-destructive focus-visible:ring-destructive{% endif %}"
     >
         {% for choice in field.field.choices %}
@@ -36,17 +37,22 @@
         {% if field.field.widget.attrs.autofocus %}autofocus{% endif %}
         {% if field.field.required %}required{% endif %}
         {% if field.errors %}aria-invalid="true"{% endif %}
+        aria-describedby="{% if field.help_text %}{{ field.id_for_label }}-helptext{% endif %} {% if field.errors %}{{ field.id_for_label }}-error{% endif %}"
         class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm {% if field.errors %}border-destructive focus-visible:ring-destructive{% endif %}"
     >
     {% endif %}
 
     {% if field.help_text %}
-    <div class="text-xs leading-relaxed text-muted-foreground [&_ul]:list-disc [&_ul]:space-y-0.5 [&_ul]:pl-4">
+    <div id="{{ field.id_for_label }}-helptext" class="text-xs leading-relaxed text-muted-foreground [&_ul]:list-disc [&_ul]:space-y-0.5 [&_ul]:pl-4">
         {{ field.help_text }}
     </div>
     {% endif %}
 
-    {% for error in field.errors %}
-    <p class="text-xs font-medium text-destructive">{{ error }}</p>
-    {% endfor %}
+    {% if field.errors %}
+    <div id="{{ field.id_for_label }}-error">
+        {% for error in field.errors %}
+        <p class="text-xs font-medium text-destructive">{{ error }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
 </div>

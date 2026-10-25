@@ -53,7 +53,15 @@ for attempt in range(1, 61):
         time.sleep(1)
 PY
 
-python manage.py migrate --noinput
-python manage.py collectstatic --noinput
+# Migrations/static collection belong to the web process. Workers set
+# RUN_MIGRATIONS=0 and RUN_COLLECTSTATIC=0 so several containers never race
+# over the same schema or static volume during startup.
+if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then
+    python manage.py migrate --noinput
+fi
+
+if [ "${RUN_COLLECTSTATIC:-1}" = "1" ]; then
+    python manage.py collectstatic --noinput
+fi
 
 exec "$@"

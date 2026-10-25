@@ -35,7 +35,6 @@
                             id="{{ form.email.id_for_label }}"
                             placeholder="Enter your email"
                             value="{{ form.email.value|default:'' }}"
-                            {{ form.email.field.required|yesno:'required,' }}
                             class="{{ form.email.errors|yesno:'border-destructive,' }}"
                         />
                         {% if form.email.errors %}
@@ -57,7 +56,6 @@
                             id="{{ form.username.id_for_label }}"
                             placeholder="Choose a username"
                             value="{{ form.username.value|default:'' }}"
-                            {{ form.username.field.required|yesno:'required,' }}
                             class="{{ form.username.errors|yesno:'border-destructive,' }}"
                         />
                         {% if form.username.errors %}
@@ -77,7 +75,6 @@
                         name="{{ form.password1.name }}"
                         id="{{ form.password1.id_for_label }}"
                         placeholder="Create a password"
-                        {{ form.password1.field.required|yesno:'required,' }}
                         class="{{ form.password1.errors|yesno:'border-destructive,' }}"
                     />
                     {% if form.password1.errors %}
@@ -96,7 +93,6 @@
                         name="{{ form.password2.name }}"
                         id="{{ form.password2.id_for_label }}"
                         placeholder="Confirm your password"
-                        {{ form.password2.field.required|yesno:'required,' }}
                         class="{{ form.password2.errors|yesno:'border-destructive,' }}"
                     />
                     {% if form.password2.errors %}

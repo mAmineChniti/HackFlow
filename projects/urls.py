@@ -14,6 +14,11 @@ urlpatterns = [
     path("ai/detect-category/", views.project_ai_detect_category, name="ai_detect_category"),
     path("<slug:slug>/", views.project_detail, name="project_detail"),
     path("<slug:slug>/ai-analyze/", views.project_ai_analyze, name="ai_analyze"),
+    path(
+        "<slug:slug>/ai-analyze/status/<slug:task_id>/",
+        views.project_ai_analyze_status,
+        name="ai_analyze_status",
+    ),
     path("<slug:slug>/submit/", views.project_submit, name="project_submit"),
     path("<slug:slug>/edit/", views.project_update, name="project_update"),
     path("<slug:slug>/delete/", views.project_delete, name="project_delete"),

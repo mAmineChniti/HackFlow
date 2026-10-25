@@ -6,114 +6,122 @@
 <div class="container-page py-8 lg:py-12">
     <div class="mx-auto max-w-2xl">
         <!-- Breadcrumb -->
-        <div class="flex items-center gap-2 text-xs text-muted-foreground font-mono">
-            <a href="{% url 'sponsors:dashboard' %}" class="hover:text-foreground">Dashboard</a>
+        <nav class="flex items-center gap-2 text-xs text-muted-foreground font-mono" aria-label="Breadcrumb">
+            <c-button_link href="{% url 'sponsors:dashboard' %}" variant="ghost" size="sm" class="text-xs">Dashboard</c-button_link>
             <span>/</span>
             <span class="text-primary font-semibold">{% if object %}Edit sponsorship{% else %}New sponsorship{% endif %}</span>
-        </div>
+        </nav>
 
-        <div class="mt-4 rounded-2xl border border-border/80 bg-card p-6 sm:p-8 shadow-sm">
-            <div class="border-b border-border/70 pb-5">
-                <h1 class="text-2xl font-bold text-foreground">
-                    {% if object %}Edit sponsorship{% else %}Link a sponsor to a hackathon{% endif %}
-                </h1>
-                <p class="mt-1 text-xs text-muted-foreground">
-                    Set the tier, financial contribution, and prospecting status.
-                </p>
-            </div>
+        <c-card class="mt-4 p-6 sm:p-8 shadow-sm">
+            <c-card.header class="border-b border-border/70 pb-5">
+                <c-card.title class="text-2xl" as="h1">{% if object %}Edit sponsorship{% else %}Link a sponsor to a hackathon{% endif %}</c-card.title>
+                <c-card.description>Set the tier, financial contribution, and prospecting status.</c-card.description>
+            </c-card.header>
 
             <form method="post" class="mt-6 space-y-5">
                 {% csrf_token %}
 
                 {% if form.non_field_errors %}
-                <div class="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-400">
-                    {{ form.non_field_errors }}
-                </div>
+                <c-alert variant="destructive" class="p-3 text-xs">{{ form.non_field_errors }}</c-alert>
                 {% endif %}
 
                 <!-- Sponsor & Hackathon Selection -->
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                            Sponsor company *
-                        </label>
-                        {{ form.sponsor }}
+                <c-form.fieldset class="grid gap-4 sm:grid-cols-2">
+                    <c-form.field>
+                        <c-form.label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Sponsor company <span class="text-destructive">*</span></c-form.label>
+                        <c-select name="{{ form.sponsor.html_name }}" id="{{ form.sponsor.id_for_label }}" class="w-full">
+                            {% for value, label in form.sponsor.field.choices %}
+                            <option value="{{ value }}" {% if form.sponsor.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </c-select>
                         {% if form.sponsor.errors %}
-                        <p class="mt-1 text-xs text-rose-400">{{ form.sponsor.errors.0 }}</p>
+                        <c-form.error>{{ form.sponsor.errors.0 }}</c-form.error>
                         {% endif %}
-                    </div>
+                    </c-form.field>
 
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                            Hackathon event *
-                        </label>
-                        {{ form.hackathon }}
+                    <c-form.field>
+                        <c-form.label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Hackathon event <span class="text-destructive">*</span></c-form.label>
+                        <c-select name="{{ form.hackathon.html_name }}" id="{{ form.hackathon.id_for_label }}" class="w-full">
+                            {% for value, label in form.hackathon.field.choices %}
+                            <option value="{{ value }}" {% if form.hackathon.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </c-select>
                         {% if form.hackathon.errors %}
-                        <p class="mt-1 text-xs text-rose-400">{{ form.hackathon.errors.0 }}</p>
+                        <c-form.error>{{ form.hackathon.errors.0 }}</c-form.error>
                         {% endif %}
-                    </div>
-                </div>
+                    </c-form.field>
+                </c-form.fieldset>
 
                 <!-- Tier & Contribution Type -->
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                            Sponsorship tier *
-                        </label>
-                        {{ form.tier }}
+                <c-form.fieldset class="grid gap-4 sm:grid-cols-2">
+                    <c-form.field>
+                        <c-form.label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Sponsorship tier <span class="text-destructive">*</span></c-form.label>
+                        <c-select name="{{ form.tier.html_name }}" id="{{ form.tier.id_for_label }}" class="w-full">
+                            {% for value, label in form.tier.field.choices %}
+                            <option value="{{ value }}" {% if form.tier.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </c-select>
                         {% if form.tier.errors %}
-                        <p class="mt-1 text-xs text-rose-400">{{ form.tier.errors.0 }}</p>
+                        <c-form.error>{{ form.tier.errors.0 }}</c-form.error>
                         {% endif %}
-                    </div>
+                    </c-form.field>
 
-                    <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                            Contribution type *
-                        </label>
-                        {{ form.contribution_type }}
+                    <c-form.field>
+                        <c-form.label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Contribution type <span class="text-destructive">*</span></c-form.label>
+                        <c-select name="{{ form.contribution_type.html_name }}" id="{{ form.contribution_type.id_for_label }}" class="w-full">
+                            {% for value, label in form.contribution_type.field.choices %}
+                            <option value="{{ value }}" {% if form.contribution_type.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </c-select>
                         {% if form.contribution_type.errors %}
-                        <p class="mt-1 text-xs text-rose-400">{{ form.contribution_type.errors.0 }}</p>
+                        <c-form.error>{{ form.contribution_type.errors.0 }}</c-form.error>
                         {% endif %}
-                    </div>
-                </div>
+                    </c-form.field>
+                </c-form.fieldset>
 
                 <!-- Amount -->
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                        Financial amount (DT) *
-                    </label>
-                    {{ form.amount }}
+                <c-form.field>
+                    <c-form.label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Financial amount (DT) <span class="text-destructive">*</span></c-form.label>
+                    <c-input
+                        type="number"
+                        name="{{ form.amount.html_name }}"
+                        value="{{ form.amount.value|default:'' }}"
+                        id="{{ form.amount.id_for_label }}"
+                        placeholder="0"
+                        step="any"
+                    />
                     {% if form.amount.errors %}
-                    <p class="mt-1 text-xs text-rose-400">{{ form.amount.errors.0 }}</p>
+                    <c-form.error>{{ form.amount.errors.0 }}</c-form.error>
                     {% endif %}
-                    <span class="mt-1 block text-[11px] text-muted-foreground">Enter 0 for an in-kind or logistical contribution.</span>
-                </div>
+                    <c-form.description>Enter 0 for an in-kind or logistical contribution.</c-form.description>
+                </c-form.field>
 
                 <!-- Notes internes -->
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                        Internal notes
-                    </label>
-                    {{ form.notes }}
+                <c-form.field>
+                    <c-form.label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Internal notes</c-form.label>
+                    <c-textarea
+                        name="{{ form.notes.html_name }}"
+                        id="{{ form.notes.id_for_label }}"
+                        placeholder="Internal notes for organizing staff..."
+                        rows="4"
+                    >{{ form.notes.value|default:'' }}</c-textarea>
                     {% if form.notes.errors %}
-                    <p class="mt-1 text-xs text-rose-400">{{ form.notes.errors.0 }}</p>
+                    <c-form.error>{{ form.notes.errors.0 }}</c-form.error>
                     {% endif %}
-                    <span class="mt-1 block text-[11px] text-muted-foreground">Visible only to the organizing staff.</span>
-                </div>
+                    <c-form.description>Visible only to the organizing staff.</c-form.description>
+                </c-form.field>
 
                 <!-- Submit buttons -->
-                <div class="flex items-center justify-end gap-3 pt-4 border-t border-border/70">
-                    <a href="{% url 'sponsors:dashboard' %}"
-                       class="rounded-lg border border-border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-accent transition-colors">
+                <c-card.footer class="flex items-center justify-end gap-3 pt-4 border-t border-border/70">
+                    <c-button_link href="{% url 'sponsors:dashboard' %}" variant="outline" size="sm">
                         Cancel
-                    </a>
-                    <button type="submit"
-                            class="rounded-lg bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm">
+                    </c-button_link>
+                    <c-button type="submit" size="sm">
                         {% if object %}Save changes{% else %}Create sponsorship{% endif %}
-                    </button>
-                </div>
+                    </c-button>
+                </c-card.footer>
             </form>
-        </div>
+        </c-card>
     </div>
 </div>
 {% endblock %}

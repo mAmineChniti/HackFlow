@@ -7,17 +7,15 @@ Deux fonctionnalités d'évaluation IA à forte valeur ajoutée :
 
 import json
 import logging
-import os
 import re
-import urllib.error
-import urllib.request
+
+from core.groq import DEFAULT_AI_MODEL, call_groq, get_api_key, get_model
 
 logger = logging.getLogger(__name__)
 
-# Récupération de la clé API
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
-DEFAULT_MODEL = "openai/gpt-oss-120b"
-API_TIMEOUT_SECONDS = 15
+# Kept as a module-level alias for backwards compatibility; actual calls go
+# through core.groq and read AI_MODEL dynamically.
+DEFAULT_MODEL = DEFAULT_AI_MODEL
 
 CATEGORY_CHOICES = {
     "web": "Développement Web",
@@ -31,56 +29,23 @@ CATEGORY_CHOICES = {
 
 
 def _get_groq_client():
-    """Vérifie si une clé API Groq valide est disponible."""
-    api_key = os.environ.get("GROQ_API_KEY", "").strip()
-    # Reject placeholder or empty keys
-    if not api_key or "your_api_key" in api_key or api_key.lower() in ("", "none", "null") or "gsk_" not in api_key:
+    """Return the configured Groq key, or ``None`` when the fallback should run."""
+    api_key = get_api_key()
+    if not api_key:
         logger.warning("GROQ_API_KEY not configured or contains placeholder - using fallback")
         return None
     return api_key
 
 
-def _call_groq_api(prompt: str) -> str:
-    """Appel l'API Groq avec le prompt donné."""
-    api_key = _get_groq_client()
-    if not api_key:
-        return None
-
-    try:
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "content-type": "application/json",
-        }
-        request_body = json.dumps({
-            "model": DEFAULT_MODEL,
-            "max_tokens": 600,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": prompt,
-                }
-            ],
-        }).encode("utf-8")
-
-        req = urllib.request.Request(
-            "https://api.groq.com/openai/v1/chat/completions",
-            data=request_body,
-            headers=headers,
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=API_TIMEOUT_SECONDS) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            choices = data.get("choices", [])
-            raw_text = choices[0].get("message", {}).get("content", "") if choices else ""
-            return raw_text
-    except Exception as e:
-        logger.warning(f"Erreur appel Groq: {e}")
-        return None
+def _call_groq_api(prompt: str) -> str | None:
+    """Call the shared Groq client (kept as a test/mocking seam)."""
+    return call_groq(prompt, max_tokens=600)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. ÉVALUATION IA & FEEDBACK DU PROJET (Score /10 + Forces + Faiblesses)
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def _fallback_analyse(title: str, tagline: str, description: str, category: str) -> dict:
     """Analyse heuristique de secours si l'API externe n'a pas encore de clé renseignée."""
@@ -98,7 +63,10 @@ def _fallback_analyse(title: str, tagline: str, description: str, category: str)
     else:
         weaknesses.append("La description est concise, gagne à être étoffée.")
 
-    if any(k in words for k in ["api", "django", "react", "ia", "base de données", "architecture", "docker"]):
+    if any(
+        k in words
+        for k in ["api", "django", "react", "ia", "base de données", "architecture", "docker"]
+    ):
         score += 1
         strengths.append("Technologies et stack technique bien explicitées.")
 
@@ -174,7 +142,7 @@ Réponds UNIQUEMENT sous forme de JSON strict et valide :
             "comment": data.get("comment", "Évaluation générée avec succès."),
             "strengths": data.get("strengths", [])[:3],
             "weaknesses": data.get("weaknesses", [])[:3],
-            "source": f"Groq ({DEFAULT_MODEL})",
+            "source": f"Groq ({get_model()})",
             "source_key": "remote",
         }
     except Exception as e:
@@ -190,17 +158,75 @@ Réponds UNIQUEMENT sous forme de JSON strict et valide :
 # 2. DÉTECTION AUTOMATIQUE DE CATÉGORIE VIA IA
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def _fallback_detect_category(title: str, description: str) -> dict:
     """Détection heuristique de secours par analyse de mots-clés sémantiques."""
     text = f"{title} {description}".lower()
 
     keywords = {
-        "ai": ["ia", "intelligence artificielle", "machine learning", "deep learning", "nlp", "llm", "chat", "modèle", "data", "vision"],
-        "cyber": ["sécurité", "cyber", "pentest", "chiffrement", "vulnerability", "auth", "authentification", "firewall"],
-        "iot": ["iot", "arduino", "raspberry", "capteur", "embarqué", "hardware", "bluetooth", "robot"],
-        "green": ["vert", "écologie", "climat", "carbone", "recyclage", "énergie", "green", "durable", "déchet"],
-        "mobile": ["mobile", "android", "ios", "react native", "flutter", "smartphone", "application mobile"],
-        "web": ["web", "site", "plateforme", "django", "react", "html", "portail", "saas", "dashboard"],
+        "ai": [
+            "ia",
+            "intelligence artificielle",
+            "machine learning",
+            "deep learning",
+            "nlp",
+            "llm",
+            "chat",
+            "modèle",
+            "data",
+            "vision",
+        ],
+        "cyber": [
+            "sécurité",
+            "cyber",
+            "pentest",
+            "chiffrement",
+            "vulnerability",
+            "auth",
+            "authentification",
+            "firewall",
+        ],
+        "iot": [
+            "iot",
+            "arduino",
+            "raspberry",
+            "capteur",
+            "embarqué",
+            "hardware",
+            "bluetooth",
+            "robot",
+        ],
+        "green": [
+            "vert",
+            "écologie",
+            "climat",
+            "carbone",
+            "recyclage",
+            "énergie",
+            "green",
+            "durable",
+            "déchet",
+        ],
+        "mobile": [
+            "mobile",
+            "android",
+            "ios",
+            "react native",
+            "flutter",
+            "smartphone",
+            "application mobile",
+        ],
+        "web": [
+            "web",
+            "site",
+            "plateforme",
+            "django",
+            "react",
+            "html",
+            "portail",
+            "saas",
+            "dashboard",
+        ],
     }
 
     best_cat = "other"
@@ -264,7 +290,7 @@ Réponds UNIQUEMENT sous forme de JSON strict :
             "category_label": CATEGORY_CHOICES[cat_key],
             "confidence": data.get("confidence", "moyenne"),
             "reason": data.get("reason", "Catégorie déterminée par analyse sémantique Groq."),
-            "source": f"Groq ({DEFAULT_MODEL})",
+            "source": f"Groq ({get_model()})",
             "source_key": "remote",
         }
     except Exception as e:

@@ -82,7 +82,10 @@ npm run css:build   # one-off production build
 npm run css:watch   # rebuild on template changes
 ```
 
-The generated `static/css/output.css` is served by Django/WhiteNoise.
+The generated `static/css/output.css` is served by Django/WhiteNoise and is
+committed to the repository, so CI and the Docker/Render deployment do not need
+Node. Rebuild it (`npm run css:build`) and commit the result whenever you add or
+change Tailwind classes in templates or Python view strings.
 
 ## Authentication
 
@@ -132,8 +135,13 @@ so links are printed in the `runserver` output. To send real email, set
 Run the test suite with a PostgreSQL test database:
 
 ```bash
-python manage.py test
+python -m pytest --cov --cov-report=term-missing
+# or: python manage.py test
 ```
+
+CI runs the same suite against PostgreSQL and uploads `coverage.xml` as an
+artifact. Tests do not require Redis: without `REDIS_URL`, the AI endpoints use
+the synchronous fallback, and the async tests mock the Celery enqueue call.
 
 ## Utility Scripts
 
@@ -186,6 +194,11 @@ GROQ_API_KEY=your_groq_api_key_here
 AI_MODEL=openai/gpt-oss-120b
 ```
 
+Every external AI call goes through the single client in `core/groq.py`, so
+there is only one provider, key, model and timeout policy to maintain. The
+sponsor recommender is local TF-IDF/cosine similarity (scikit-learn) and makes
+no network call.
+
 The project evaluation endpoints are throttled per user (`AI_RATE_LIMIT_MAX`
 requests per `AI_RATE_LIMIT_WINDOW` seconds, default 20 per 60s) because each
 call is billed. Set `AI_RATE_LIMIT_MAX=0` to disable the throttle.
@@ -200,15 +213,41 @@ Placeholder values will be rejected and fallback to standard templates.
 2. Render Dashboard → New → Blueprint → select the repo (`render.yaml` is detected).
 3. Approve the resources:
    - `hackflow` web service (Docker, health check at `/health/`)
+   - `hackflow-worker` Celery worker (smallest paid compute plan)
    - `hackflow-postgres` managed PostgreSQL database
-4. Render injects `DATABASE_URL` from the database into the web service.
-5. In the Render dashboard, add the SMTP variables (`EMAIL_HOST`,
+   - `hackflow-redis` Render Key Value instance (cache + Celery broker)
+4. Render injects `DATABASE_URL` and `REDIS_URL` into both the web service and
+   the worker.
+5. Set `GROQ_API_KEY` once on the web service when prompted; the worker reads
+   the same value through `fromService`.
+6. In the Render dashboard, add the SMTP variables (`EMAIL_HOST`,
    `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`,
    `DEFAULT_FROM_EMAIL`) so verification and password-reset emails are
    delivered. Without `EMAIL_HOST`, Django prints them to the service logs.
-6. Render's external hostname is added to `ALLOWED_HOSTS` automatically. If you
+7. Render's external hostname is added to `ALLOWED_HOSTS` automatically. If you
    attach a custom domain, add it to `DJANGO_ALLOWED_HOSTS` (comma-separated).
    Avoid setting `DJANGO_ALLOWED_HOSTS=*` in production.
+
+The web service runs `python manage.py migrate` and `collectstatic` once via
+`docker-entrypoint.sh`; the worker sets `RUN_MIGRATIONS=0` and
+`RUN_COLLECTSTATIC=0` to avoid racing the web container.
+
+Render Key Value is free, but Render does **not** offer free background
+workers. The Blueprint therefore uses the smallest paid compute plan for
+`hackflow-worker` so Celery/Redis async AI is actually deployed (the BNF
+“Performance & asynchronisme” requirement). For a zero-cost demo, remove the
+worker service, set `AI_ASYNC_ENABLED=False` on the web service, and AI calls
+will run synchronously; the same Redis + worker stack also runs locally or on
+a VPS with `docker compose up --build`.
+
+Free web services also have an ephemeral filesystem: uploaded sponsor logos are
+lost on redeploy. Use external object storage (or a paid persistent disk) if you
+need durable media.
+
+Render's free PostgreSQL instance expires 30 days after creation. If the
+grading/demo happens later, upgrade the database plan or point `DATABASE_URL`
+at an external managed PostgreSQL before the defense. Free web services also
+spin down after inactivity, so expect a cold start on the first request.
 
 For an external PostgreSQL (Neon, Supabase, RDS, Aiven), set `DATABASE_URL` to its
 connection string instead. Use `DB_SSL_REQUIRE=True` when the provider requires SSL.

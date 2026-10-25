@@ -3,12 +3,9 @@
 <header class="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 header-blur">
     <div class="container-page flex h-16 items-center justify-between gap-4">
         <div class="flex items-center gap-8">
-            <a href="{% url 'core:home' %}" class="group flex items-center gap-2.5">
+            <a href="{% url 'core:home' %}" class="group flex items-center gap-2.5" aria-label="HackFlow Home">
                 <span class="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-[0_0_24px_-6px_var(--primary)] transition-transform duration-200 group-hover:-rotate-3">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true">
-                        <path d="m5 7 5 5-5 5"/>
-                        <path d="M13 17h6"/>
-                    </svg>
+                    <c-lucideicon.arrow-right class="size-5" />
                 </span>
                 <span class="text-lg font-semibold tracking-tight">Hack<span class="text-primary">Flow</span></span>
                 <span class="hidden sm:inline-flex">

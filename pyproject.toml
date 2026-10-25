@@ -1,0 +1,114 @@
+[project]
+name = "hackflow"
+version = "0.1.0"
+description = "HackFlow — Hackathon and challenge platform"
+requires-python = ">=3.10"
+dependencies = [
+    "Django>=5.2,<6.0",
+    "psycopg[binary]>=3.2,<4.0",
+    "dj-database-url>=2.1.0",
+    "python-dotenv>=1.0.0",
+    "gunicorn>=22.0.0",
+    "whitenoise>=6.6.0",
+    "django-cotton>=1.6.0",
+    "cotton-icons>=0.3.0,<0.4.0",
+    "django-htmx>=1.21.0",
+    "reportlab>=4.0,<5.0",
+    "Pillow>=10.0.0",
+    "scikit-learn>=1.4.0",
+    "openpyxl>=3.1.0",
+    "coverage>=7.0.0",
+    "celery>=5.4,<6.0",
+    "redis>=5.0,<7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-django>=4.5.0",
+    "pytest-cov>=4.0.0",
+    "factory-boy>=3.3.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "HackFlow.settings"
+testpaths = [
+    "accounts",
+    "core",
+    "hackathons",
+    "projects",
+    "sponsors",
+]
+python_files = ["tests*.py", "test_*.py"]
+python_classes = ["*Tests", "*TestCase"]
+python_functions = ["test_*"]
+addopts = [
+    "--verbose",
+    "--tb=short",
+    "--strict-markers",
+    "--strict-config",
+]
+markers = [
+    "slow: marks tests as slow",
+    "integration: marks tests as integration tests",
+]
+
+[tool.coverage.run]
+source = ["accounts", "core", "hackathons", "projects", "sponsors"]
+omit = [
+    "*/migrations/*",
+    "*/tests.py",
+    "*/tests_*.py",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/.venv/*",
+    "manage.py",
+    "HackFlow/asgi.py",
+    "HackFlow/wsgi.py",
+    "HackFlow/celery.py",
+]
+branch = true
+concurrency = "multiprocessing"
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+ignore_errors = true
+show_missing = true
+skip_covered = false
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+# Gate CI on real breakage (syntax errors, invalid control flow, undefined
+# names). The existing tree predates stricter style rules, so formatting and
+# unused-import checks are intentionally not enforced in CI yet.
+[tool.ruff.lint]
+select = ["E9", "F63", "F7", "F82"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true

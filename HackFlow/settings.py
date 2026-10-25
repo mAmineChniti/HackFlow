@@ -53,7 +53,9 @@ if RENDER_EXTERNAL_URL:
 
 CSRF_TRUSTED_ORIGINS = env_list(
     "DJANGO_CSRF_TRUSTED_ORIGINS",
-    "http://localhost:8000,http://127.0.0.1:8000,http://localhost,http://127.0.0.1" if DEBUG else "",
+    "http://localhost:8000,http://127.0.0.1:8000,http://localhost,http://127.0.0.1"
+    if DEBUG
+    else "",
 )
 if RENDER_EXTERNAL_HOSTNAME:
     CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
@@ -166,9 +168,12 @@ LOGOUT_REDIRECT_URL = "core:home"
 PASSWORD_RESET_TIMEOUT = int(os.getenv("PASSWORD_RESET_TIMEOUT", str(60 * 60 * 24 * 3)))
 LOGIN_MAX_ATTEMPTS = int(os.getenv("LOGIN_MAX_ATTEMPTS", "5"))
 LOGIN_LOCKOUT_SECONDS = int(os.getenv("LOGIN_LOCKOUT_SECONDS", "900"))
-EMAIL_VERIFICATION_RESEND_COOLDOWN = int(
-    os.getenv("EMAIL_VERIFICATION_RESEND_COOLDOWN", "60")
-)
+EMAIL_VERIFICATION_RESEND_COOLDOWN = int(os.getenv("EMAIL_VERIFICATION_RESEND_COOLDOWN", "60"))
+# Single external AI provider: Groq. Every AI service goes through
+# core.groq, so there is only one key/model pair to configure.
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
+AI_MODEL = os.getenv("AI_MODEL", "openai/gpt-oss-120b").strip() or "openai/gpt-oss-120b"
+
 # AI endpoints cost money per call, so they are throttled per user.
 # Set AI_RATE_LIMIT_MAX to 0 to disable the throttle.
 AI_RATE_LIMIT_MAX = int(os.getenv("AI_RATE_LIMIT_MAX", "20"))
@@ -190,6 +195,25 @@ else:
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
         }
     }
+
+# Async AI processing (Celery + Redis) — grille BNF "Performance &
+# asynchronisme": the Groq HTTP call can take up to 15s, so it runs in a
+# worker instead of blocking the request. The view enqueues
+# projects.tasks.run_ai_evaluation and the browser polls the status endpoint.
+#
+# Default: async only when REDIS_URL is set (a broker is required). Without
+# Redis the AI endpoints stay synchronous, which keeps dev/tests broker-free.
+AI_ASYNC_ENABLED = env_bool("AI_ASYNC_ENABLED", bool(REDIS_URL))
+CELERY_BROKER_URL = REDIS_URL or "memory://"
+# Result payloads are written to the Django cache by the task itself, so no
+# Celery result backend is needed.
+CELERY_TASK_SERIALIZER = "json"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_TIME_LIMIT = int(os.getenv("CELERY_TASK_TIME_LIMIT", "60"))
+# With AI_ASYNC_ENABLED but no broker (demo without Redis), run tasks inline
+# through the Celery API so the endpoint still returns a result.
+CELERY_TASK_ALWAYS_EAGER = env_bool("CELERY_TASK_ALWAYS_EAGER", AI_ASYNC_ENABLED and not REDIS_URL)
+CELERY_TASK_EAGER_PROPAGATES = False
 
 # Email: console backend in development. Set EMAIL_HOST (and friends) for SMTP.
 EMAIL_HOST = os.getenv("EMAIL_HOST", "")

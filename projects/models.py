@@ -6,6 +6,8 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 
+from core.fields import HTTPSURLField
+
 
 class Project(models.Model):
     """
@@ -118,6 +120,7 @@ class Project(models.Model):
     @date_decision.setter
     def date_decision(self, value):
         self.reviewed_at = value
+
     review_history = models.JSONField(
         default=list,
         blank=True,
@@ -132,17 +135,17 @@ class Project(models.Model):
     )
 
     # Liens externes du projet
-    repository_url = models.URLField(
+    repository_url = HTTPSURLField(
         blank=True,
         verbose_name="Dépôt de code (GitHub/GitLab)",
         help_text="URL publique du repository",
     )
-    demo_url = models.URLField(
+    demo_url = HTTPSURLField(
         blank=True,
         verbose_name="Lien de la démo",
         help_text="URL du prototype ou site déployé",
     )
-    video_url = models.URLField(
+    video_url = HTTPSURLField(
         blank=True,
         verbose_name="Vidéo de présentation",
         help_text="Lien YouTube, Vimeo ou Loom du pitch",
@@ -196,11 +199,7 @@ class Project(models.Model):
                 if attempt == 0:
                     candidate = base_slug
                     counter = 1
-                    while (
-                        Project.objects.filter(slug=candidate)
-                        .exclude(pk=self.pk)
-                        .exists()
-                    ):
+                    while Project.objects.filter(slug=candidate).exclude(pk=self.pk).exists():
                         candidate = f"{base_slug}-{counter}"
                         counter += 1
                 else:
@@ -254,18 +253,22 @@ class Project(models.Model):
         self.reviewed_at = timezone.now()
         if not isinstance(self.review_history, list):
             self.review_history = []
-        self.review_history.append({
-            "type": "decision",
-            "decision": "accept",
-            "decision_display": "Accepté",
-            "reason": "",
-            "reviewed_by": user.get_username() if user else "",
-            "reviewed_at": self.reviewed_at.isoformat(),
-            "reviewed_at_display": self.reviewed_at.strftime("%d/%m/%Y à %H:%M"),
-            "date": self.reviewed_at.isoformat(),
-            "date_display": self.reviewed_at.strftime("%d/%m/%Y à %H:%M"),
-        })
-        self.save(update_fields=["status", "reviewed_by", "reviewed_at", "review_history", "updated_at"])
+        self.review_history.append(
+            {
+                "type": "decision",
+                "decision": "accept",
+                "decision_display": "Accepté",
+                "reason": "",
+                "reviewed_by": user.get_username() if user else "",
+                "reviewed_at": self.reviewed_at.isoformat(),
+                "reviewed_at_display": self.reviewed_at.strftime("%d/%m/%Y à %H:%M"),
+                "date": self.reviewed_at.isoformat(),
+                "date_display": self.reviewed_at.strftime("%d/%m/%Y à %H:%M"),
+            }
+        )
+        self.save(
+            update_fields=["status", "reviewed_by", "reviewed_at", "review_history", "updated_at"]
+        )
 
     def reject(self, user, reason):
         """Refuser le projet avec un motif et enregistrer la décision dans l'historique."""
@@ -275,18 +278,29 @@ class Project(models.Model):
         self.reviewed_at = timezone.now()
         if not isinstance(self.review_history, list):
             self.review_history = []
-        self.review_history.append({
-            "type": "decision",
-            "decision": "reject",
-            "decision_display": "Refusé",
-            "reason": reason,
-            "reviewed_by": user.get_username() if user else "",
-            "reviewed_at": self.reviewed_at.isoformat(),
-            "reviewed_at_display": self.reviewed_at.strftime("%d/%m/%Y à %H:%M"),
-            "date": self.reviewed_at.isoformat(),
-            "date_display": self.reviewed_at.strftime("%d/%m/%Y à %H:%M"),
-        })
-        self.save(update_fields=["status", "rejection_reason", "reviewed_by", "reviewed_at", "review_history", "updated_at"])
+        self.review_history.append(
+            {
+                "type": "decision",
+                "decision": "reject",
+                "decision_display": "Refusé",
+                "reason": reason,
+                "reviewed_by": user.get_username() if user else "",
+                "reviewed_at": self.reviewed_at.isoformat(),
+                "reviewed_at_display": self.reviewed_at.strftime("%d/%m/%Y à %H:%M"),
+                "date": self.reviewed_at.isoformat(),
+                "date_display": self.reviewed_at.strftime("%d/%m/%Y à %H:%M"),
+            }
+        )
+        self.save(
+            update_fields=[
+                "status",
+                "rejection_reason",
+                "reviewed_by",
+                "reviewed_at",
+                "review_history",
+                "updated_at",
+            ]
+        )
 
 
 class ProjectMember(models.Model):
@@ -350,6 +364,7 @@ class ConseilMentor(models.Model):
     """
     Conseils et recommandations pédagogiques laissés par un mentor pour l'équipe d'un projet.
     """
+
     project = models.ForeignKey(
         Project,
         on_delete=models.CASCADE,
@@ -387,13 +402,13 @@ class HistoriqueProjet(models.Model):
     """
 
     class Action(models.TextChoices):
-        SUBMITTED      = "submitted",       "Submitted"
-        RESUBMITTED    = "soumis_a_nouveau", "Resubmitted"
-        REJECTED       = "refuse",           "Rejected"
-        ACCEPTED       = "accepte",          "Accepted"
-        UNDER_REVIEW   = "en_evaluation",    "Under Review"
-        FINALIST       = "finaliste",        "Finalist"
-        WINNER         = "laureat",          "Winner"
+        SUBMITTED = "submitted", "Submitted"
+        RESUBMITTED = "soumis_a_nouveau", "Resubmitted"
+        REJECTED = "refuse", "Rejected"
+        ACCEPTED = "accepte", "Accepted"
+        UNDER_REVIEW = "en_evaluation", "Under Review"
+        FINALIST = "finaliste", "Finalist"
+        WINNER = "laureat", "Winner"
 
     project = models.ForeignKey(
         Project,
@@ -428,7 +443,7 @@ class HistoriqueProjet(models.Model):
     class Meta:
         verbose_name = "Project History Entry"
         verbose_name_plural = "Project History"
-        ordering = ("date",)   # chronological
+        ordering = ("date",)  # chronological
 
     def __str__(self):
         actor = self.acteur.get_username() if self.acteur else "—"

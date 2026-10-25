@@ -1,11 +1,29 @@
-# Render Blueprint for HackFlow (Django + PostgreSQL)
-# Docs: https://docs.render.com/blueprint-spec
+# Render Blueprint for HackFlow (Django + PostgreSQL + Key Value)
+# Docs: https://render.com/docs/blueprint-spec
 databases:
   - name: hackflow-postgres
     databaseName: hackflow
     user: hackflow
     plan: free
     region: oregon
+    postgresMajorVersion: "17"
+    # Free Render Postgres databases expire 30 days after creation. Upgrade
+    # the plan for anything long-lived.
+
+envVarGroups:
+  # Shared by the web service and the worker so they sign sessions and tokens
+  # with the same key. Do not use generateValue per service.
+  - name: hackflow-shared
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: TIME_ZONE
+        value: "Africa/Tunis"
+      - key: AI_MODEL
+        # Groq-hosted model id; every AI service reads this through core.groq.
+        value: "openai/gpt-oss-120b"
 
 services:
   - type: web
@@ -15,14 +33,20 @@ services:
     plan: free
     region: oregon
     healthCheckPath: /health/
+    # Free web services have an ephemeral filesystem: sponsor logos uploaded
+    # at runtime are lost on redeploy/restart. Use object storage or a paid
+    # plan with a persistent disk for durable media.
     envVars:
-      - key: DJANGO_SECRET_KEY
-        generateValue: true
-      - key: DJANGO_DEBUG
-        value: "False"
+      - fromGroup: hackflow-shared
       - key: DJANGO_SECURE_SSL_REDIRECT
         value: "True"
       - key: DJANGO_SECURE_COOKIES
+        value: "True"
+      - key: SECURE_HSTS_SECONDS
+        value: "31536000"
+      - key: SECURE_HSTS_INCLUDE_SUBDOMAINS
+        value: "True"
+      - key: SECURE_HSTS_PRELOAD
         value: "True"
       - key: DATABASE_URL
         fromDatabase:
@@ -34,9 +58,94 @@ services:
         value: "True"
       - key: DB_SSL_REQUIRE
         value: "True"
-      - key: SECURE_HSTS_SECONDS
-        value: "31536000"
-      - key: SECURE_HSTS_INCLUDE_SUBDOMAINS
+      - key: REDIS_URL
+        fromService:
+          name: hackflow-redis
+          type: keyvalue
+          property: connectionString
+      # Celery/Redis async AI. Redis is the broker; hackflow-worker below
+      # consumes the long Groq calls so HTTP requests are never blocked.
+      - key: AI_ASYNC_ENABLED
         value: "True"
-      - key: SECURE_HSTS_PRELOAD
+      - key: CELERY_TASK_ALWAYS_EAGER
+        value: "False"
+      - key: CELERY_TASK_TIME_LIMIT
+        value: "60"
+      - key: GROQ_API_KEY
+        sync: false
+      - key: PASSWORD_RESET_TIMEOUT
+        value: "259200"
+      - key: LOGIN_MAX_ATTEMPTS
+        value: "5"
+      - key: LOGIN_LOCKOUT_SECONDS
+        value: "900"
+      - key: EMAIL_VERIFICATION_RESEND_COOLDOWN
+        value: "60"
+      - key: AI_RATE_LIMIT_MAX
+        value: "20"
+      - key: AI_RATE_LIMIT_WINDOW
+        value: "60"
+      # RENDER_EXTERNAL_HOSTNAME / RENDER_EXTERNAL_URL are added to
+      # ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS automatically. Add custom
+      # domains via DJANGO_ALLOWED_HOSTS / DJANGO_CSRF_TRUSTED_ORIGINS.
+
+  # ---------------------------------------------------------------------------
+  # Celery worker — performs the long Groq calls off the HTTP request cycle.
+  #
+  # Render does not offer free background workers: this is the smallest paid
+  # compute plan. If the project must stay 100% free, delete this service and
+  # set AI_ASYNC_ENABLED=False on the web service (AI then runs synchronously).
+  # The included docker-compose.yml also runs Redis + this worker on a VPS.
+  # ---------------------------------------------------------------------------
+  - type: worker
+    name: hackflow-worker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: celery -A HackFlow worker --loglevel=info --concurrency=2
+    plan: 0.5c-512mb
+    region: oregon
+    envVars:
+      - fromGroup: hackflow-shared
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hackflow-postgres
+          property: connectionString
+      - key: DB_CONN_MAX_AGE
+        value: "60"
+      - key: DB_CONN_HEALTH_CHECKS
         value: "True"
+      - key: DB_SSL_REQUIRE
+        value: "True"
+      - key: REDIS_URL
+        fromService:
+          name: hackflow-redis
+          type: keyvalue
+          property: connectionString
+      - key: AI_ASYNC_ENABLED
+        value: "True"
+      - key: CELERY_TASK_ALWAYS_EAGER
+        value: "False"
+      - key: CELERY_TASK_TIME_LIMIT
+        value: "60"
+      # Only the web container runs migrations/collectstatic.
+      - key: RUN_MIGRATIONS
+        value: "0"
+      - key: RUN_COLLECTSTATIC
+        value: "0"
+      # Reuse the value entered once on the web service.
+      - key: GROQ_API_KEY
+        fromService:
+          name: hackflow
+          type: web
+          envVarKey: GROQ_API_KEY
+
+  - type: keyvalue
+    name: hackflow-redis
+    plan: free
+    region: oregon
+    # Empty allow list = private network only (the web service reaches it
+    # internally).
+    ipAllowList: []
+    # This instance is both the shared cache and the Celery broker. Never
+    # evict keys: dropping a queued job would silently lose an AI evaluation.
+    maxmemoryPolicy: noeviction

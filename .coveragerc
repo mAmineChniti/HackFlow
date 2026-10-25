@@ -1,0 +1,39 @@
+[coverage:run]
+source = 
+    accounts
+    core
+    hackathons
+    projects
+    sponsors
+
+omit = 
+    */migrations/*
+    */tests.py
+    */tests_*.py
+    */test_*.py
+    */__pycache__/*
+    */.venv/*
+    manage.py
+    HackFlow/asgi.py
+    HackFlow/wsgi.py
+    HackFlow/celery.py
+
+branch = True
+concurrency = multiprocessing
+
+[coverage:report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+
+ignore_errors = True
+
+[coverage:html]
+directory = htmlcov
+
+[coverage:xml]
+output = coverage.xml

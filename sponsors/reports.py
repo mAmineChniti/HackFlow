@@ -18,6 +18,7 @@ try:
     import openpyxl
     from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
     from openpyxl.utils import get_column_letter
+
     OPENPYXL_AVAILABLE = True
 except ImportError:
     OPENPYXL_AVAILABLE = False
@@ -63,16 +64,21 @@ def export_sponsorships_to_excel(queryset: QuerySet[Sponsorship]) -> io.BytesIO:
 
     total_count = queryset.count()
     if total_count > MAX_EXPORT_ROWS:
-        raise ValueError(f"Exports are limited to {MAX_EXPORT_ROWS} rows ({total_count} requested).")
+        raise ValueError(
+            f"Exports are limited to {MAX_EXPORT_ROWS} rows ({total_count} requested)."
+        )
 
     wb = openpyxl.Workbook()
 
     # Styles réutilisables
-    header_fill = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid")  # Slate-800
+    header_fill = PatternFill(
+        start_color="1E293B", end_color="1E293B", fill_type="solid"
+    )  # Slate-800
     header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
-    section_fill = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")  # Slate-100
+    section_fill = PatternFill(
+        start_color="F1F5F9", end_color="F1F5F9", fill_type="solid"
+    )  # Slate-100
     section_font = Font(name="Calibri", size=11, bold=True, color="0F172A")
-    bold_font = Font(name="Calibri", size=11, bold=True)
     regular_font = Font(name="Calibri", size=11)
     center_align = Alignment(horizontal="center", vertical="center")
     left_align = Alignment(horizontal="left", vertical="center")
@@ -109,9 +115,8 @@ def export_sponsorships_to_excel(queryset: QuerySet[Sponsorship]) -> io.BytesIO:
         cell.font = header_font
         cell.alignment = center_align
 
-    sponsorships = (
-        queryset.select_related("sponsor", "hackathon")
-        .order_by("-updated_at", "-created_at")
+    sponsorships = queryset.select_related("sponsor", "hackathon").order_by(
+        "-updated_at", "-created_at"
     )
 
     for row_idx, sp in enumerate(sponsorships, start=2):
@@ -162,15 +167,23 @@ def export_sponsorships_to_excel(queryset: QuerySet[Sponsorship]) -> io.BytesIO:
     ws_summary.views.sheetView[0].showGridLines = True
 
     # Titre du résumé
-    ws_summary.cell(row=1, column=1, value="Financial and operational sponsorship summary").font = Font(name="Calibri", size=14, bold=True, color="0F172A")
-    ws_summary.cell(row=2, column=1, value=f"Generated on {timezone.now().strftime('%Y-%m-%d %H:%M')} — HackFlow ESPRIT").font = Font(name="Calibri", size=10, italic=True, color="64748B")
+    ws_summary.cell(
+        row=1, column=1, value="Financial and operational sponsorship summary"
+    ).font = Font(name="Calibri", size=14, bold=True, color="0F172A")
+    ws_summary.cell(
+        row=2,
+        column=1,
+        value=f"Generated on {timezone.now().strftime('%Y-%m-%d %H:%M')} — HackFlow ESPRIT",
+    ).font = Font(name="Calibri", size=10, italic=True, color="64748B")
 
     # Calcul des totaux clés
     confirmed_qs = queryset.filter(status=StatusChoices.CONFIRME)
     total_confirmed = confirmed_qs.aggregate(t=Sum("amount"))["t"] or Decimal("0.000")
     count_confirmed = confirmed_qs.count()
 
-    in_progress_qs = queryset.filter(status__in=[StatusChoices.PROSPECT, StatusChoices.CONTACTE, StatusChoices.NEGOCIATION])
+    in_progress_qs = queryset.filter(
+        status__in=[StatusChoices.PROSPECT, StatusChoices.CONTACTE, StatusChoices.NEGOCIATION]
+    )
     total_in_progress = in_progress_qs.aggregate(t=Sum("amount"))["t"] or Decimal("0.000")
     count_in_progress = in_progress_qs.count()
 
@@ -199,10 +212,14 @@ def export_sponsorships_to_excel(queryset: QuerySet[Sponsorship]) -> io.BytesIO:
 
     # Status breakdown
     start_row_status = 10
-    ws_summary.cell(row=start_row_status, column=1, value="Status breakdown").font = Font(name="Calibri", size=12, bold=True)
+    ws_summary.cell(row=start_row_status, column=1, value="Status breakdown").font = Font(
+        name="Calibri", size=12, bold=True
+    )
     ws_summary.cell(row=start_row_status + 1, column=1, value="Status").font = header_font
     ws_summary.cell(row=start_row_status + 1, column=2, value="Count").font = header_font
-    ws_summary.cell(row=start_row_status + 1, column=3, value="Total amount (DT)").font = header_font
+    ws_summary.cell(
+        row=start_row_status + 1, column=3, value="Total amount (DT)"
+    ).font = header_font
     for c in range(1, 4):
         ws_summary.cell(row=start_row_status + 1, column=c).fill = header_fill
         ws_summary.cell(row=start_row_status + 1, column=c).alignment = center_align
@@ -213,7 +230,9 @@ def export_sponsorships_to_excel(queryset: QuerySet[Sponsorship]) -> io.BytesIO:
         st_count = qs_stat.count()
         st_sum = qs_stat.aggregate(s=Sum("amount"))["s"] or Decimal("0.000")
 
-        ws_summary.cell(row=current_r, column=1, value=sanitize_excel_cell(label)).font = regular_font
+        ws_summary.cell(
+            row=current_r, column=1, value=sanitize_excel_cell(label)
+        ).font = regular_font
         ws_summary.cell(row=current_r, column=2, value=st_count).alignment = center_align
         cell_amt = ws_summary.cell(row=current_r, column=3, value=float(st_sum))
         cell_amt.number_format = "#,##0.000"
@@ -224,7 +243,9 @@ def export_sponsorships_to_excel(queryset: QuerySet[Sponsorship]) -> io.BytesIO:
 
     # Tier breakdown
     start_row_tier = current_r + 2
-    ws_summary.cell(row=start_row_tier, column=1, value="Tier breakdown").font = Font(name="Calibri", size=12, bold=True)
+    ws_summary.cell(row=start_row_tier, column=1, value="Tier breakdown").font = Font(
+        name="Calibri", size=12, bold=True
+    )
     ws_summary.cell(row=start_row_tier + 1, column=1, value="Tier").font = header_font
     ws_summary.cell(row=start_row_tier + 1, column=2, value="Count").font = header_font
     ws_summary.cell(row=start_row_tier + 1, column=3, value="Total amount (DT)").font = header_font
@@ -238,7 +259,9 @@ def export_sponsorships_to_excel(queryset: QuerySet[Sponsorship]) -> io.BytesIO:
         tr_count = qs_tier.count()
         tr_sum = qs_tier.aggregate(s=Sum("amount"))["s"] or Decimal("0.000")
 
-        ws_summary.cell(row=current_r, column=1, value=sanitize_excel_cell(label)).font = regular_font
+        ws_summary.cell(
+            row=current_r, column=1, value=sanitize_excel_cell(label)
+        ).font = regular_font
         ws_summary.cell(row=current_r, column=2, value=tr_count).alignment = center_align
         cell_amt = ws_summary.cell(row=current_r, column=3, value=float(tr_sum))
         cell_amt.number_format = "#,##0.000"

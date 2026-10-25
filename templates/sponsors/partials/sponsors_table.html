@@ -13,106 +13,112 @@
 
     <!-- Table Container -->
     <div class="rounded-xl border border-border/80 bg-card overflow-hidden shadow-sm">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
-                <thead class="border-b border-border/70 bg-muted/40 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                    <tr>
-                        <th class="py-3.5 px-4">Sponsor</th>
-                        <th class="py-3.5 px-4">Industry</th>
-                        <th class="py-3.5 px-4">Hackathon</th>
-                        <th class="py-3.5 px-4">Tier</th>
-                        <th class="py-3.5 px-4">Status</th>
-                        <th class="py-3.5 px-4">Amount</th>
-                        <th class="py-3.5 px-4 text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-border/60">
-                    {% for item in sponsorships %}
-                    <tr class="hover:bg-muted/30 transition-colors">
-                        <!-- Sponsor name + logo -->
-                        <td class="py-3.5 px-4">
-                            <div class="flex items-center gap-3">
-                                {% if item.sponsor.logo %}
-                                <img src="{{ item.sponsor.logo.url }}" alt="{{ item.sponsor.name }}" class="size-8 rounded-md object-contain bg-background/80 p-1 border border-border/60">
-                                {% else %}
-                                <span class="flex size-8 items-center justify-center rounded-md bg-primary/10 text-xs font-bold text-primary border border-primary/20">
-                                    {{ item.sponsor.name|slice:":2"|upper }}
-                                </span>
+        <c-table class="w-full">
+            <c-table.caption class="sr-only">Sponsorships list</c-table.caption>
+            <c-table.header>
+                <c-table.row>
+                    <c-table.head scope="col">Sponsor</c-table.head>
+                    <c-table.head scope="col">Industry</c-table.head>
+                    <c-table.head scope="col">Hackathon</c-table.head>
+                    <c-table.head scope="col">Tier</c-table.head>
+                    <c-table.head scope="col">Status</c-table.head>
+                    <c-table.head scope="col">Amount</c-table.head>
+                    <c-table.head scope="col" class="text-right">Actions</c-table.head>
+                </c-table.row>
+            </c-table.header>
+            <c-table.body>
+                {% for item in sponsorships %}
+                <c-table.row class="hover:bg-muted/30 transition-colors">
+                    <!-- Sponsor name + logo -->
+                    <c-table.cell>
+                        <div class="flex items-center gap-3">
+                            {% if item.sponsor.logo %}
+                            <img src="{{ item.sponsor.logo.url }}" alt="{{ item.sponsor.name }}" class="size-8 rounded-md object-contain bg-background/80 p-1 border border-border/60">
+                            {% else %}
+                            <span class="flex size-8 items-center justify-center rounded-md bg-primary/10 text-xs font-bold text-primary border border-primary/20">
+                                {{ item.sponsor.name|slice:":2"|upper }}
+                            </span>
+                            {% endif %}
+                            <div>
+                                <a href="{% url 'sponsors:sponsor_detail' item.sponsor.pk %}" class="font-semibold text-foreground hover:text-primary transition-colors">
+                                    {{ item.sponsor.name }}
+                                </a>
+                                {% if item.sponsor.contact_name %}
+                                <span class="block text-[11px] text-muted-foreground">{{ item.sponsor.contact_name }}</span>
                                 {% endif %}
-                                <div>
-                                    <a href="{% url 'sponsors:sponsor_detail' item.sponsor.pk %}" class="font-semibold text-foreground hover:text-primary transition-colors">
-                                        {{ item.sponsor.name }}
-                                    </a>
-                                    {% if item.sponsor.contact_name %}
-                                    <span class="block text-[11px] text-muted-foreground">{{ item.sponsor.contact_name }}</span>
-                                    {% endif %}
-                                </div>
                             </div>
-                        </td>
+                        </div>
+                    </c-table.cell>
 
-                        <!-- Sector -->
-                        <td class="py-3.5 px-4">
-                            <span class="rounded bg-muted px-2 py-0.5 text-[11px] text-muted-foreground font-mono">
-                                {{ item.sponsor.get_sector_display }}
-                            </span>
-                        </td>
+                    <!-- Sector -->
+                    <c-table.cell>
+                        <c-badge variant="outline" class="text-[11px] font-mono">
+                            {{ item.sponsor.get_sector_display }}
+                        </c-badge>
+                    </c-table.cell>
 
-                        <!-- Hackathon -->
-                        <td class="py-3.5 px-4 text-xs font-medium text-foreground">
-                            {{ item.hackathon.name }}
-                        </td>
+                    <!-- Hackathon -->
+                    <c-table.cell class="text-xs font-medium text-foreground">
+                        {{ item.hackathon.name }}
+                    </c-table.cell>
 
-                        <!-- Tier badge -->
-                        <td class="py-3.5 px-4">
-                            <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold
-                                {% if item.tier == 'platinum' %}border border-cyan-500/30 bg-cyan-500/10 text-cyan-400
-                                {% elif item.tier == 'gold' %}border border-amber-500/30 bg-amber-500/10 text-amber-400
-                                {% elif item.tier == 'silver' %}border border-slate-400/30 bg-slate-400/10 text-slate-300
-                                {% else %}border border-orange-500/30 bg-orange-500/10 text-orange-400{% endif %}">
-                                {{ item.get_tier_display }}
-                            </span>
-                        </td>
+                    <!-- Tier badge -->
+                    <c-table.cell>
+                        <c-badge
+                            variant="outline"
+                            class="text-xs font-semibold
+                                {% if item.tier == 'platinum' %}border-cyan-500/30 bg-cyan-500/10 text-cyan-400
+                                {% elif item.tier == 'gold' %}border-amber-500/30 bg-amber-500/10 text-amber-400
+                                {% elif item.tier == 'silver' %}border-slate-400/30 bg-slate-400/10 text-slate-300
+                                {% else %}border-orange-500/30 bg-orange-500/10 text-orange-400{% endif %}"
+                        >
+                            {{ item.get_tier_display }}
+                        </c-badge>
+                    </c-table.cell>
 
-                        <!-- Status badge -->
-                        <td class="py-3.5 px-4">
-                            <span class="inline-flex items-center rounded px-2.5 py-1 text-xs font-semibold
-                                {% if item.status == 'confirmé' %}bg-emerald-500/15 text-emerald-400 border border-emerald-500/30
-                                {% elif item.status == 'négociation' %}bg-amber-500/15 text-amber-400 border border-amber-500/30
-                                {% elif item.status == 'contacté' %}bg-blue-500/15 text-blue-400 border border-blue-500/30
-                                {% elif item.status == 'refusé' %}bg-rose-500/15 text-rose-400 border border-rose-500/30
-                                {% else %}bg-muted text-muted-foreground border border-border/60{% endif %}">
-                                {{ item.get_status_display }}
-                            </span>
-                        </td>
+                    <!-- Status badge -->
+                    <c-table.cell>
+                        <c-badge
+                            variant="outline"
+                            class="text-xs font-semibold
+                                {% if item.status == 'confirmé' %}border-emerald-500/30 bg-emerald-500/15 text-emerald-400
+                                {% elif item.status == 'négociation' %}border-amber-500/30 bg-amber-500/15 text-amber-400
+                                {% elif item.status == 'contacté' %}border-blue-500/30 bg-blue-500/15 text-blue-400
+                                {% elif item.status == 'refusé' %}border-rose-500/30 bg-rose-500/15 text-rose-400
+                                {% else %}border-border/60 bg-muted text-muted-foreground{% endif %}"
+                        >
+                            {{ item.get_status_display }}
+                        </c-badge>
+                    </c-table.cell>
 
-                        <!-- Amount -->
-                        <td class="py-3.5 px-4 font-mono text-xs font-semibold text-foreground">
-                            {{ item.amount|intcomma }} DT
-                        </td>
+                    <!-- Amount -->
+                    <c-table.cell class="font-mono text-xs font-semibold text-foreground">
+                        {{ item.amount|intcomma }} DT
+                    </c-table.cell>
 
-                        <!-- Actions -->
-                        <td class="py-3.5 px-4 text-right">
-                            <div class="inline-flex items-center gap-2">
-                                <a href="{% url 'sponsors:sponsorship_update' item.pk %}" class="text-xs text-primary hover:underline font-medium">
-                                    Edit
-                                </a>
-                                <span class="text-border">|</span>
-                                <a href="{% url 'sponsors:sponsorship_delete' item.pk %}" class="text-xs text-rose-400 hover:underline">
-                                    Remove
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="py-12 text-center text-sm text-muted-foreground">
-                            No sponsorships match your search criteria.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                    <!-- Actions -->
+                    <c-table.cell class="text-right">
+                        <div class="inline-flex items-center gap-2">
+                            <c-button_link href="{% url 'sponsors:sponsorship_update' item.pk %}" variant="ghost" size="sm" class="text-xs">
+                                <c-lucideicon.edit class="size-3" />
+                                Edit
+                            </c-button_link>
+                            <c-button_link href="{% url 'sponsors:sponsorship_delete' item.pk %}" variant="ghost" size="sm" class="text-xs text-rose-400 hover:text-rose-300">
+                                <c-lucideicon.trash-2 class="size-3" />
+                                Remove
+                            </c-button_link>
+                        </div>
+                    </c-table.cell>
+                </c-table.row>
+                {% empty %}
+                <c-table.row>
+                    <c-table.cell colspan="7" class="py-12 text-center text-sm text-muted-foreground">
+                        No sponsorships match your search criteria.
+                    </c-table.cell>
+                </c-table.row>
+                {% endfor %}
+            </c-table.body>
+        </c-table>
     </div>
 
     <!-- Pagination (10 per page), preserving filters with HTMX -->
@@ -124,13 +130,17 @@
 
         <div class="flex items-center gap-1.5">
             {% if page_obj.has_previous %}
-            <button type="button"
-                    hx-get="{% url 'sponsors:sponsor_list' %}?page={{ page_obj.previous_page_number }}&q={{ query }}&sector={{ selected_sector }}&tier={{ selected_tier }}&status={{ selected_status }}&hackathon={{ selected_hackathon }}"
-                    hx-target="#sponsors-results"
-                    hx-push-url="true"
-                    class="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors">
-                ← Previous
-            </button>
+            <c-button
+                variant="outline"
+                size="sm"
+                hx-get="{% url 'sponsors:sponsor_list' %}?page={{ page_obj.previous_page_number }}&q={{ query }}&sector={{ selected_sector }}&tier={{ selected_tier }}&status={{ selected_status }}&hackathon={{ selected_hackathon }}"
+                hx-target="#sponsors-results"
+                hx-push-url="true"
+                aria-label="Go to previous page"
+            >
+                <c-lucideicon.chevron-left class="size-3" />
+                Previous
+            </c-button>
             {% endif %}
 
             <span class="px-2 font-mono text-xs text-muted-foreground">
@@ -138,13 +148,17 @@
             </span>
 
             {% if page_obj.has_next %}
-            <button type="button"
-                    hx-get="{% url 'sponsors:sponsor_list' %}?page={{ page_obj.next_page_number }}&q={{ query }}&sector={{ selected_sector }}&tier={{ selected_tier }}&status={{ selected_status }}&hackathon={{ selected_hackathon }}"
-                    hx-target="#sponsors-results"
-                    hx-push-url="true"
-                    class="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors">
-                Next →
-            </button>
+            <c-button
+                variant="outline"
+                size="sm"
+                hx-get="{% url 'sponsors:sponsor_list' %}?page={{ page_obj.next_page_number }}&q={{ query }}&sector={{ selected_sector }}&tier={{ selected_tier }}&status={{ selected_status }}&hackathon={{ selected_hackathon }}"
+                hx-target="#sponsors-results"
+                hx-push-url="true"
+                aria-label="Go to next page"
+            >
+                Next
+                <c-lucideicon.chevron-right class="size-3" />
+            </c-button>
             {% endif %}
         </div>
     </div>
