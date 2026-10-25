@@ -183,9 +183,6 @@
                                         <c-lucideicon.pencil class="size-4" />
                                         Edit & Manage Event
                                     </c-button_link>
-                                    <a href="{% url 'hackathons:ai_metrics' hackathon.slug %}" class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-xs font-mono font-bold text-emerald-400 hover:bg-emerald-500/20 transition-all shadow-xs">
-                                        📊 AI Metrics &amp; Benchmark Dashboard
-                                    </a>
                                 </div>
 
                             {% elif is_assigned_judge %}
@@ -194,9 +191,6 @@
                                         <span>⚖️</span>
                                         <span>You are an official <strong>Judge</strong> for this event.</span>
                                     </div>
-                                    <a href="{% url 'hackathons:ai_metrics' hackathon.slug %}" class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border/70 bg-card/60 px-4 py-2 text-xs font-mono text-muted-foreground hover:text-foreground transition-all">
-                                        📊 View AI Evaluation Telemetry
-                                    </a>
                                 </div>
 
                             {% elif is_assigned_mentor %}
@@ -397,15 +391,14 @@
                 :class="activeTab === 'badge' ? 'bg-primary/15 text-primary border-primary shadow-xs font-semibold' : 'bg-card/50 text-muted-foreground border-border/70 hover:text-foreground hover:bg-card/80'"
                 class="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 cursor-pointer"
             >
-                <span>🎫 Badge &amp; QR Code</span>
+                {% if is_organizer or user.is_staff %}
+                <span>🎫 Check-in Desk &amp; Badges ({{ checked_in_count }}/{{ confirmed_registrations_count }})</span>
+                {% elif is_registered %}
+                <span>🎫 Mon Badge &amp; QR Pass</span>
+                {% else %}
+                <span>🎫 Badge Participant &amp; QR</span>
+                {% endif %}
             </button>
-
-            <a
-                href="{% url 'hackathons:ai_metrics' hackathon.slug %}"
-                class="inline-flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-xs sm:text-sm font-mono text-emerald-400 hover:bg-emerald-500/20 transition-all whitespace-nowrap shrink-0"
-            >
-                <span>📊 AI Metrics &amp; Benchmark</span>
-            </a>
         </div>
 
         <!-- Tab 1: Overview -->
@@ -730,22 +723,150 @@
             </div>
         </div>
 
-        <!-- Tab 6: Digital Badge Pass & Verifiable QR Code -->
+        <!-- Tab 6: Digital Badge Pass & Verifiable QR Code (Role-Aware) -->
         <div x-show="activeTab === 'badge'"
              class="mt-6"
              x-transition:enter="transition ease-out duration-150"
              x-transition:enter-start="opacity-0 translate-y-1"
              x-transition:enter-end="opacity-100 translate-y-0"
              style="display: none;">
+            
+            {% if is_organizer or user.is_staff %}
+            <!-- ORGANIZER VIEW: Check-in Desk & Attendance Console -->
+            <div class="rounded-2xl border border-border/70 bg-card/40 p-6 md:p-8 space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/50 pb-5">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🎫</span>
+                            <h2 class="text-xl font-semibold text-foreground">Organizer Check-in Desk &amp; Attendance Console</h2>
+                        </div>
+                        <p class="text-xs text-muted-foreground">
+                            Real-time door check-in, QR ticket verification, and venue presence tracking for <strong class="text-foreground">{{ hackathon.title }}</strong>.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a
+                            href="{% url 'hackathons:export_participants' hackathon.slug %}"
+                            class="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-background/60 px-3 py-1.5 font-mono text-xs text-muted-foreground hover:text-foreground transition-all shrink-0"
+                        >
+                            <c-lucideicon.download class="size-3" />
+                            Export Attendee CSV
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Live Attendance KPIs -->
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <div class="rounded-xl border border-border/60 bg-background/50 p-4 space-y-1">
+                        <span class="font-mono text-[11px] uppercase text-muted-foreground">Confirmed Builders</span>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-2xl font-black text-foreground">{{ confirmed_registrations_count }}</span>
+                            <span class="text-xs text-muted-foreground">/ {{ hackathon.max_participants }} capacity</span>
+                        </div>
+                    </div>
+                    <div class="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 space-y-1">
+                        <span class="font-mono text-[11px] uppercase text-emerald-400">Checked-in Present in Venue</span>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-2xl font-black text-emerald-400">{{ checked_in_count }}</span>
+                            <span class="text-xs text-emerald-300/80">({{ attendance_rate }}% attendance)</span>
+                        </div>
+                    </div>
+                    <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 space-y-1">
+                        <span class="font-mono text-[11px] uppercase text-amber-300">Pending Arrival</span>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-2xl font-black text-amber-300">{{ pending_checkin_count }}</span>
+                            <span class="text-xs text-amber-300/80">ticket passes issued</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Registered Attendees Table -->
+                <div class="overflow-hidden rounded-xl border border-border/60 bg-background/40">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="border-b border-border/60 bg-muted/40 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                                <tr>
+                                    <th class="px-4 py-3">Attendee</th>
+                                    <th class="px-4 py-3">University</th>
+                                    <th class="px-4 py-3">Ticket Identifier</th>
+                                    <th class="px-4 py-3">Check-in Status</th>
+                                    <th class="px-4 py-3 text-right">Door Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border/40 font-mono">
+                                {% for reg in organizer_registrations %}
+                                <tr class="hover:bg-muted/20 transition-colors">
+                                    <td class="px-4 py-3 font-sans">
+                                        <div class="flex items-center gap-2.5">
+                                            <div class="flex size-7 items-center justify-center rounded-lg bg-primary/20 text-xs font-bold text-primary font-mono shrink-0">
+                                                {{ reg.participant.first_name|first|default:reg.participant.username|first|upper }}
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-foreground">{{ reg.participant.get_full_name|default:reg.participant.username }}</p>
+                                                <p class="text-[11px] font-mono text-muted-foreground">{{ reg.participant.email }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 font-sans text-muted-foreground">
+                                        {{ reg.university|default:"Non spécifiée" }} · {{ reg.get_study_level_display }}
+                                    </td>
+                                    <td class="px-4 py-3 font-mono font-bold text-primary">
+                                        {{ reg.ticket_code }}
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        {% if reg.checked_in %}
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400">
+                                            ✓ Present ({{ reg.checked_in_at|date:"H:i" }})
+                                        </span>
+                                        {% else %}
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 text-[10px] text-amber-400">
+                                            ⏳ Pending
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-4 py-3 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <a
+                                                href="{% url 'hackathons:toggle_checkin' hackathon.slug reg.ticket_code %}"
+                                                class="rounded-md border {% if reg.checked_in %}border-destructive/30 text-destructive hover:bg-destructive/10{% else %}border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/15{% endif %} px-2.5 py-1 text-[11px] font-sans font-medium transition-colors"
+                                            >
+                                                {% if reg.checked_in %}Annuler entrée{% else %}✓ Valider entrée{% endif %}
+                                            </a>
+                                            <a
+                                                href="{% url 'hackathons:participant_badge' hackathon.slug %}?ticket={{ reg.ticket_code }}"
+                                                target="_blank"
+                                                class="rounded-md border border-border/80 px-2 py-1 text-[11px] font-sans text-muted-foreground hover:text-foreground transition-colors"
+                                                title="Voir le badge de cet étudiant"
+                                            >
+                                                🔍 Voir Badge
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="py-8 text-center text-muted-foreground text-xs font-sans">
+                                        Aucun participant inscrit pour le moment.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            {% elif is_registered and badge_registration %}
+            <!-- STUDENT VIEW: Personal Official Holographic Badge & Scannable QR -->
             <div class="rounded-2xl border border-border/70 bg-card/40 p-6 md:p-8">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 pb-5 border-b border-border/50">
                     <div class="space-y-1">
                         <div class="flex items-center gap-2">
                             <span class="text-xl">🎫</span>
-                            <h2 class="text-xl font-semibold text-foreground">Official Participant Badge &amp; QR Pass</h2>
+                            <h2 class="text-xl font-semibold text-foreground">Mon Badge Participant Officiel</h2>
                         </div>
                         <p class="text-xs text-muted-foreground">
-                            Encrypted verifiable entry credential for <strong class="text-foreground">{{ hackathon.title }}</strong>.
+                            Présentez ce QR Code à l'accueil pour valider votre entrée à <strong class="text-foreground">{{ hackathon.title }}</strong>.
                         </p>
                     </div>
                     <div class="flex items-center gap-2">
@@ -756,13 +877,13 @@
                             <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>
                             </svg>
-                            <span>Open Fullscreen / Print Badge</span>
+                            <span>Plein Écran / Imprimer PDF</span>
                         </a>
                     </div>
                 </div>
 
                 <div class="max-w-md mx-auto">
-                    <!-- Holographic Badge Preview Card -->
+                    <!-- Holographic Badge Card -->
                     <div class="relative overflow-hidden rounded-3xl border border-primary/40 bg-gradient-to-b from-card/90 via-background to-card/90 p-7 shadow-2xl backdrop-blur-xl space-y-5 text-center">
                         <div class="mx-auto h-2 w-14 rounded-full bg-border/80 border border-border"></div>
 
@@ -798,14 +919,38 @@
                         <!-- Scannable QR Code -->
                         <div class="rounded-2xl border border-border/60 bg-card/60 p-4 space-y-2">
                             <div class="mx-auto size-44 rounded-xl bg-white p-2.5 flex items-center justify-center shadow-inner">
-                                <img src="{{ badge_qr_b64 }}" alt="QR Code Badge" class="size-full object-contain" />
+                                <img src="{{ badge_qr_b64 }}" alt="Mon QR Code de Badge" class="size-full object-contain" />
                             </div>
                             <p class="font-mono text-xs font-bold tracking-widest text-primary">{{ badge_registration.ticket_code }}</p>
-                            <p class="text-[10px] font-mono text-muted-foreground">Scan with camera to validate check-in</p>
+                            {% if badge_registration.checked_in %}
+                            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-3 py-1 font-mono text-xs font-bold text-emerald-400">
+                                ✓ ENTRÉE VALIDÉE EN SALLE
+                            </span>
+                            {% else %}
+                            <p class="text-[10px] font-mono text-muted-foreground">Présentez ce QR Code à l'accueil pour entrer</p>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
+
+            {% else %}
+            <!-- UNREGISTERED VISITOR VIEW -->
+            <div class="rounded-2xl border border-border/70 bg-card/40 p-8 text-center space-y-4 max-w-lg mx-auto">
+                <div class="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary text-2xl">
+                    🎫
+                </div>
+                <h3 class="text-lg font-bold text-foreground">Obtenez votre Pass Officiel</h3>
+                <p class="text-xs text-muted-foreground leading-relaxed">
+                    Vous n'êtes pas encore inscrit à <strong>{{ hackathon.title }}</strong>. Inscrivez-vous pour recevoir votre badge d'accès officiel avec QR code vérifiable.
+                </p>
+                <div class="pt-2">
+                    <a href="{% url 'hackathons:register' hackathon.slug %}" class="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-mono text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all">
+                        S'inscrire au Hackathon
+                    </a>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         <script>

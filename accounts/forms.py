@@ -63,15 +63,16 @@ class HackFlowSignupForm(UserCreationForm):
             }
         ),
     )
+    PUBLIC_ROLE_CHOICES = [
+        (Profile.Role.STUDENT, _("Student")),
+        (Profile.Role.ORGANIZER, _("Organizer")),
+        (Profile.Role.JUDGE, _("Judge")),
+        (Profile.Role.MENTOR, _("Mentor")),
+    ]
+
     role = forms.ChoiceField(
         label=_("Role"),
-        choices=[
-            (Profile.Role.STUDENT, _("Student")),
-            (Profile.Role.ORGANIZER, _("Organizer")),
-            (Profile.Role.JUDGE, _("Judge")),
-            (Profile.Role.MENTOR, _("Mentor")),
-            (Profile.Role.ADMIN, _("Administrator")),
-        ],
+        choices=PUBLIC_ROLE_CHOICES,
         initial=Profile.Role.STUDENT,
         required=False,
         widget=forms.Select(
@@ -140,6 +141,9 @@ class HackFlowSignupForm(UserCreationForm):
         user = super().save(commit=commit)
         user.email = self.cleaned_data["email"]
         role = self.cleaned_data.get("role", Profile.Role.STUDENT)
+        # Security: Administrator role can never be acquired via public signup
+        if role not in dict(self.PUBLIC_ROLE_CHOICES):
+            role = Profile.Role.STUDENT
         if commit:
             user.save()
             profile, _ = Profile.objects.get_or_create(user=user)

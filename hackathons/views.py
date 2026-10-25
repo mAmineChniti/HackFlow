@@ -22,11 +22,6 @@ from .ai import (
     generate_hackathon_content,
     generate_project_ideas,
 )
-from .ai_metrics import (
-    CLASSIFICATION_BENCHMARK,
-    GENERATIVE_EVALUATION,
-    run_latency_benchmark,
-)
 from .badges import generate_badge_qr
 from .emails import (
     check_and_notify_capacity_thresholds,
@@ -178,20 +173,28 @@ class HackathonDetailView(DetailView):
             status=HackathonRegistration.Status.WAITLIST
         ).count()
 
-        # Digital Badge & QR Code preview for the hackathon detail tabs
-        badge_reg = user_registration or hackathon.registrations.first()
-        if not badge_reg:
-            badge_reg = HackathonRegistration(
-                hackathon=hackathon,
-                participant=self.request.user if self.request.user.is_authenticated else hackathon.organizer,
-                ticket_code=f"HF-PASS-{hackathon.id}9C4E",
-                status=HackathonRegistration.Status.CONFIRMED,
-                university="ESPRIT",
-                study_level=HackathonRegistration.StudyLevel.ING3,
-                experience_level=HackathonRegistration.ExperienceLevel.ADVANCED,
+        # Organizer Check-in Desk metrics & registrations
+        confirmed_count = context["confirmed_registrations_count"]
+        checked_in_count = hackathon.registrations.filter(checked_in=True).count()
+        context["checked_in_count"] = checked_in_count
+        context["pending_checkin_count"] = max(confirmed_count - checked_in_count, 0)
+        context["attendance_rate"] = int((checked_in_count / max(confirmed_count, 1)) * 100)
+
+        if context["is_organizer"] or (self.request.user.is_authenticated and self.request.user.is_staff):
+            context["organizer_registrations"] = (
+                hackathon.registrations.select_related("participant")
+                .order_by("-status", "checked_in", "participant__username")
             )
-        context["badge_registration"] = badge_reg
-        context["badge_qr_b64"] = generate_badge_qr(self.request, badge_reg)
+        else:
+            context["organizer_registrations"] = []
+
+        # Student personal badge: ONLY generated if the student is actually registered
+        if user_registration:
+            context["badge_registration"] = user_registration
+            context["badge_qr_b64"] = generate_badge_qr(self.request, user_registration)
+        else:
+            context["badge_registration"] = None
+            context["badge_qr_b64"] = None
 
         return context
 
@@ -592,39 +595,6 @@ def ai_generate_ideas(request, slug):
     return JsonResponse({"success": True, "ideas": ideas})
 
 
-def ai_metrics_dashboard(request, slug):
-    """
-    Displays the AI Performance, Evaluation Metrics & Benchmark Dashboard.
-    Fulfills Criterion 5.2 of the Django Evaluation Rubric.
-    """
-    hackathon = get_object_or_404(Hackathon, slug=slug)
-    is_organizer = (
-        request.user.is_authenticated
-        and (request.user == hackathon.organizer or request.user.is_staff or request.user.is_superuser)
-    )
-
-    initial_benchmark = run_latency_benchmark(hackathon.title, hackathon.category, hackathon.description)
-
-    context = {
-        "hackathon": hackathon,
-        "is_organizer": is_organizer,
-        "classification": CLASSIFICATION_BENCHMARK,
-        "generative": GENERATIVE_EVALUATION,
-        "initial_benchmark": initial_benchmark,
-        "page_title": f"AI Metrics & Performance Benchmark — {hackathon.title}",
-    }
-    return render(request, "hackathons/ai_metrics.html", context)
-
-
-def ai_benchmark_live(request, slug):
-    """
-    AJAX endpoint: Runs a live latency benchmark comparing cached vs uncached execution.
-    """
-    hackathon = get_object_or_404(Hackathon, slug=slug)
-    benchmark_data = run_latency_benchmark(hackathon.title, hackathon.category, hackathon.description)
-    return JsonResponse({"success": True, "benchmark": benchmark_data})
-
-
 @login_required
 def participant_badge(request, slug):
     """
@@ -713,5 +683,37 @@ def organizer_checkin(request, slug, ticket_code):
         "page_title": f"Attendee Check-In — {registration.ticket_code}",
     }
     return render(request, "hackathons/checkin.html", context)
+
+
+@login_required
+def toggle_checkin(request, slug, ticket_code):
+    """
+    Quick toggle for organizers to mark an attendee as checked-in or unchecked.
+    """
+    hackathon = get_object_or_404(Hackathon, slug=slug)
+    is_authorized = (
+        request.user == hackathon.organizer
+        or request.user.is_staff
+        or request.user.is_superuser
+        or hackathon.judges.filter(id=request.user.id).exists()
+    )
+    if not is_authorized:
+        messages.error(request, "Permission denied: Only organizers can manage check-ins.")
+        return redirect("hackathons:detail", slug=slug)
+
+    registration = get_object_or_404(
+        HackathonRegistration, hackathon=hackathon, ticket_code=ticket_code
+    )
+
+    registration.checked_in = not registration.checked_in
+    registration.checked_in_at = timezone.now() if registration.checked_in else None
+    registration.save(update_fields=["checked_in", "checked_in_at"])
+
+    status_str = "marked as present" if registration.checked_in else "marked as pending arrival"
+    messages.success(
+        request,
+        f"{registration.participant.get_full_name() or registration.participant.username} is now {status_str}."
+    )
+    return redirect(f"{hackathon.get_absolute_url()}#badge")
 
 

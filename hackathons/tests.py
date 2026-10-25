@@ -157,25 +157,6 @@ class HackathonModelTest(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertFalse(HackathonRegistration.objects.filter(participant=self.organizer).exists())
 
-    def test_ai_metrics_dashboard_view(self):
-        url = reverse("hackathons:ai_metrics", kwargs={"slug": self.hackathon.slug})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "AI Performance &amp; Evaluation Metrics")
-        self.assertContains(response, "Multi-Class Confusion Matrix")
-        self.assertContains(response, "Macro F1")
-
-    def test_ai_benchmark_live_endpoint(self):
-        url = reverse("hackathons:ai_benchmark", kwargs={"slug": self.hackathon.slug})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertTrue(data.get("success"))
-        bench = data.get("benchmark", {})
-        self.assertIn("uncached_latency_ms", bench)
-        self.assertIn("cached_latency_ms", bench)
-        self.assertIn("performance_gain_percent", bench)
-
     def test_participant_badge_view(self):
         # Register student first
         reg = HackathonRegistration.objects.create(
