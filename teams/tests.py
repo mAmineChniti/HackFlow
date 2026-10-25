@@ -3,16 +3,16 @@ from datetime import date
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from . import services
 from .forms import JoinTeamForm, TeamForm
-from .models import Hackathon, Team, TeamMember
+from .models import Hackathon, SkillProfile, Team, TeamMember
 
 User = get_user_model()
 
-
+@override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
 class BaseTeamTestCase(TestCase):
     password = "S3curePassw0rd!"
 
@@ -328,3 +328,53 @@ class CrudTests(BaseTeamTestCase):
         response = client.post(reverse("teams:delete", args=[self.team.pk]))
         self.assertEqual(response.status_code, 403)
         self.assertTrue(Team.objects.filter(pk=self.team.pk).exists())
+
+
+
+class MatchingTests(BaseTeamTestCase):
+    def setUp(self):
+        super().setUp()
+        SkillProfile.objects.create(user=self.leader, main_role="backend", skills="python, django")
+        self.designer = User.objects.create_user("designer", "d@example.com", self.password)
+        self.designer_profile = SkillProfile.objects.create(
+            user=self.designer, main_role="designer", skills="figma, ui"
+        )
+        self.backend2 = User.objects.create_user("backend2", "b2@example.com", self.password)
+        SkillProfile.objects.create(user=self.backend2, main_role="backend", skills="python, django")
+
+    def test_parse_skills_normalizes_and_deduplicates(self):
+        self.assertEqual(services.parse_skills(" Python, django ,python,, "), ["python", "django"])
+        self.assertEqual(services.parse_skills(""), [])
+
+    def test_role_fit_beats_skill_novelty(self):
+        role_score, _ = services.score_candidate(
+            role="designer", skills=[], missing_roles=["designer"], team_skills=set()
+        )
+        skill_score, _ = services.score_candidate(
+            role="backend", skills=["a", "b", "c", "d"], missing_roles=["designer"], team_skills=set()
+        )
+        self.assertGreater(role_score, skill_score)
+
+    def test_analyze_team_uses_leader_profile_role(self):
+        analysis = services.analyze_team(self.team)
+        self.assertIn("backend", analysis["roles"])
+        self.assertEqual(set(analysis["missing_roles"]), {"frontend", "designer", "data"})
+
+    def test_missing_role_candidate_ranked_first(self):
+        _, results = services.suggest_candidates(self.team)
+        self.assertEqual(results[0]["user"], self.designer)
+
+    def test_redundant_candidate_is_not_suggested(self):
+        _, results = services.suggest_candidates(self.team)
+        self.assertNotIn(self.backend2, [r["user"] for r in results])
+
+    def test_user_already_in_a_team_is_excluded(self):
+        services.join_team(team=self.team, user=self.designer, role="designer")
+        _, results = services.suggest_candidates(self.team)
+        self.assertNotIn(self.designer, [r["user"] for r in results])
+
+    def test_user_not_looking_for_team_is_excluded(self):
+        self.designer_profile.looking_for_team = False
+        self.designer_profile.save()
+        _, results = services.suggest_candidates(self.team)
+        self.assertNotIn(self.designer, [r["user"] for r in results])

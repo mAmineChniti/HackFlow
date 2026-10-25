@@ -9,8 +9,8 @@ from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
 from . import services
-from .forms import JoinTeamForm, TeamForm
-from .models import Hackathon, Team
+from .forms import JoinTeamForm, SkillProfileForm, TeamForm
+from .models import Hackathon, SkillProfile, Team
 
 
 class LeaderRequiredMixin(UserPassesTestMixin):
@@ -25,7 +25,7 @@ class TeamListView(ListView):
     paginate_by = 9
 
     def get_queryset(self):
-                qs = (
+        qs = (
             Team.objects.select_related("hackathon", "leader")
             .annotate(member_count=Count("members"))
             .order_by("-created_at")
@@ -125,3 +125,17 @@ def leave_team(request, pk):
     except services.TeamError as exc:
         messages.error(request, str(exc))
     return redirect("teams:detail", pk=pk)
+
+
+class SkillProfileUpdateView(LoginRequiredMixin, UpdateView):
+    model = SkillProfile
+    form_class = SkillProfileForm
+    success_url = reverse_lazy("teams:skills")
+
+    def get_object(self, queryset=None):
+        profile, _ = SkillProfile.objects.get_or_create(user=self.request.user)
+        return profile
+
+    def form_valid(self, form):
+        messages.success(self.request, "Compétences enregistrées.")
+        return super().form_valid(form)

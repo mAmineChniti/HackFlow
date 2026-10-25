@@ -72,3 +72,26 @@ class TeamMember(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.team}"
+
+
+
+
+class SkillProfile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="skill_profile"
+    )
+    main_role = models.CharField(
+        "Rôle principal", max_length=10,
+        choices=[c for c in TeamMember.Role.choices if c[0] != "leader"],
+        default=TeamMember.Role.OTHER,
+    )
+    skills = models.CharField(
+        "Compétences", max_length=200, blank=True,
+        help_text="Séparées par des virgules : python, django, figma",
+    )
+    bio = models.TextField("Présentation", blank=True)
+    looking_for_team = models.BooleanField("Je cherche une équipe", default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Compétences de {self.user}"    

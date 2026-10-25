@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Mes compétences — HackFlow{% endblock %}
+
+{% block content %}
+<section class="container-page py-10" aria-labelledby="skills-title">
+    <h1 id="skills-title" class="text-3xl font-semibold tracking-tight">Mes compétences</h1>
+    <p class="mt-2 max-w-xl text-sm text-muted-foreground">
+        Ces informations servent à suggérer des équipes équilibrées.
+    </p>
+
+    <form method="post" class="mt-8 max-w-xl space-y-5" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm" role="alert">{{ form.non_field_errors }}</div>
+        {% endif %}
+        {% for field in form %}
+        <div class="space-y-1.5">
+            <label for="{{ field.id_for_label }}" class="text-sm font-medium">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<p class="text-xs text-muted-foreground">{{ field.help_text }}</p>{% endif %}
+            {% for error in field.errors %}<p class="text-sm text-destructive" role="alert">{{ error }}</p>{% endfor %}
+        </div>
+        {% endfor %}
+        <c-button type="submit">Enregistrer</c-button>
+    </form>
+</section>
+{% endblock %}

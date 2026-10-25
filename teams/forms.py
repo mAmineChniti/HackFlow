@@ -1,7 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
-from .models import Team, TeamMember
+from .models import SkillProfile, Team, TeamMember
 
 INPUT_CLASS = (
     "w-full rounded-md border border-input bg-background px-3 py-2 text-sm "
@@ -45,3 +45,14 @@ class JoinTeamForm(StyledFormMixin, forms.ModelForm):
             c for c in TeamMember.Role.choices if c[0] != TeamMember.Role.LEADER
         ]
         self._apply_styles()
+
+class SkillProfileForm(StyledFormMixin, forms.ModelForm):
+    class Meta:
+        model = SkillProfile
+        fields = ["main_role", "skills", "bio", "looking_for_team"]
+        widgets = {"bio": forms.Textarea(attrs={"rows": 3})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._apply_styles()
+        self.fields["looking_for_team"].widget.attrs["class"] = "size-4"
