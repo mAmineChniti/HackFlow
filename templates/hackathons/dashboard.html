@@ -87,6 +87,10 @@
                         </td>
                         <td class="px-5 py-4 text-right">
                             <div class="flex items-center justify-end gap-2">
+                                <a href="{% url 'hackathons:export_participants' h.slug %}" title="Export participants CSV" class="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400 hover:bg-emerald-500/20 transition-colors inline-flex items-center gap-1">
+                                    <c-lucideicon.download class="size-3" />
+                                    CSV
+                                </a>
                                 <a href="{% url 'hackathons:update' h.slug %}" class="rounded-md border border-border/80 px-2.5 py-1 text-xs font-medium hover:bg-accent transition-colors">
                                     Edit
                                 </a>

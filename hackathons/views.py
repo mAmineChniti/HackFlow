@@ -14,6 +14,14 @@ from django.views.generic import (
     UpdateView,
 )
 
+import csv
+import json
+from django.http import HttpResponse, JsonResponse
+from .ai import (
+    calculate_team_match_score,
+    generate_hackathon_content,
+    generate_project_ideas,
+)
 from .emails import (
     check_and_notify_capacity_thresholds,
     send_organizer_new_registration_email,
@@ -149,6 +157,21 @@ class HackathonDetailView(DetailView):
             self.request.user.is_authenticated
             and hackathon.mentors.filter(id=self.request.user.id).exists()
         )
+
+        # AI Feature: Project Ideas & Inspiration based on the Hackathon
+        ideas = generate_project_ideas(
+            hackathon.title, hackathon.category, hackathon.description
+        )
+        context["project_ideas"] = ideas
+        context["project_ideas_json"] = json.dumps(ideas)
+
+        context["confirmed_registrations_count"] = hackathon.registrations.filter(
+            status=HackathonRegistration.Status.CONFIRMED
+        ).count()
+        context["waitlist_registrations_count"] = hackathon.registrations.filter(
+            status=HackathonRegistration.Status.WAITLIST
+        ).count()
+
         return context
 
 
@@ -441,3 +464,109 @@ def organizer_dashboard(request):
             "user_role": role,
         },
     )
+
+
+@login_required
+def ai_generate_hackathon(request):
+    """
+    AI Copilot endpoint: generates tagline, description, rules, and suggested skills
+    for organizers creating or editing a hackathon.
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "POST method required."}, status=405)
+
+    user = request.user
+    is_organizer = (
+        user.is_superuser
+        or user.is_staff
+        or (hasattr(user, "profile") and user.profile.is_organizer_user)
+    )
+    if not is_organizer:
+        return JsonResponse({"error": "Only organizers can use the AI Assistant."}, status=403)
+
+    try:
+        if request.content_type == "application/json" and request.body:
+            payload = json.loads(request.body.decode("utf-8"))
+        else:
+            payload = request.POST
+
+        title = payload.get("title", "").strip()
+        category = payload.get("category", "").strip()
+        hints = payload.get("hints", "").strip()
+
+        if not title:
+            return JsonResponse({"error": "Please provide an event title first."}, status=400)
+
+        result = generate_hackathon_content(title=title, category=category, theme_hints=hints)
+        return JsonResponse({"success": True, "data": result})
+    except Exception as exc:
+        return JsonResponse({"error": str(exc)}, status=500)
+
+
+@login_required
+def export_participants_csv(request, slug):
+    """
+    High-value Organizer Tool: 1-click export of registered participants to CSV (Excel compatible).
+    """
+    hackathon = get_object_or_404(Hackathon, slug=slug)
+
+    # Permission check: only host organizer or superuser
+    if not (request.user == hackathon.organizer or request.user.is_superuser or request.user.is_staff):
+        messages.error(request, "Access restricted: Only the organizer can export participant lists.")
+        return redirect("hackathons:detail", slug=slug)
+
+    registrations = (
+        hackathon.registrations.select_related("participant")
+        .order_by("-status", "registered_at")
+    )
+
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="{hackathon.slug}-participants.csv"'
+    
+    # Write UTF-8 BOM so Microsoft Excel opens special characters and accents seamlessly
+    response.write("\ufeff")
+
+    writer = csv.writer(response)
+    writer.writerow([
+        "Username",
+        "Full Name",
+        "Email",
+        "Status",
+        "University / School",
+        "Study Level",
+        "Experience Level",
+        "Skills",
+        "Looking for Team",
+        "Portfolio URL",
+        "Motivation",
+        "Registration Date",
+    ])
+
+    for reg in registrations:
+        p = reg.participant
+        writer.writerow([
+            p.username,
+            p.get_full_name() or p.username,
+            p.email,
+            reg.get_status_display(),
+            reg.university or "Not specified",
+            reg.get_study_level_display(),
+            reg.get_experience_level_display(),
+            reg.skills or "",
+            "Yes" if reg.seeking_team else "No",
+            reg.portfolio_url or "",
+            reg.motivation or "",
+            reg.registered_at.strftime("%Y-%m-%d %H:%M"),
+        ])
+
+    return response
+
+
+def ai_generate_ideas(request, slug):
+    """
+    Dynamic endpoint: Generates fresh AI project blueprints tailored to this hackathon event.
+    """
+    hackathon = get_object_or_404(Hackathon, slug=slug)
+    ideas = generate_project_ideas(hackathon.title, hackathon.category, hackathon.description)
+    return JsonResponse({"success": True, "ideas": ideas})
+
