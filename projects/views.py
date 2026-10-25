@@ -10,6 +10,7 @@ from .forms import ProjectForm, ProjectMemberForm, ProjectReviewDecisionForm, Pr
 from .models import Project, ProjectMember, ConseilMentor
 from . import services
 import csv
+from django.core.cache import cache
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from . import ai_service
@@ -688,15 +689,24 @@ def project_ai_analyze(request, slug):
     Évaluation IA du projet avec Gemini :
     Génère un score prédictif /10, un avis d'expert jury, points forts et axes d'amélioration.
     Vérifie côté serveur que l'utilisateur a l'autorisation (403 pour jurys et mentors).
+    Mise en cache intelligente (10 min) pour optimiser les performances et le temps de réponse (WCAG / BNF).
     """
     project = get_object_or_404(Project, slug=slug)
     services.validate_ai_evaluation_permission(request.user, project)
-    data = ai_service.analyse_project(
-        title=project.title,
-        tagline=project.tagline,
-        description=project.description,
-        category=project.get_category_display() or project.category,
-    )
+
+    cache_key = f"ai_eval_{project.id}_{int(project.updated_at.timestamp())}"
+    data = cache.get(cache_key)
+
+    if not data:
+        data = ai_service.analyse_project(
+            title=project.title,
+            tagline=project.tagline,
+            description=project.description,
+            category=project.get_category_display() or project.category,
+        )
+        if not data.get("error"):
+            cache.set(cache_key, data, timeout=600)
+
     return JsonResponse(data)
 
 

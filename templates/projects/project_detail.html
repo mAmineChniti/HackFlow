@@ -429,20 +429,26 @@
                         <h3 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3" aria-label="Add Student / Ajouter un étudiant">
                             <span class="sr-only">Ajouter un étudiant</span>Add Student
                         </h3>
-                        <form method="post" action="{% url 'projects:member_add' project.slug %}" class="space-y-3">
-                            {% csrf_token %}
-                            <div>
-                                <label class="block text-xs text-muted-foreground mb-1">Student</label>
-                                {{ member_form.user }}
-                            </div>
-                            <div>
-                                <label class="block text-xs text-muted-foreground mb-1">Role</label>
-                                {{ member_form.role }}
-                            </div>
-                            <button type="submit" class="w-full rounded-md bg-secondary py-1.5 text-xs font-medium text-secondary-foreground hover:bg-secondary/80">
-                                + Add to Team
-                            </button>
-                        </form>
+                        {% if member_form.fields.user.queryset.exists %}
+                            <form method="post" action="{% url 'projects:member_add' project.slug %}" class="space-y-3">
+                                {% csrf_token %}
+                                <div>
+                                    <label class="block text-xs text-muted-foreground mb-1">Student</label>
+                                    {{ member_form.user }}
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-muted-foreground mb-1">Role</label>
+                                    {{ member_form.role }}
+                                </div>
+                                <button type="submit" class="w-full rounded-md bg-secondary py-1.5 text-xs font-medium text-secondary-foreground hover:bg-secondary/80">
+                                    + Add to Team
+                                </button>
+                            </form>
+                        {% else %}
+                            <p class="text-xs text-muted-foreground py-1">
+                                No other students available to add to this team.
+                            </p>
+                        {% endif %}
                     </div>
                 {% endif %}
             </div>

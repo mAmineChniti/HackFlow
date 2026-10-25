@@ -121,13 +121,10 @@ class SignupView(FormView):
 
 @method_decorator(csrf_exempt, name="dispatch")
 class LogoutView(View):
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         logout(request)
         messages.success(request, "You've been signed out. See you next build.")
         return redirect("core:home")
-
-    def post(self, request, *args, **kwargs):
-        return self.get(request, *args, **kwargs)
 
 
 def _password_reset_expiry_days():

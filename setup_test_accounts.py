@@ -23,25 +23,30 @@ print("REINITIALISATION DES COMPTES DE TEST HACKFLOW")
 print("=" * 55)
 
 for username, password, role, is_staff, is_superuser in test_accounts:
-    try:
-        u = User.objects.get(username=username)
-        u.set_password(password)
-        u.is_staff = is_staff
-        u.is_superuser = is_superuser
-        u.is_active = True
-        u.save()
+    u, created = User.objects.get_or_create(
+        username=username,
+        defaults={
+            "email": f"{username.lower()}@hackflow.tn",
+            "is_staff": is_staff,
+            "is_superuser": is_superuser,
+            "is_active": True,
+        },
+    )
+    u.set_password(password)
+    u.is_staff = is_staff
+    u.is_superuser = is_superuser
+    u.is_active = True
+    if not u.email:
+        u.email = f"{username.lower()}@hackflow.tn"
+    u.save()
 
-        # Mettre a jour le profil
-        try:
-            p = u.profile
-            p.role = role
-            p.save()
-        except Exception:
-            Profile.objects.create(user=u, role=role)
+    p, _ = Profile.objects.get_or_create(user=u)
+    p.role = role
+    p.email_verified = True
+    p.save()
 
-        print(f"  OK  {username:15} | role: {role:12} | pass: {password}")
-    except User.DoesNotExist:
-        print(f"  --  {username:15} | NOT FOUND, skipping")
+    status_str = "CREATED" if created else "UPDATED"
+    print(f"  OK [{status_str:7}] {username:15} | role: {role:12} | pass: {password}")
 
 print("=" * 55)
 print("Tous les comptes sont prets !")
