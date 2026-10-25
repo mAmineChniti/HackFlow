@@ -10,7 +10,7 @@ from django.urls import reverse
 
 from . import ai, services
 from .forms import JoinTeamForm, TeamForm
-from .models import Hackathon, SkillProfile, Team, TeamMember
+from .models import Hackathon, Invitation, SkillProfile, Team, TeamMember
 from .management.commands.evaluate_matching import evaluate
 
 User = get_user_model()
@@ -478,3 +478,25 @@ class MatchingEvaluationTests(TestCase):
         result = evaluate()
         self.assertGreaterEqual(result["precision"], 0.8)
         self.assertGreater(result["precision"], result["baseline"])
+
+class InvitationModelTests(BaseTeamTestCase):
+    def make(self, **kwargs):
+        data = {"team": self.team, "invitee": self.member, "invited_by": self.leader}
+        data.update(kwargs)
+        return Invitation.objects.create(**data)
+
+    def test_default_status_is_pending(self):
+        self.assertEqual(self.make().status, Invitation.Status.PENDING)
+
+    def test_cannot_have_two_pending_invitations_for_same_team_and_user(self):
+        self.make()
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            self.make()
+
+    def test_can_reinvite_after_decline(self):
+        self.make(status=Invitation.Status.DECLINED)
+        self.make()  # ne doit pas lever d'erreur
+        self.assertEqual(Invitation.objects.count(), 2)
+
+    def test_str(self):
+        self.assertIn("En attente", str(self.make()))

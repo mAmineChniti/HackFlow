@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Hackathon, Team, TeamMember, SkillProfile
+from .models import Hackathon, Invitation, SkillProfile, Team, TeamMember
 
 
 class TeamMemberInline(admin.TabularInline):
@@ -25,3 +25,9 @@ class SkillProfileAdmin(admin.ModelAdmin):
     list_display = ("user", "main_role", "skills", "looking_for_team")
     list_filter = ("main_role", "looking_for_team")
     search_fields = ("user__username", "skills")
+
+@admin.register(Invitation)
+class InvitationAdmin(admin.ModelAdmin):
+    list_display = ("team", "invitee", "invited_by", "status", "created_at")
+    list_filter = ("status",)
+    search_fields = ("team__name", "invitee__username", "invited_by__username")

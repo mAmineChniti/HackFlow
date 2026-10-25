@@ -95,3 +95,38 @@ class SkillProfile(models.Model):
 
     def __str__(self):
         return f"Compétences de {self.user}"    
+
+
+class Invitation(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "En attente"
+        ACCEPTED = "accepted", "Acceptée"
+        DECLINED = "declined", "Refusée"
+        CANCELLED = "cancelled", "Annulée"
+
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="invitations")
+    invitee = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="received_invitations"
+    )
+    invited_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="sent_invitations"
+    )
+    message = models.CharField("Message", max_length=200, blank=True)
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.PENDING
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    responded_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["team", "invitee"],
+                condition=models.Q(status="pending"),
+                name="unique_pending_invitation",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.invitee} -> {self.team} ({self.get_status_display()})"
