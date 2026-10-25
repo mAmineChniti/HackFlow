@@ -30,7 +30,28 @@
     </ul>
 
     {% if is_leader and not team.is_full %}
-    <section class="mt-10 max-w-2xl rounded-xl border border-border/70 p-5" aria-labelledby="ai-title">
+    <section class="mt-10 max-w-2xl rounded-xl border border-border/70 p-5" aria-labelledby="invite-title">
+        <h2 id="invite-title" class="text-xl font-semibold">Inviter un étudiant</h2>
+        <p class="mt-1 text-sm text-muted-foreground">
+            Saisissez le nom d'utilisateur de la personne à inviter. Elle verra l'invitation dans « Mes invitations ».
+        </p>
+        <form method="post" action="{% url 'teams:send_invitation' team.pk %}" class="mt-4 space-y-3">
+            {% csrf_token %}
+            <div class="space-y-1.5">
+                <label for="invite-username" class="text-sm font-medium">Nom d'utilisateur</label>
+                <input id="invite-username" type="text" name="username" required autocomplete="off"
+                       class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+            </div>
+            <div class="space-y-1.5">
+                <label for="invite-message" class="text-sm font-medium">Message (optionnel)</label>
+                <input id="invite-message" type="text" name="message" maxlength="200"
+                       class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+            </div>
+            <c-button type="submit">Envoyer l'invitation</c-button>
+        </form>
+    </section>
+
+    <section class="mt-6 max-w-2xl rounded-xl border border-border/70 p-5" aria-labelledby="ai-title">
         <h2 id="ai-title" class="text-xl font-semibold">Assistant IA : trouver des coéquipiers</h2>
         <p class="mt-1 text-sm text-muted-foreground">
             Analyse les rôles et compétences manquants, puis propose les profils les plus complémentaires.
@@ -55,7 +76,7 @@
             return node;
         }
 
-                function badge(text, className) {
+        function badge(text, className) {
             return el("span", text, "inline-flex rounded-full border px-2 py-0.5 text-xs " + className);
         }
 

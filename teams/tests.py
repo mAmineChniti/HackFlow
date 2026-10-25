@@ -627,3 +627,100 @@ class InvitationServiceTests(BaseTeamTestCase):
         services.decline_invitation(invitation=invitation, user=self.member)
         with self.assertRaises(services.TeamError):
             services.cancel_invitation(invitation=invitation, user=self.leader)
+
+class InvitationViewTests(BaseTeamTestCase):
+    def send(self, user, **data):
+        self.client.force_login(user)
+        return self.client.post(f"/teams/{self.team.pk}/invite/", data)
+
+    def test_my_invitations_requires_login(self):
+        response = self.client.get("/teams/invitations/")
+        self.assertEqual(response.status_code, 302)
+
+    def test_leader_can_invite_by_username(self):
+        response = self.send(self.leader, username=self.member.username, message="Hello")
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            Invitation.objects.filter(team=self.team, invitee=self.member, status="pending").exists()
+        )
+
+    def test_non_leader_gets_403(self):
+        response = self.send(self.member, username=self.outsider.username)
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(Invitation.objects.count(), 0)
+
+    def test_get_is_not_allowed(self):
+        self.client.force_login(self.leader)
+        response = self.client.get(f"/teams/{self.team.pk}/invite/")
+        self.assertEqual(response.status_code, 405)
+
+    def test_ajax_success_returns_json(self):
+        self.client.force_login(self.leader)
+        response = self.client.post(
+            f"/teams/{self.team.pk}/invite/",
+            {"user_id": self.member.pk},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["ok"])
+
+    def test_ajax_duplicate_returns_400(self):
+        self.client.force_login(self.leader)
+        kwargs = {"HTTP_X_REQUESTED_WITH": "XMLHttpRequest"}
+        self.client.post(f"/teams/{self.team.pk}/invite/", {"user_id": self.member.pk}, **kwargs)
+        response = self.client.post(
+            f"/teams/{self.team.pk}/invite/", {"user_id": self.member.pk}, **kwargs
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", response.json())
+
+    def test_unknown_username_creates_nothing(self):
+        self.send(self.leader, username="personne-inconnue")
+        self.assertEqual(Invitation.objects.count(), 0)
+
+    def test_my_invitations_lists_pending(self):
+        services.invite_user(team=self.team, invited_by=self.leader, invitee=self.member)
+        self.client.force_login(self.member)
+        response = self.client.get("/teams/invitations/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Alpha Team")
+
+    def test_invitee_can_accept(self):
+        invitation = services.invite_user(team=self.team, invited_by=self.leader, invitee=self.member)
+        self.client.force_login(self.member)
+        response = self.client.post(f"/teams/invitations/{invitation.pk}/accept/")
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(self.team.members.filter(user=self.member).exists())
+
+    def test_invitee_can_decline(self):
+        invitation = services.invite_user(team=self.team, invited_by=self.leader, invitee=self.member)
+        self.client.force_login(self.member)
+        self.client.post(f"/teams/invitations/{invitation.pk}/decline/")
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.status, "declined")
+
+    def test_stranger_gets_404(self):
+        invitation = services.invite_user(team=self.team, invited_by=self.leader, invitee=self.member)
+        self.client.force_login(self.outsider)
+        response = self.client.post(f"/teams/invitations/{invitation.pk}/accept/")
+        self.assertEqual(response.status_code, 404)
+
+    def test_unknown_action_gets_404(self):
+        invitation = services.invite_user(team=self.team, invited_by=self.leader, invitee=self.member)
+        self.client.force_login(self.member)
+        response = self.client.post(f"/teams/invitations/{invitation.pk}/hack/")
+        self.assertEqual(response.status_code, 404)
+
+    def test_leader_can_cancel(self):
+        invitation = services.invite_user(team=self.team, invited_by=self.leader, invitee=self.member)
+        self.client.force_login(self.leader)
+        self.client.post(f"/teams/invitations/{invitation.pk}/cancel/")
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.status, "cancelled")
+
+    def test_invitee_cannot_cancel_via_view(self):
+        invitation = services.invite_user(team=self.team, invited_by=self.leader, invitee=self.member)
+        self.client.force_login(self.member)
+        self.client.post(f"/teams/invitations/{invitation.pk}/cancel/")
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.status, "pending")

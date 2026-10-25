@@ -6,7 +6,10 @@
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 id="teams-title" class="text-3xl font-semibold tracking-tight">Équipes</h1>
         {% if user.is_authenticated %}
-        <a href="{% url 'teams:create' %}" class="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">Créer une équipe</a>
+        <div class="flex gap-2">
+            <a href="{% url 'teams:my_invitations' %}" class="inline-flex h-9 items-center rounded-md border border-input px-4 text-sm font-medium hover:bg-accent">Mes invitations</a>
+            <a href="{% url 'teams:create' %}" class="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">Créer une équipe</a>
+        </div>
         {% endif %}
     </div>
 
