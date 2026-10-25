@@ -2,13 +2,13 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Count, Q
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
-from . import services
+from . import ai, services
 from .forms import JoinTeamForm, SkillProfileForm, TeamForm
 from .models import Hackathon, SkillProfile, Team
 
@@ -139,3 +139,14 @@ class SkillProfileUpdateView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         messages.success(self.request, "Compétences enregistrées.")
         return super().form_valid(form)
+
+
+@login_required
+@require_POST
+def suggest_teammates(request, pk):
+    team = get_object_or_404(Team.objects.select_related("hackathon"), pk=pk)
+    if team.leader_id != request.user.pk:
+        return JsonResponse({"error": "Réservé au chef d'équipe."}, status=403)
+    if team.is_full:
+        return JsonResponse({"error": "L'équipe est déjà complète."}, status=400)
+    return JsonResponse(ai.build_report(team))
