@@ -78,6 +78,9 @@
 
                 {% include "accounts/_form_field.html" with field=form.username %}
                 {% include "accounts/_form_field.html" with field=form.email %}
+                {% if form.role %}
+                {% include "accounts/_form_field.html" with field=form.role %}
+                {% endif %}
 
                 <div class="flex items-center gap-2 text-xs text-muted-foreground">
                     {% if profile.email_verified %}
