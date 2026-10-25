@@ -10,9 +10,11 @@ from django.core.cache import cache
 from django.db import DataError, transaction
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
+from django.utils.decorators import method_decorator
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import FormView
 
 from .emails import send_verification_email
@@ -82,6 +84,7 @@ class LoginView(auth_views.LoginView):
         )
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class SignupView(FormView):
     template_name = "accounts/signup.html"
     form_class = HackFlowSignupForm
@@ -116,13 +119,15 @@ class SignupView(FormView):
         return super().form_valid(form)
 
 
-class LogoutView(auth_views.LogoutView):
-    next_page = reverse_lazy("core:home")
+@method_decorator(csrf_exempt, name="dispatch")
+class LogoutView(View):
+    def get(self, request, *args, **kwargs):
+        logout(request)
+        messages.success(request, "You've been signed out. See you next build.")
+        return redirect("core:home")
 
     def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        messages.success(request, "You've been signed out. See you next build.")
-        return response
+        return self.get(request, *args, **kwargs)
 
 
 def _password_reset_expiry_days():

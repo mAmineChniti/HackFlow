@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} a Project — HackFlow{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+    <div class="mb-4">
+        <a href="{% if project %}{% url 'projects:project_detail' project.slug %}{% else %}{% url 'projects:project_list' %}{% endif %}" class="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+            ← Cancel and return
+        </a>
+    </div>
+
+    <div class="rounded-xl border border-border bg-card p-6 sm:p-8 shadow-sm">
+        <div class="border-b border-border/50 pb-4 mb-6">
+            <h1 class="text-2xl font-bold tracking-tight text-foreground">
+                {{ action }} a Project
+            </h1>
+            <p class="mt-1 text-xs text-muted-foreground">
+                Provide the technical and functional details of your solution for the hackathon.
+            </p>
+        </div>
+
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+
+            {% if form.errors %}
+                <div class="rounded-md border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive">
+                    Please correct the errors below.
+                </div>
+            {% endif %}
+
+            <!-- Title -->
+            <div>
+                <label for="{{ form.title.id_for_label }}" class="block text-xs font-semibold text-foreground mb-1">
+                    Project Title *
+                </label>
+                {{ form.title }}
+                {% if form.title.errors %}
+                    <p class="mt-1 text-xs text-destructive">{{ form.title.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Tagline -->
+            <div>
+                <label for="{{ form.tagline.id_for_label }}" class="block text-xs font-semibold text-foreground mb-1">
+                    Tagline / Pitch (one sentence) *
+                </label>
+                {{ form.tagline }}
+                {% if form.tagline.errors %}
+                    <p class="mt-1 text-xs text-destructive">{{ form.tagline.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Category and Status -->
+            {% if form.status %}
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label for="{{ form.category.id_for_label }}" class="block text-xs font-semibold text-foreground">
+                            Category *
+                        </label>
+                        <button
+                            type="button"
+                            id="btn-ai-category"
+                            onclick="detectCategoryAI()"
+                            class="inline-flex items-center gap-1 rounded-md bg-purple-500/10 border border-purple-500/30 px-2 py-0.5 text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 transition"
+                        >
+                            <span id="ai-cat-icon">✨</span> <span class="sr-only">Suggérer avec l'IA</span>Suggest with AI
+                        </button>
+                    </div>
+                    {{ form.category }}
+                    <div id="ai-cat-feedback" class="hidden mt-1.5 rounded-md border border-purple-500/30 bg-purple-500/10 p-2 text-[11px] text-purple-700 dark:text-purple-300"></div>
+                    {% if form.category.errors %}
+                        <p class="mt-1 text-xs text-destructive">{{ form.category.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.status.id_for_label }}" class="block text-xs font-semibold text-foreground mb-1">
+                        Status *
+                    </label>
+                    {{ form.status }}
+                    {% if form.status.errors %}
+                        <p class="mt-1 text-xs text-destructive">{{ form.status.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label for="{{ form.category.id_for_label }}" class="block text-xs font-semibold text-foreground">
+                        Category *
+                    </label>
+                    <button
+                        type="button"
+                        id="btn-ai-category"
+                        onclick="detectCategoryAI()"
+                        class="inline-flex items-center gap-1 rounded-md bg-purple-500/10 border border-purple-500/30 px-2 py-0.5 text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 transition"
+                    >
+                        <span id="ai-cat-icon">✨</span> <span class="sr-only">Suggérer avec l'IA</span>Suggest with AI
+                    </button>
+                </div>
+                {{ form.category }}
+                <div id="ai-cat-feedback" class="hidden mt-1.5 rounded-md border border-purple-500/30 bg-purple-500/10 p-2 text-[11px] text-purple-700 dark:text-purple-300"></div>
+                {% if form.category.errors %}
+                    <p class="mt-1 text-xs text-destructive">{{ form.category.errors.0 }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Description -->
+            <div>
+                <label for="{{ form.description.id_for_label }}" class="block text-xs font-semibold text-foreground mb-1">
+                    Detailed Description *
+                </label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                    <p class="mt-1 text-xs text-destructive">{{ form.description.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Links -->
+            <div class="space-y-4 border-t border-border/50 pt-4">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Hackathon Links & Deliverables
+                </h3>
+
+                <div>
+                    <label for="{{ form.repository_url.id_for_label }}" class="block text-xs font-medium text-foreground mb-1">
+                        GitHub / GitLab Repository
+                    </label>
+                    {{ form.repository_url }}
+                    {% if form.repository_url.errors %}
+                        <p class="mt-1 text-xs text-destructive">{{ form.repository_url.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.demo_url.id_for_label }}" class="block text-xs font-medium text-foreground mb-1">
+                        Live Demo URL
+                    </label>
+                    {{ form.demo_url }}
+                    {% if form.demo_url.errors %}
+                        <p class="mt-1 text-xs text-destructive">{{ form.demo_url.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.video_url.id_for_label }}" class="block text-xs font-medium text-foreground mb-1">
+                        Pitch Video (YouTube, Loom...)
+                    </label>
+                    {{ form.video_url }}
+                    {% if form.video_url.errors %}
+                        <p class="mt-1 text-xs text-destructive">{{ form.video_url.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 border-t border-border/50 pt-5">
+                <a href="{% if project %}{% url 'projects:project_detail' project.slug %}{% else %}{% url 'projects:project_list' %}{% endif %}" class="rounded-md border border-border px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground">
+                    Cancel
+                </a>
+                <button type="submit" class="rounded-md bg-primary px-5 py-2 text-xs font-medium text-primary-foreground shadow hover:bg-primary/90">
+                    Save Project
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function detectCategoryAI() {
+    const title = document.getElementById("{{ form.title.id_for_label }}")?.value || "";
+    const description = document.getElementById("{{ form.description.id_for_label }}")?.value || "";
+    const tagline = document.getElementById("{{ form.tagline.id_for_label }}")?.value || "";
+    const btn = document.getElementById("btn-ai-category");
+    const icon = document.getElementById("ai-cat-icon");
+    const feedback = document.getElementById("ai-cat-feedback");
+    const catSelect = document.getElementById("{{ form.category.id_for_label }}");
+
+    if (!title && !description) {
+        alert("Please enter at least the project title or tagline first!");
+        return;
+    }
+
+    btn.disabled = true;
+    icon.textContent = "⏳";
+    btn.classList.add("opacity-60");
+    feedback.classList.remove("hidden");
+    feedback.innerHTML = `<span class="inline-flex items-center gap-1.5"><svg class="animate-spin h-3.5 w-3.5 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> AI analysis in progress with Gemini...</span>`;
+
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("description", (tagline + " " + description).trim());
+    formData.append("csrfmiddlewaretoken", document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    fetch("{% url 'projects:ai_detect_category' %}", {
+        method: "POST",
+        body: formData,
+        headers: { "X-Requested-With": "XMLHttpRequest" }
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        icon.textContent = "✨";
+        btn.classList.remove("opacity-60");
+
+        if (data.category && catSelect) {
+            catSelect.value = data.category;
+            feedback.innerHTML = `
+                <div class="flex items-start justify-between gap-2">
+                    <div>
+                        <span class="font-bold text-purple-700 dark:text-purple-300">✓ Suggested category: ${data.category_label}</span>
+                        <span class="ml-1 rounded px-1.5 py-0.2 bg-purple-600/20 text-[10px] font-semibold text-purple-600 uppercase tracking-wider">Confidence ${data.confidence}</span>
+                        <p class="mt-0.5 text-[10px] text-muted-foreground">${data.reason || ''}</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            feedback.innerHTML = `<span class="text-amber-600">Unable to determine category automatically.</span>`;
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        icon.textContent = "✨";
+        btn.classList.remove("opacity-60");
+        feedback.innerHTML = `<span class="text-destructive">Error during AI request.</span>`;
+    });
+}
+</script>
+{% endblock %}

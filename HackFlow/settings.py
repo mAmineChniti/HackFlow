@@ -41,7 +41,10 @@ if RENDER_EXTERNAL_URL:
     if render_host and render_host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(render_host)
 
-CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", "")
+CSRF_TRUSTED_ORIGINS = env_list(
+    "DJANGO_CSRF_TRUSTED_ORIGINS",
+    "http://localhost:8000,http://127.0.0.1:8000,http://localhost,http://127.0.0.1" if DEBUG else "",
+)
 if RENDER_EXTERNAL_HOSTNAME:
     CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
 if RENDER_EXTERNAL_URL:
@@ -65,6 +68,7 @@ INSTALLED_APPS = [
     # Local apps
     "accounts",
     "core",
+    "projects",
 ]
 
 MIDDLEWARE = [
@@ -188,7 +192,7 @@ EMAIL_BACKEND = os.getenv(
 )
 
 LANGUAGE_CODE = "en-us"
-TIME_ZONE = "UTC"
+TIME_ZONE = "Africa/Tunis"
 USE_I18N = True
 USE_TZ = True
 
