@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ team.name }} — HackFlow{% endblock %}
+
+{% block content %}
+<section class="container-page py-10" aria-labelledby="team-title">
+    <a href="{% url 'teams:list' %}" class="text-sm text-muted-foreground hover:underline">← Toutes les équipes</a>
+    <div class="mt-3 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+            <h1 id="team-title" class="text-3xl font-semibold tracking-tight">{{ team.name }}</h1>
+            <p class="mt-1 text-sm text-muted-foreground">{{ team.hackathon.title }} · Chef : {{ team.leader.username }}</p>
+        </div>
+        {% if is_leader %}
+        <div class="flex gap-2">
+            <a href="{% url 'teams:update' team.pk %}" class="inline-flex h-9 items-center rounded-md border border-input px-4 text-sm font-medium hover:bg-accent">Modifier</a>
+            <a href="{% url 'teams:delete' team.pk %}" class="inline-flex h-9 items-center rounded-md bg-destructive px-4 text-sm font-medium text-destructive-foreground hover:bg-destructive/90">Supprimer</a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if team.description %}<p class="mt-6 max-w-2xl text-sm leading-relaxed">{{ team.description }}</p>{% endif %}
+
+    <h2 class="mt-10 text-xl font-semibold">Membres ({{ members|length }} / {{ team.max_members }})</h2>
+    <ul class="mt-4 divide-y divide-border rounded-xl border border-border/70">
+        {% for m in members %}
+        <li class="flex flex-col gap-1 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <span class="font-medium">{{ m.user.username }}</span>
+            <span class="text-sm text-muted-foreground">{{ m.get_role_display }}{% if m.skills %} · {{ m.skills }}{% endif %}</span>
+        </li>
+        {% endfor %}
+    </ul>
+
+    {% if user.is_authenticated %}
+        {% if is_member and not is_leader %}
+        <form method="post" action="{% url 'teams:leave' team.pk %}" class="mt-6">
+            {% csrf_token %}
+            <c-button type="submit" variant="outline">Quitter l'équipe</c-button>
+        </form>
+        {% elif not is_member %}
+            {% if team.is_full %}
+            <p class="mt-6 text-sm text-muted-foreground">Cette équipe est complète.</p>
+            {% else %}
+            <form method="post" action="{% url 'teams:join' team.pk %}" class="mt-8 max-w-md space-y-4" aria-label="Rejoindre l'équipe">
+                {% csrf_token %}
+                <h2 class="text-xl font-semibold">Rejoindre l'équipe</h2>
+                {% for field in join_form %}
+                <div class="space-y-1.5">
+                    <label for="{{ field.id_for_label }}" class="text-sm font-medium">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<p class="text-xs text-muted-foreground">{{ field.help_text }}</p>{% endif %}
+                </div>
+                {% endfor %}
+                <c-button type="submit">Rejoindre</c-button>
+            </form>
+            {% endif %}
+        {% endif %}
+    {% else %}
+    <p class="mt-6 text-sm"><a href="{% url 'accounts:login' %}?next={{ request.path }}" class="underline">Connectez-vous</a> pour rejoindre cette équipe.</p>
+    {% endif %}
+</section>
+{% endblock %}

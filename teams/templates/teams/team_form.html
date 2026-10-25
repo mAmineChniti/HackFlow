@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{% if object %}Modifier{% else %}Créer{% endif %} une équipe — HackFlow{% endblock %}
+
+{% block content %}
+<section class="container-page py-10" aria-labelledby="form-title">
+    <h1 id="form-title" class="text-3xl font-semibold tracking-tight">
+        {% if object %}Modifier « {{ object.name }} »{% else %}Créer une équipe{% endif %}
+    </h1>
+
+    <form method="post" class="mt-8 max-w-xl space-y-5" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm" role="alert">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+        {% for field in form %}
+        <div class="space-y-1.5">
+            <label for="{{ field.id_for_label }}" class="text-sm font-medium">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<p class="text-xs text-muted-foreground">{{ field.help_text }}</p>{% endif %}
+            {% for error in field.errors %}<p class="text-sm text-destructive" role="alert">{{ error }}</p>{% endfor %}
+        </div>
+        {% endfor %}
+        <div class="flex gap-3">
+            <c-button type="submit">Enregistrer</c-button>
+            <a href="{% url 'teams:list' %}" class="inline-flex h-9 items-center rounded-md border border-input px-4 text-sm font-medium hover:bg-accent">Annuler</a>
+        </div>
+    </form>
+</section>
+{% endblock %}
