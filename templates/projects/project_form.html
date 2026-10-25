@@ -198,33 +198,50 @@ function detectCategoryAI() {
         body: formData,
         headers: { "X-Requested-With": "XMLHttpRequest" }
     })
-    .then(r => r.json())
-    .then(data => {
-        btn.disabled = false;
-        icon.textContent = "✨";
-        btn.classList.remove("opacity-60");
+        .then(r => {
+            if (!r.ok) {
+                throw new Error("HTTP " + r.status);
+            }
+            return r.json();
+        })
+        .then(data => {
+            btn.disabled = false;
+            icon.textContent = "✨";
+            btn.classList.remove("opacity-60");
 
-        if (data.category && catSelect) {
-            catSelect.value = data.category;
-            feedback.innerHTML = `
-                <div class="flex items-start justify-between gap-2">
-                    <div>
-                        <span class="font-bold text-purple-700 dark:text-purple-300">✓ Suggested category: ${data.category_label}</span>
-                        <span class="ml-1 rounded px-1.5 py-0.2 bg-purple-600/20 text-[10px] font-semibold text-purple-600 uppercase tracking-wider">Confidence ${data.confidence}</span>
-                        <p class="mt-0.5 text-[10px] text-muted-foreground">${data.reason || ''}</p>
-                    </div>
-                </div>
-            `;
-        } else {
-            feedback.innerHTML = `<span class="text-amber-600">Unable to determine category automatically.</span>`;
-        }
-    })
-    .catch(err => {
-        btn.disabled = false;
-        icon.textContent = "✨";
-        btn.classList.remove("opacity-60");
-        feedback.innerHTML = `<span class="text-destructive">Error during AI request.</span>`;
-    });
+            if (data.category && catSelect) {
+                catSelect.value = data.category;
+                // Build with textContent: the AI response is not trusted markup.
+                feedback.textContent = "";
+                const box = document.createElement("div");
+                box.className = "flex items-start justify-between gap-2";
+
+                const left = document.createElement("div");
+                const headline = document.createElement("span");
+                headline.className = "font-bold text-purple-700 dark:text-purple-300";
+                headline.textContent = "✓ Suggested category: " + data.category_label;
+                const confidence = document.createElement("span");
+                confidence.className = "ml-1 rounded px-1.5 py-0.2 bg-purple-600/20 text-[10px] font-semibold text-purple-600 uppercase tracking-wider";
+                confidence.textContent = "Confidence " + data.confidence;
+                const reason = document.createElement("p");
+                reason.className = "mt-0.5 text-[10px] text-muted-foreground";
+                reason.textContent = data.reason || "";
+
+                headline.appendChild(confidence);
+                left.appendChild(headline);
+                left.appendChild(reason);
+                box.appendChild(left);
+                feedback.appendChild(box);
+            } else {
+                feedback.textContent = "Unable to determine category automatically.";
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            icon.textContent = "✨";
+            btn.classList.remove("opacity-60");
+            feedback.textContent = "Error during AI request.";
+        });
 }
 </script>
 {% endblock %}

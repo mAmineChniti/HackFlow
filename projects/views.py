@@ -1,18 +1,62 @@
+import csv
+
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .forms import ProjectForm, ProjectMemberForm, ProjectReviewDecisionForm, ProjectScoreForm, ConseilMentorForm
-from .models import Project, ProjectMember, ConseilMentor
-from . import services
-import csv
-from django.http import HttpResponse, JsonResponse
-from django.utils import timezone
-from . import ai_service
+from . import ai_service, services
+from .forms import (
+    ConseilMentorForm,
+    ProjectForm,
+    ProjectMemberForm,
+    ProjectReviewDecisionForm,
+    ProjectScoreForm,
+)
+from .models import ConseilMentor, Project, ProjectMember
+
+AI_RATE_LIMIT_MESSAGE = (
+    "Too many AI requests. Please wait a moment before trying again."
+)
+
+
+def _ai_rate_limited(user) -> bool:
+    """Fixed-window throttle for the AI endpoints.
+
+    The AI calls cost real money per request, so they need a per-user limit,
+    not just an authentication check. Uses the configured cache, so a shared
+    cache (e.g. Redis) is required to enforce this across workers.
+    """
+    limit = getattr(settings, "AI_RATE_LIMIT_MAX", 0)
+    if not user or not user.is_authenticated or limit <= 0:
+        return False
+
+    window = getattr(settings, "AI_RATE_LIMIT_WINDOW", 60)
+    key = f"ai-requests:{user.pk}"
+    cache.add(key, 0, window)
+    try:
+        count = cache.incr(key)
+    except ValueError:
+        # Key expired between add() and incr(); restart the window.
+        cache.set(key, 1, window)
+        count = 1
+    return count > limit
+
+
+def _csv_safe(value) -> str:
+    """Neutralise spreadsheet formula injection in exported cell values."""
+    if value is None:
+        return ""
+    text = str(value)
+    if text and text[0] in ("=", "+", "-", "@", "\t", "\r"):
+        return "'" + text
+    return text
 
 
 def project_list(request):
@@ -471,18 +515,18 @@ def export_projects_csv(request):
     # Lignes de données
     for p in projects_qs:
         writer.writerow([
-            p.title,
-            p.tagline,
+            _csv_safe(p.title),
+            _csv_safe(p.tagline),
             p.get_category_display(),
-            p.hackathon or "HackFlow 2026",
+            _csv_safe(p.hackathon or "HackFlow 2026"),
             p.get_status_display(),
             p.score if p.score else "",
-            p.created_by.get_username() if p.created_by else "",
-            p.reviewed_by.get_username() if p.reviewed_by else "",
+            _csv_safe(p.created_by.get_username() if p.created_by else ""),
+            _csv_safe(p.reviewed_by.get_username() if p.reviewed_by else ""),
             p.reviewed_at.strftime("%d/%m/%Y %H:%M") if p.reviewed_at else "",
-            p.rejection_reason or "",
-            p.repository_url or "",
-            p.demo_url or "",
+            _csv_safe(p.rejection_reason or ""),
+            _csv_safe(p.repository_url or ""),
+            _csv_safe(p.demo_url or ""),
             p.created_at.strftime("%d/%m/%Y %H:%M"),
         ])
 
@@ -503,7 +547,7 @@ def export_projects_pdf(request):
         SimpleDocTemplate, Table, TableStyle, Paragraph,
         Spacer, HRFlowable
     )
-    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    from reportlab.lib.enums import TA_CENTER
     import io
 
     # Filtres
@@ -688,32 +732,53 @@ def project_ai_analyze(request, slug):
     Évaluation IA du projet avec Gemini :
     Génère un score prédictif /10, un avis d'expert jury, points forts et axes d'amélioration.
     Vérifie côté serveur que l'utilisateur a l'autorisation (403 pour jurys et mentors).
+    Mise en cache intelligente (10 min) pour optimiser les performances et le temps de réponse (WCAG / BNF).
     """
     project = get_object_or_404(Project, slug=slug)
     services.validate_ai_evaluation_permission(request.user, project)
-    data = ai_service.analyse_project(
-        title=project.title,
-        tagline=project.tagline,
-        description=project.description,
-        category=project.get_category_display() or project.category,
-    )
+
+    if _ai_rate_limited(request.user):
+        return JsonResponse({"error": AI_RATE_LIMIT_MESSAGE}, status=429)
+
+    cache_key = f"ai_eval_{project.id}_{int(project.updated_at.timestamp())}"
+    data = cache.get(cache_key)
+
+    if data:
+        data = {**data, "source_key": "cache"}
+    else:
+        data = ai_service.analyse_project(
+            title=project.title,
+            tagline=project.tagline,
+            description=project.description,
+            category=project.get_category_display() or project.category,
+        )
+        # Never persist or return the raw exception text: it can leak
+        # endpoint/credential details to the client.
+        data.pop("error", None)
+        if not data.get("failed"):
+            cache.set(cache_key, data, timeout=600)
+
     return JsonResponse(data)
 
 
 @login_required
+@require_POST
 def project_ai_detect_category(request):
     """
     Suggestion IA de catégorie :
     Analyse le titre et la description fournis et propose la catégorie la plus adaptée.
+
+    POST-only: a GET variant would let any third-party page trigger paid AI
+    calls with an <img> tag or a link preview.
     """
-    if request.method == "POST":
-        title = request.POST.get("title", "").strip()
-        description = request.POST.get("description", "").strip()
-    else:
-        title = request.GET.get("title", "").strip()
-        description = request.GET.get("description", "").strip()
+    if _ai_rate_limited(request.user):
+        return JsonResponse({"error": AI_RATE_LIMIT_MESSAGE}, status=429)
+
+    title = request.POST.get("title", "").strip()
+    description = request.POST.get("description", "").strip()
 
     data = ai_service.detect_category(title=title, description=description)
+    data.pop("error", None)
     return JsonResponse(data)
 
 

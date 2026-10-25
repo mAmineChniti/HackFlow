@@ -13,6 +13,12 @@ from django.utils.translation import gettext_lazy as _
 
 from .models import Profile
 
+# Roles that confer elevated access must never be self-assigned at signup or
+# through self-service account settings. Organizers can see every draft,
+# review/accept submissions and export all team data; administrators can do
+# everything.
+PRIVILEGED_ROLES = (Profile.Role.ADMIN, Profile.Role.ORGANIZER)
+
 
 class HackFlowAuthenticationForm(AuthenticationForm):
     username = forms.CharField(
@@ -61,9 +67,11 @@ class HackFlowSignupForm(UserCreationForm):
             }
         ),
     )
-    # On exclut le rôle Admin de l'inscription publique pour des raisons de sécurité
+
     SIGNUP_ROLE_CHOICES = [
-        (val, label) for val, label in Profile.Role.choices if val != Profile.Role.ADMIN
+        (value, label)
+        for value, label in Profile.Role.choices
+        if value not in PRIVILEGED_ROLES
     ]
 
     role = forms.ChoiceField(
@@ -71,7 +79,10 @@ class HackFlowSignupForm(UserCreationForm):
         choices=SIGNUP_ROLE_CHOICES,
         initial=Profile.Role.STUDENT,
         required=False,
-        help_text=_("Your role in HackFlow."),
+        help_text=_(
+            "Your role in HackFlow. Organizer and administrator roles are "
+            "granted by the HackFlow team."
+        ),
     )
 
     class Meta(UserCreationForm.Meta):
@@ -104,10 +115,14 @@ class HackFlowSignupForm(UserCreationForm):
         self.fields["password2"].help_text = _("Re-enter your password to confirm.")
 
     def clean_role(self):
-        role = self.cleaned_data.get("role")
-        # Protection contre la soumission forcée du rôle admin
-        if not role or role == Profile.Role.ADMIN:
-            role = Profile.Role.STUDENT
+        role = self.cleaned_data.get("role") or Profile.Role.STUDENT
+        # Defense in depth: a forged POST can send a value that is not in
+        # SIGNUP_ROLE_CHOICES, so reject privileged roles server-side.
+        if role in PRIVILEGED_ROLES:
+            raise ValidationError(
+                _("That role can only be granted by an administrator."),
+                code="role_forbidden",
+            )
         return role
 
     def clean_username(self):
@@ -136,9 +151,8 @@ class HackFlowSignupForm(UserCreationForm):
         user = super().save(commit=commit)
         user.email = self.cleaned_data["email"]
         role = self.cleaned_data.get("role") or Profile.Role.STUDENT
-        if role in (Profile.Role.ADMIN, Profile.Role.ORGANIZER):
-            user.is_staff = True
-            user.is_superuser = True
+        # Signup never grants staff/superuser flags: elevated roles are assigned
+        # by an existing administrator (see accounts.admin.ProfileAdmin).
         if commit:
             user.save()
             profile, _ = Profile.objects.get_or_create(user=user)
@@ -232,14 +246,10 @@ class AccountSettingsForm(forms.ModelForm):
         )
         self.fields["first_name"].label = _("First name")
         self.fields["last_name"].label = _("Last name")
-        if hasattr(self.instance, "profile"):
-            self.fields["role"] = forms.ChoiceField(
-                label=_("Role"),
-                choices=Profile.Role.choices,
-                initial=self.instance.profile.role,
-                required=False,
-                help_text=_("Your global account role in HackFlow."),
-            )
+        # The global role is intentionally NOT editable here: profile.role drives
+        # every permission check in projects/services.py, so exposing it to
+        # self-service updates would let any user promote themselves.
+        # Administrators change roles through the Django admin instead.
 
     def clean_username(self):
         username = self.cleaned_data["username"]
@@ -276,12 +286,7 @@ class AccountSettingsForm(forms.ModelForm):
         return self.cleaned_data.get("email", "").lower() != self.original_email
 
     def save(self, commit=True):
-        user = super().save(commit=commit)
-        if commit and "role" in self.cleaned_data:
-            profile, _ = Profile.objects.get_or_create(user=user)
-            profile.role = self.cleaned_data["role"]
-            profile.save(update_fields=["role"])
-        return user
+        return super().save(commit=commit)
 
 
 class HackFlowPasswordChangeForm(PasswordChangeForm):

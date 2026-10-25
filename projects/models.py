@@ -1,5 +1,7 @@
+import uuid
+
 from django.conf import settings
-from django.db import models
+from django.db import IntegrityError, models, transaction
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
@@ -173,16 +175,50 @@ class Project(models.Model):
     def __str__(self):
         return self.title
 
+    MAX_SLUG_ATTEMPTS = 5
+
     def save(self, *args, **kwargs):
-        if not self.slug:
-            base_slug = slugify(self.title) or "projet"
-            unique_slug = base_slug
-            counter = 1
-            while Project.objects.filter(slug=unique_slug).exclude(pk=self.pk).exists():
-                unique_slug = f"{base_slug}-{counter}"
-                counter += 1
-            self.slug = unique_slug
-        super().save(*args, **kwargs)
+        """Save with a race-safe unique slug.
+
+        The existence check below handles the sequential case (two projects
+        called "Foo" get foo / foo-1). Two requests can still pass that check
+        at the same time, so the insert is retried with a random suffix when
+        the unique constraint rejects the first attempt.
+        """
+        auto_slug = not self.slug
+        update_fields = kwargs.get("update_fields")
+        if update_fields is not None and "slug" not in update_fields and not auto_slug:
+            return super().save(*args, **kwargs)
+
+        base_slug = slugify(self.title) or "projet"
+        for attempt in range(self.MAX_SLUG_ATTEMPTS):
+            if auto_slug:
+                if attempt == 0:
+                    candidate = base_slug
+                    counter = 1
+                    while (
+                        Project.objects.filter(slug=candidate)
+                        .exclude(pk=self.pk)
+                        .exists()
+                    ):
+                        candidate = f"{base_slug}-{counter}"
+                        counter += 1
+                else:
+                    candidate = f"{base_slug}-{uuid.uuid4().hex[:8]}"
+                self.slug = candidate
+                if update_fields is not None and "slug" not in update_fields:
+                    kwargs["update_fields"] = list(update_fields) + ["slug"]
+
+            try:
+                with transaction.atomic():
+                    return super().save(*args, **kwargs)
+            except IntegrityError:
+                if not auto_slug or attempt == self.MAX_SLUG_ATTEMPTS - 1:
+                    raise
+                self.slug = ""
+                continue
+
+        raise IntegrityError("Could not generate a unique project slug.")
 
     def get_absolute_url(self):
         return reverse("projects:project_detail", kwargs={"slug": self.slug})

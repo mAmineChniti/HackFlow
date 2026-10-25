@@ -4,6 +4,7 @@ Tests unitaires et d'intégration pour le module Gestion des Sponsors.
 
 import io
 import json
+import os
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 import openpyxl
@@ -716,10 +717,16 @@ class SponsorModelAndViewsTest(TestCase):
         self.client.login(username="staff_user", password="password123")
         url = reverse("sponsors:sponsor_ai_generate_email", kwargs={"pk": self.sponsor.pk})
 
+        # Groq uses the OpenAI-compatible response shape.
         fake_api_response = json.dumps({
-            "content": [
+            "choices": [
                 {
-                    "text": "SUBJECT: Excellence in partnership with Alpha Corp — ESPRIT Hack 2026\n\nDear Karim,\nJoin Hackathon 2026."
+                    "message": {
+                        "content": (
+                            "SUBJECT: Excellence in partnership with Alpha Corp — ESPRIT Hack 2026\n\n"
+                            "Dear Karim,\nJoin Hackathon 2026."
+                        )
+                    }
                 }
             ]
         }).encode("utf-8")
@@ -728,7 +735,7 @@ class SponsorModelAndViewsTest(TestCase):
         mock_resp.read.return_value = fake_api_response
         mock_resp.__enter__.return_value = mock_resp
 
-        with patch("os.getenv", side_effect=lambda k, d="": "sk-ant-test-key-mock" if k == "ANTHROPIC_API_KEY" else d):
+        with patch.dict(os.environ, {"GROQ_API_KEY": "gsk_test_key_mock"}):
             with patch("urllib.request.urlopen", return_value=mock_resp):
                 response = self.client.post(
                     url,
@@ -745,8 +752,11 @@ class SponsorModelAndViewsTest(TestCase):
         self.client.login(username="staff_user", password="password123")
         url = reverse("sponsors:sponsor_ai_generate_email", kwargs={"pk": self.sponsor.pk})
 
-        with patch("os.getenv", side_effect=lambda k, d="": "sk-ant-test-key-mock" if k == "ANTHROPIC_API_KEY" else d):
-            with patch("urllib.request.urlopen", side_effect=Exception("HTTP 504 Gateway Timeout")):
+        with patch.dict(os.environ, {"GROQ_API_KEY": "gsk_test_key_mock"}):
+            with patch(
+                "urllib.request.urlopen",
+                side_effect=Exception("HTTP 504 Gateway Timeout"),
+            ):
                 response = self.client.post(
                     url,
                     {"template_key": "relance", "tone": "amical"},
@@ -1181,20 +1191,24 @@ class SponsorRolePermissionTest(TestCase):
 
     @override_settings(SPONSORS_USE_PROFILE_ROLE=True)
     def test_profile_role_source_works_without_staff_flag(self):
-        profile_model = type(self.user.profile)
-        with patch.object(profile_model, "role", "organisateur", create=True):
-            self.assertFalse(self.user.is_staff)
-            self.assertEqual(get_user_roles(self.user), {"organisateur"})
-            self.assertTrue(can_view_confidential(self.user))
-            self.assertTrue(can_manage_sponsorship(self.user, self.sponsorship))
-            self.assertEqual(
-                sponsorships_visible_to(self.user).count(),
-                Sponsorship.objects.count(),
-            )
+        # Patch the saved instance, not the model class: `role` is a field
+        # descriptor, so patching the class never changes user.profile.role.
+        self.user.profile.role = "organizer"  # accounts.Profile.Role.ORGANIZER
+        self.user.profile.save(update_fields=["role"])
 
-            self.client.force_login(self.user)
-            response = self.client.get(reverse("sponsors:dashboard"))
-            self.assertEqual(response.status_code, 200)
+        self.assertFalse(self.user.is_staff)
+        # accounts roles are mapped onto the French label used here.
+        self.assertEqual(get_user_roles(self.user), {"organisateur"})
+        self.assertTrue(can_view_confidential(self.user))
+        self.assertTrue(can_manage_sponsorship(self.user, self.sponsorship))
+        self.assertEqual(
+            sponsorships_visible_to(self.user).count(),
+            Sponsorship.objects.count(),
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("sponsors:dashboard"))
+        self.assertEqual(response.status_code, 200)
 
     @override_settings(SPONSORS_ROLE_PERMISSIONS={"jury": {"manage"}})
     def test_role_permission_map_can_be_overridden_in_settings(self):

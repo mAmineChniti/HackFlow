@@ -19,6 +19,18 @@ ROLE_PERMISSIONS = {
     "visiteur": set(),
 }
 
+# accounts.Profile.Role stores English values ("organizer", "student", ...),
+# while this module keys permissions on French labels. Without this mapping an
+# accounts organizer would silently get no sponsor permissions at all when
+# SPONSORS_USE_PROFILE_ROLE is enabled.
+PROFILE_ROLE_ALIASES = {
+    "admin": "admin",
+    "organizer": "organisateur",
+    "student": "etudiant",
+    "judge": "jury",
+    "mentor": "jury",
+}
+
 
 def _role_permissions():
     configured = getattr(settings, "SPONSORS_ROLE_PERMISSIONS", None)
@@ -39,7 +51,7 @@ def get_user_roles(user) -> set[str]:
         if profile_role:
             normalized_role = str(profile_role).strip().lower()
             if normalized_role:
-                return {normalized_role}
+                return {PROFILE_ROLE_ALIASES.get(normalized_role, normalized_role)}
 
     # Enable SPONSORS_USE_GROUP_ROLES when Django groups become the role source.
     if getattr(settings, "SPONSORS_USE_GROUP_ROLES", False):
