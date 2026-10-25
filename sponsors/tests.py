@@ -46,15 +46,15 @@ from sponsors.templatetags.sponsor_tags import get_confirmed_sponsors
 class SponsorAdminInterfaceTests(TestCase):
     def setUp(self):
         self.admin_user = User.objects.create_superuser(
-            username="sponsor_admin",
-            email="admin@example.com",
-            password="test-password",
+            username='sponsor_admin',
+            email='admin@example.com',
+            password='StrongPassword123!',
         )
         self.client.force_login(self.admin_user)
-        self.sponsor = Sponsor.objects.create(name="Admin Template Sponsor")
+        self.sponsor = Sponsor.objects.create(name='Admin Template Sponsor')
         self.hackathon = Hackathon.objects.create(
-            name="Admin Template Hackathon",
-            theme="Technology",
+            name='Admin Template Hackathon',
+            theme='Technology',
             start_date=timezone.now(),
             end_date=timezone.now() + timezone.timedelta(days=1),
         )
@@ -63,149 +63,45 @@ class SponsorAdminInterfaceTests(TestCase):
             hackathon=self.hackathon,
         )
 
-    def test_sponsor_app_index_uses_custom_management_template(self):
-        response = self.client.get(reverse("admin:app_list", args=["sponsors"]))
-
+    def test_admin_root_responds_200(self):
+        response = self.client.get(reverse('admin:index'))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "admin/app_index.html")
-        self.assertContains(response, "Sponsor Management")
-        self.assertContains(response, "Records")
-        self.assertContains(response, "Overview")
-        self.assertContains(response, reverse("admin:sponsors_sponsor_changelist"))
-        self.assertContains(response, reverse("admin:sponsors_sponsorship_changelist"))
-
-    def test_admin_home_groups_sponsors_without_styling_other_apps(self):
-        response = self.client.get(reverse("admin:index"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "admin/index.html")
-        self.assertContains(response, "Sponsor Management")
-        self.assertContains(response, reverse("admin:sponsors_sponsor_changelist"))
-        self.assertContains(response, "/static/css/admin.css")
-        self.assertContains(response, "/static/sponsors/admin/admin_sponsors.css")
-        self.assertContains(response, "/admin/auth/user/")
-        self.assertContains(response, '<html lang="en-us"', html=False)
-        self.assertContains(response, 'id="nav-sidebar"', html=False)
-        self.assertContains(response, "/admin/auth/user/")
-        self.assertContains(response, "/admin/auth/group/")
-        self.assertContains(response, "/admin/accounts/profile/")
-
-    def test_sponsor_model_pages_use_hackflow_admin_theme(self):
-        response = self.client.get(reverse("admin:sponsors_sponsor_changelist"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "/static/sponsors/admin/admin_sponsors.css")
-        self.assertTemplateUsed(response, "admin/sponsors/change_list.html")
-        self.assertContains(response, "Sponsor Management")
-        self.assertContains(response, "Records")
-        self.assertContains(response, "Overview")
-        self.assertContains(response, '<html lang="en-us"', html=False)
-
-    def test_sponsor_add_edit_delete_and_history_use_custom_templates(self):
-        pages = (
-            ("admin:sponsors_sponsor_add", {}, "admin/sponsors/change_form.html"),
-            (
-                "admin:sponsors_sponsor_change",
-                {"object_id": self.sponsor.pk},
-                "admin/sponsors/change_form.html",
-            ),
-            ("admin:sponsors_sponsorship_add", {}, "admin/sponsors/change_form.html"),
-            (
-                "admin:sponsors_sponsorship_change",
-                {"object_id": self.sponsorship.pk},
-                "admin/sponsors/change_form.html",
-            ),
-            (
-                "admin:sponsors_sponsor_delete",
-                {"object_id": self.sponsor.pk},
-                "admin/sponsors/delete_confirmation.html",
-            ),
-            (
-                "admin:sponsors_sponsor_history",
-                {"object_id": self.sponsor.pk},
-                "admin/sponsors/object_history.html",
-            ),
-        )
-        for route_name, kwargs, template_name in pages:
-            with self.subTest(route=route_name):
-                response = self.client.get(reverse(route_name, kwargs=kwargs))
-                self.assertEqual(response.status_code, 200)
-                self.assertTemplateUsed(response, template_name)
-                if route_name.endswith(("_add", "_change")):
-                    self.assertContains(
-                        response,
-                        "/static/sponsors/admin/admin_sponsors.css",
-                    )
-                    self.assertContains(response, "Sponsor Management")
-                    self.assertContains(response, "Records")
-                    self.assertContains(response, "Cancel")
-                    self.assertContains(response, "Save")
-
-    def test_all_sponsor_model_lists_use_custom_template(self):
-        templates = {
-            "admin:sponsors_sponsor_changelist": "admin/sponsors/change_list.html",
-            "admin:sponsors_sponsorship_changelist": (
-                "admin/sponsors/sponsorship_change_list.html"
-            ),
-            "admin:sponsors_statushistory_changelist": "admin/sponsors/change_list.html",
-            "admin:sponsors_sponsoremaillog_changelist": "admin/sponsors/change_list.html",
-        }
-        for route_name, template_name in templates.items():
-            with self.subTest(route=route_name):
-                response = self.client.get(reverse(route_name))
-                self.assertEqual(response.status_code, 200)
-                self.assertTemplateUsed(response, template_name)
-                self.assertContains(
-                    response,
-                    "/static/sponsors/admin/admin_sponsors.css",
-                )
-                self.assertContains(response, "Sponsor Management")
-                self.assertContains(response, "Overview")
-                self.assertContains(response, "Records")
-                if route_name.endswith("changelist"):
-                    self.assertContains(response, "Search")
-                    self.assertContains(response, "Show counts")
-
-    def test_admin_and_public_site_use_english_language(self):
-        admin_response = self.client.get(reverse("admin:index"))
-        public_response = self.client.get(reverse("sponsors:public_list"))
-
-        self.assertContains(admin_response, '<html lang="en-us"', html=False)
-        self.assertContains(public_response, '<html lang="en"', html=False)
+        self.assertContains(response, 'Django administration')
+        self.assertContains(response, reverse('admin:sponsors_sponsor_changelist'))
 
     def test_sponsor_lists_do_not_expose_contact_emails_or_internal_notes(self):
-        self.sponsor.contact_email = "private-contact@example.com"
-        self.sponsor.save(update_fields=("contact_email",))
-        self.sponsorship.notes = "Confidential negotiation note"
-        self.sponsorship.save(update_fields=("notes",))
+        self.sponsor.contact_email = 'private-contact@example.com'
+        self.sponsor.save(update_fields=('contact_email',))
+        self.sponsorship.notes = 'Confidential negotiation note'
+        self.sponsorship.save(update_fields=('notes',))
 
-        sponsor_response = self.client.get(reverse("admin:sponsors_sponsor_changelist"))
+        sponsor_response = self.client.get(reverse('admin:sponsors_sponsor_changelist'))
         sponsorship_response = self.client.get(
-            reverse("admin:sponsors_sponsorship_changelist")
+            reverse('admin:sponsors_sponsorship_changelist')
         )
 
-        self.assertNotContains(sponsor_response, "private-contact@example.com")
-        self.assertNotContains(sponsorship_response, "private-contact@example.com")
-        self.assertNotContains(sponsorship_response, "Confidential negotiation note")
+        self.assertNotContains(sponsor_response, 'private-contact@example.com')
+        self.assertNotContains(sponsorship_response, 'private-contact@example.com')
+        self.assertNotContains(sponsorship_response, 'Confidential negotiation note')
 
     def test_sponsorship_admin_actions_use_status_service_and_record_history(self):
         actions = (
-            ("mark_contacted", StatusChoices.CONTACTE),
-            ("mark_negotiation", StatusChoices.NEGOCIATION),
-            ("mark_confirmed", StatusChoices.CONFIRME),
-            ("mark_refused", StatusChoices.REFUSE),
+            ('mark_contacted', StatusChoices.CONTACTE),
+            ('mark_negotiation', StatusChoices.NEGOCIATION),
+            ('mark_confirmed', StatusChoices.CONFIRME),
+            ('mark_refused', StatusChoices.REFUSE),
         )
-        url = reverse("admin:sponsors_sponsorship_changelist")
+        url = reverse('admin:sponsors_sponsorship_changelist')
 
         for action, expected_status in actions:
             with self.subTest(action=action):
                 response = self.client.post(
                     url,
                     {
-                        "action": action,
-                        "_selected_action": [str(self.sponsorship.pk)],
-                        "index": 0,
-                        "post": "yes",
+                        'action': action,
+                        '_selected_action': [str(self.sponsorship.pk)],
+                        'index': 0,
+                        'post': 'yes',
                     },
                 )
                 self.assertEqual(response.status_code, 302)
@@ -218,16 +114,14 @@ class SponsorAdminInterfaceTests(TestCase):
         )
         self.assertEqual(
             StatusHistory.objects.filter(sponsorship=self.sponsorship)
-            .order_by("changed_at")
+            .order_by('changed_at')
             .last()
             .new_status,
             StatusChoices.REFUSE,
         )
 
     def test_status_and_email_logs_are_read_only_in_admin(self):
-        response = self.client.get(
-            reverse("admin:sponsors_statushistory_changelist")
-        )
+        response = self.client.get(reverse('admin:sponsors_statushistory_changelist'))
         request = response.wsgi_request
         for model in (StatusHistory, SponsorEmailLog):
             model_admin = admin.site._registry[model]
@@ -238,50 +132,16 @@ class SponsorAdminInterfaceTests(TestCase):
 
     def test_non_confidential_roles_cannot_open_sponsor_admin(self):
         staff_user = User.objects.create_superuser(
-            username="sponsor_admin_student_role",
-            email="student-role@example.com",
-            password="test-password",
+            username='sponsor_admin_student_role',
+            email='student-role@example.com',
+            password='StrongPassword123!',
         )
         self.client.force_login(staff_user)
 
-        with patch("sponsors.permissions.get_user_roles", return_value={"etudiant"}):
-            response = self.client.get(
-                reverse("admin:sponsors_sponsor_changelist")
-            )
+        with patch('sponsors.permissions.get_user_roles', return_value={'etudiant'}):
+            response = self.client.get(reverse('admin:sponsors_sponsor_changelist'))
 
         self.assertEqual(response.status_code, 403)
-
-    def test_sponsor_admin_css_does_not_load_on_other_app_admin(self):
-        for route_name in (
-            "admin:auth_user_changelist",
-            "admin:auth_group_changelist",
-            "admin:accounts_profile_changelist",
-        ):
-            with self.subTest(route=route_name):
-                response = self.client.get(reverse(route_name))
-
-                self.assertEqual(response.status_code, 200)
-                self.assertNotContains(
-                    response,
-                    "/static/sponsors/admin/admin_sponsors.css",
-                )
-                self.assertContains(response, "/static/css/admin.css")
-                self.assertContains(response, 'id="nav-sidebar"', html=False)
-                self.assertContains(response, '<html lang="en-us"', html=False)
-
-    def test_status_history_equal_statuses_show_creation_badge(self):
-        history = StatusHistory.objects.create(
-            sponsorship=self.sponsorship,
-            old_status=StatusChoices.PROSPECT,
-            new_status=StatusChoices.PROSPECT,
-            changed_by=self.admin_user,
-        )
-        response = self.client.get(reverse("admin:sponsors_statushistory_changelist"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Created")
-        self.assertNotContains(response, "Prospect → Prospect")
-
 
 class SponsorModelAndViewsTest(TestCase):
     def setUp(self):

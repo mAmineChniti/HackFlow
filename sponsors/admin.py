@@ -9,7 +9,6 @@ from django.db.models import Count, DecimalField, Q, Sum, Value
 from django.db.models.functions import Coalesce
 from django.template.response import TemplateResponse
 from django.utils.formats import number_format
-from django.utils.html import format_html
 from django.utils.text import Truncator
 from django.utils.translation import gettext_lazy as _
 
@@ -29,28 +28,8 @@ from .permissions import (
 from .services import change_sponsorship_status
 
 
-STATUS_BADGE_CLASSES = {
-    StatusChoices.PROSPECT: "is-neutral",
-    StatusChoices.CONTACTE: "is-info",
-    StatusChoices.NEGOCIATION: "is-warning",
-    StatusChoices.CONFIRME: "is-success",
-    StatusChoices.REFUSE: "is-danger",
-}
-
-
-def status_badge(status, label):
-    return format_html(
-        '<span class="sponsor-admin-badge {}">{}</span>',
-        STATUS_BADGE_CLASSES.get(status, "is-neutral"),
-        label,
-    )
-
-
 class SponsorAdminBase(admin.ModelAdmin):
     """Shared sponsor-role and Django-permission gates for these four models."""
-
-    class Media:
-        css = {"all": ("sponsors/admin/admin_sponsors.css",)}
 
     def has_module_permission(self, request):
         return (
@@ -140,16 +119,7 @@ class TierListFilter(SimpleListFilter):
 
 @admin.register(Sponsor)
 class SponsorAdmin(SponsorAdminBase):
-    change_list_template = "admin/sponsors/change_list.html"
-    change_form_template = "admin/sponsors/change_form.html"
-    delete_confirmation_template = "admin/sponsors/delete_confirmation.html"
-    delete_selected_confirmation_template = (
-        "admin/sponsors/delete_selected_confirmation.html"
-    )
-    object_history_template = "admin/sponsors/object_history.html"
-
     list_display = (
-        "logo_thumbnail",
         "name",
         "sector",
         "sponsorship_count",
@@ -160,12 +130,12 @@ class SponsorAdmin(SponsorAdminBase):
     search_fields = ("name", "sector")
     ordering = ("name",)
     list_per_page = 25
-    readonly_fields = ("created_at", "updated_at", "logo_preview")
+    readonly_fields = ("created_at", "updated_at")
     inlines = (SponsorshipInline,)
 
     fieldsets = (
         (_("Identity"), {
-            "fields": ("name", "logo", "logo_preview", "website", "sector", "description"),
+            "fields": ("name", "logo", "website", "sector", "description"),
             "description": _("Public information about the sponsor."),
         }),
         (_("Contact"), {
@@ -177,16 +147,6 @@ class SponsorAdmin(SponsorAdminBase):
             "classes": ("collapse",),
         }),
     )
-
-    @admin.display(description=_("Logo"))
-    def logo_thumbnail(self, obj):
-        if not obj.logo:
-            return "—"
-        return format_html(
-            '<img class="sponsor-admin-logo" src="{}" alt="{}">',
-            obj.logo.url,
-            obj.name,
-        )
 
     @admin.display(description=_("Partnerships"), ordering="sponsorship_count")
     def sponsorship_count(self, obj):
@@ -217,32 +177,14 @@ class SponsorAdmin(SponsorAdminBase):
             ),
         )
 
-    @admin.display(description=_("Logo preview"))
-    def logo_preview(self, obj):
-        if not obj or not obj.logo:
-            return "—"
-        return format_html(
-            '<img class="sponsor-admin-logo-preview" src="{}" alt="{}">',
-            obj.logo.url,
-            obj.name,
-        )
-
 
 @admin.register(Sponsorship)
 class SponsorshipAdmin(SponsorAdminBase):
-    change_list_template = "admin/sponsors/sponsorship_change_list.html"
-    change_form_template = "admin/sponsors/change_form.html"
-    delete_confirmation_template = "admin/sponsors/delete_confirmation.html"
-    delete_selected_confirmation_template = (
-        "admin/sponsors/delete_selected_confirmation.html"
-    )
-    object_history_template = "admin/sponsors/object_history.html"
-
     list_display = (
         "sponsor",
         "hackathon",
         "tier_display",
-        "status_badge",
+        "status_display",
         "contribution_type",
         "formatted_amount",
         "updated_at",
@@ -325,8 +267,8 @@ class SponsorshipAdmin(SponsorAdminBase):
         return response
 
     @admin.display(description=_("Status"), ordering="status")
-    def status_badge(self, obj):
-        return status_badge(obj.status, obj.get_status_display())
+    def status_display(self, obj):
+        return obj.get_status_display()
 
     @admin.display(description=_("Amount (DT)"), ordering="amount")
     def formatted_amount(self, obj):
@@ -340,9 +282,9 @@ class SponsorshipAdmin(SponsorAdminBase):
 
     @admin.display(description=_("Current status"))
     def current_status(self, obj):
-        status = obj.status if obj else StatusChoices.PROSPECT
-        label = obj.get_status_display() if obj else StatusChoices.PROSPECT.label
-        return status_badge(status, label)
+        if obj is None:
+            return StatusChoices.PROSPECT.label
+        return obj.get_status_display()
 
     def _apply_status(self, request, queryset, new_status, label):
         changed = 0
@@ -389,9 +331,6 @@ class SponsorshipAdmin(SponsorAdminBase):
 
 @admin.register(StatusHistory)
 class StatusHistoryAdmin(SponsorAdminBase):
-    change_list_template = "admin/sponsors/change_list.html"
-    object_history_template = "admin/sponsors/object_history.html"
-
     list_display = ("sponsorship", "status_transition", "changed_by", "changed_at")
     list_filter = ("new_status", "old_status", ("changed_at", DateFieldListFilter))
     search_fields = ("sponsorship__sponsor__name", "changed_by__username")
@@ -417,12 +356,8 @@ class StatusHistoryAdmin(SponsorAdminBase):
     @admin.display(description=_("Status change"))
     def status_transition(self, obj):
         if not obj.old_status or obj.old_status == obj.new_status:
-            return status_badge(obj.new_status, _("Created"))
-        return format_html(
-            '<span class="sponsor-admin-transition">{} <span aria-hidden="true">→</span> {}</span>',
-            status_badge(obj.old_status, obj.get_old_status_display()),
-            status_badge(obj.new_status, obj.get_new_status_display()),
-        )
+            return _("Created")
+        return f"{obj.get_old_status_display()} → {obj.get_new_status_display()}"
 
     def has_add_permission(self, request):
         return False
@@ -436,9 +371,6 @@ class StatusHistoryAdmin(SponsorAdminBase):
 
 @admin.register(SponsorEmailLog)
 class SponsorEmailLogAdmin(SponsorAdminBase):
-    change_list_template = "admin/sponsors/change_list.html"
-    object_history_template = "admin/sponsors/object_history.html"
-
     list_display = (
         "sponsor",
         "subject",
@@ -475,36 +407,17 @@ class SponsorEmailLogAdmin(SponsorAdminBase):
 
     @admin.display(description=_("AI generated"), ordering="ai_generated")
     def ai_generated_badge(self, obj):
-        if obj.ai_generated:
-            return format_html(
-                '<span class="sponsor-admin-badge is-info">{}</span>',
-                _("AI generated"),
-            )
-        return format_html(
-            '<span class="sponsor-admin-badge is-neutral">{}</span>',
-            _("Written manually"),
-        )
+        return _("AI generated") if obj.ai_generated else _("Written manually")
 
     @admin.display(description=_("Delivery"), ordering="success")
     def delivery_badge(self, obj):
-        badge_class = "is-success" if obj.success else "is-danger"
-        label = _("Sent") if obj.success else _("Failed")
-        return format_html(
-            '<span class="sponsor-admin-badge {}">{}</span>',
-            badge_class,
-            label,
-        )
+        return _("Sent") if obj.success else _("Failed")
 
     @admin.display(description=_("Error"))
     def error_summary(self, obj):
         if not obj.error_message:
             return "—"
-        shortened = Truncator(obj.error_message).chars(100)
-        return format_html(
-            '<span title="{}">{}</span>',
-            obj.error_message,
-            shortened,
-        )
+        return Truncator(obj.error_message).chars(100)
 
     def has_add_permission(self, request):
         return False

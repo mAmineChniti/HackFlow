@@ -1,16 +1,21 @@
-{% extends "admin/base_site.html" %}
+{% extends "admin/index.html" %}
 {% load i18n %}
 
-{% block content %}
-    {% if app_label == "sponsors" %}
-        <div class="sponsor-admin-home">
-            {% url 'admin:index' as overview_url %}
-            {% include "admin/sponsors/includes/page_header.html" with title="Sponsor Management" description="Manage sponsors, hackathon partnerships, and communication logs." record_count=app_list.0.models|length back_url=overview_url %}
-            {% include "admin/sponsors/includes/model_cards.html" with models=app_list.0.models %}
-        </div>
-    {% else %}
-        <div id="content-main">
-            {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
-        </div>
-    {% endif %}
+{% block bodyclass %}{{ block.super }} app-{{ app_label }}{% endblock %}
+
+{% if not is_popup %}
+{% block nav-breadcrumbs %}
+  <nav aria-label="{% translate 'Breadcrumbs' %}">
+    <div class="breadcrumbs">
+      <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+      &rsaquo;
+      {% for app in app_list %}
+        {{ app.name }}
+      {% endfor %}
+    </div>
+  </nav>
 {% endblock %}
+{% endif %}
+
+{% block sidebar %}{% endblock %}
+
