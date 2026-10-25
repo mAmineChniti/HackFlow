@@ -382,6 +382,20 @@ class MatchingTests(BaseTeamTestCase):
         self.assertNotIn(self.designer, [r["user"] for r in results])
 
 
+    def test_synergy_and_skill_badges(self):
+        _, results = services.suggest_candidates(self.team)
+        best = results[0]
+        self.assertEqual(best["user"], self.designer)
+        self.assertEqual(best["synergy"], 88)  # score 7 sur 8
+        self.assertEqual(best["new_skills"], ["figma", "ui"])
+        self.assertEqual(best["shared_skills"], [])
+
+    def test_synergy_never_exceeds_100(self):
+        _, results = services.suggest_candidates(self.team)
+        for r in results:
+            self.assertLessEqual(r["synergy"], 100)    
+
+
 
 class AISuggestionTests(BaseTeamTestCase):
     def setUp(self):

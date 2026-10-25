@@ -45,7 +45,7 @@ def leave_team(*, team, user):
 
 # ----------------------------------------------------------- Matching IA
 CORE_ROLES = ("backend", "frontend", "designer", "data")
-
+MAX_SCORE = 8  # 5 (rôle manquant) + 3 (compétences nouvelles, plafonnées)
 
 def parse_skills(text):
     """'Python, Django ,python' -> ['python', 'django']"""
@@ -105,15 +105,24 @@ def suggest_candidates(team, limit=3):
     )
     results = []
     for profile in candidates:
+        candidate_skills = parse_skills(profile.skills)
         score, reasons = score_candidate(
             role=profile.main_role,
-            skills=parse_skills(profile.skills),
+            skills=candidate_skills,
             missing_roles=analysis["missing_roles"],
             team_skills=team_skills,
         )
         if score > 0:
             results.append(
-                {"user": profile.user, "role": profile.main_role, "score": score, "reasons": reasons}
+                {
+                    "user": profile.user,
+                    "role": profile.main_role,
+                    "score": score,
+                    "reasons": reasons,
+                    "synergy": round(score / MAX_SCORE * 100),
+                    "shared_skills": [s for s in candidate_skills if s in team_skills],
+                    "new_skills": [s for s in candidate_skills if s not in team_skills],
+                }
             )
     results.sort(key=lambda r: (-r["score"], r["user"].username))
     return analysis, results[:limit]

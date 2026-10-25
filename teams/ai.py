@@ -83,6 +83,9 @@ def build_report(team):
             "role": r["role"],
             "score": r["score"],
             "reasons": r["reasons"],
+            "synergy": r["synergy"],
+            "shared_skills": r["shared_skills"],
+            "new_skills": r["new_skills"],
         }
         for r in results
     ]
