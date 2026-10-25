@@ -407,6 +407,25 @@ class HackathonRegistration(models.Model):
         verbose_name="Accept Rules & Code of Conduct",
     )
 
+    # Check-in & Badge Pass attributes
+    ticket_code = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        verbose_name="Ticket / Badge Code",
+        help_text="Unique verifiable badge identifier (e.g. HF-A8F290B1E4)",
+    )
+    checked_in = models.BooleanField(
+        default=False,
+        verbose_name="Checked In",
+        help_text="Participant badge scanned and marked present at venue",
+    )
+    checked_in_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Checked In At",
+    )
+
     class Meta:
         ordering = ["-registered_at"]
         unique_together = [("hackathon", "participant")]
@@ -415,6 +434,11 @@ class HackathonRegistration(models.Model):
 
     def __str__(self):
         return f"{self.participant.get_username()} → {self.hackathon.title} ({self.get_status_display()})"
+
+    def save(self, *args, **kwargs):
+        if not self.ticket_code:
+            self.ticket_code = f"HF-{uuid.uuid4().hex[:10].upper()}"
+        super().save(*args, **kwargs)
 
     def clean(self):
         try:

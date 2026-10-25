@@ -183,6 +183,9 @@
                                         <c-lucideicon.pencil class="size-4" />
                                         Edit & Manage Event
                                     </c-button_link>
+                                    <a href="{% url 'hackathons:ai_metrics' hackathon.slug %}" class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-xs font-mono font-bold text-emerald-400 hover:bg-emerald-500/20 transition-all shadow-xs">
+                                        📊 AI Metrics &amp; Benchmark Dashboard
+                                    </a>
                                 </div>
 
                             {% elif is_assigned_judge %}
@@ -191,6 +194,9 @@
                                         <span>⚖️</span>
                                         <span>You are an official <strong>Judge</strong> for this event.</span>
                                     </div>
+                                    <a href="{% url 'hackathons:ai_metrics' hackathon.slug %}" class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border/70 bg-card/60 px-4 py-2 text-xs font-mono text-muted-foreground hover:text-foreground transition-all">
+                                        📊 View AI Evaluation Telemetry
+                                    </a>
                                 </div>
 
                             {% elif is_assigned_mentor %}
@@ -202,7 +208,7 @@
                                 </div>
 
                             {% elif is_registered %}
-                                <div class="space-y-2">
+                                <div class="space-y-2.5">
                                     {% if user_registration.status == 'waitlist' %}
                                     <div class="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
                                         <span class="text-base">⏳</span>
@@ -219,6 +225,11 @@
                                         <span>You are <strong>officially registered</strong>!</span>
                                     </div>
                                     {% endif %}
+
+                                    <!-- Digital Badge Button -->
+                                    <a href="{% url 'hackathons:participant_badge' hackathon.slug %}" class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-primary/50 bg-primary/20 px-4 py-2.5 text-xs font-mono font-bold text-primary hover:bg-primary/30 transition-all shadow-md">
+                                        🎫 View Official Badge &amp; QR Pass
+                                    </a>
 
                                     {% if can_unregister %}
                                     <form method="post" action="{% url 'hackathons:unregister' hackathon.slug %}">
@@ -379,6 +390,22 @@
             >
                 <span>💡 AI Project Ideas</span>
             </button>
+
+            <button
+                type="button"
+                @click="activeTab = 'badge'"
+                :class="activeTab === 'badge' ? 'bg-primary/15 text-primary border-primary shadow-xs font-semibold' : 'bg-card/50 text-muted-foreground border-border/70 hover:text-foreground hover:bg-card/80'"
+                class="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 cursor-pointer"
+            >
+                <span>🎫 Badge &amp; QR Code</span>
+            </button>
+
+            <a
+                href="{% url 'hackathons:ai_metrics' hackathon.slug %}"
+                class="inline-flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-xs sm:text-sm font-mono text-emerald-400 hover:bg-emerald-500/20 transition-all whitespace-nowrap shrink-0"
+            >
+                <span>📊 AI Metrics &amp; Benchmark</span>
+            </a>
         </div>
 
         <!-- Tab 1: Overview -->
@@ -699,6 +726,84 @@
                         Aucune idée de projet générée pour le moment. Cliquez sur "Regenerate Ideas".
                     </div>
                     {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 6: Digital Badge Pass & Verifiable QR Code -->
+        <div x-show="activeTab === 'badge'"
+             class="mt-6"
+             x-transition:enter="transition ease-out duration-150"
+             x-transition:enter-start="opacity-0 translate-y-1"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             style="display: none;">
+            <div class="rounded-2xl border border-border/70 bg-card/40 p-6 md:p-8">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 pb-5 border-b border-border/50">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🎫</span>
+                            <h2 class="text-xl font-semibold text-foreground">Official Participant Badge &amp; QR Pass</h2>
+                        </div>
+                        <p class="text-xs text-muted-foreground">
+                            Encrypted verifiable entry credential for <strong class="text-foreground">{{ hackathon.title }}</strong>.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a
+                            href="{% url 'hackathons:participant_badge' hackathon.slug %}"
+                            class="inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-3.5 py-1.5 font-mono text-xs font-medium text-primary hover:bg-primary/20 transition-all shrink-0 cursor-pointer"
+                        >
+                            <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>
+                            </svg>
+                            <span>Open Fullscreen / Print Badge</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="max-w-md mx-auto">
+                    <!-- Holographic Badge Preview Card -->
+                    <div class="relative overflow-hidden rounded-3xl border border-primary/40 bg-gradient-to-b from-card/90 via-background to-card/90 p-7 shadow-2xl backdrop-blur-xl space-y-5 text-center">
+                        <div class="mx-auto h-2 w-14 rounded-full bg-border/80 border border-border"></div>
+
+                        <div class="flex items-center justify-between border-b border-border/60 pb-4 text-left">
+                            <div class="flex items-center gap-2">
+                                <span class="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground font-black text-xs">&gt;_</span>
+                                <div>
+                                    <span class="font-mono text-xs font-bold text-foreground">HACKFLOW PASS</span>
+                                    <p class="text-[9px] font-mono text-muted-foreground">Official Credential</p>
+                                </div>
+                            </div>
+                            <span class="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-0.5 font-mono text-[10px] font-bold text-emerald-400 uppercase">
+                                <span class="size-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                {{ badge_registration.get_status_display }}
+                            </span>
+                        </div>
+
+                        <!-- Attendee info -->
+                        <div class="space-y-1">
+                            <div class="mx-auto flex size-14 items-center justify-center rounded-xl border border-primary/40 bg-primary/10 text-xl font-black text-primary">
+                                {{ badge_registration.participant.first_name|first|default:badge_registration.participant.username|first|upper }}
+                            </div>
+                            <h3 class="text-lg font-extrabold text-foreground">{{ badge_registration.participant.get_full_name|default:badge_registration.participant.username }}</h3>
+                            <p class="font-mono text-xs text-muted-foreground">{{ badge_registration.participant.email }}</p>
+                            <div class="flex items-center justify-center gap-2 pt-1 font-mono text-[10px]">
+                                {% if badge_registration.university %}
+                                <span class="rounded bg-secondary/70 px-2 py-0.5 text-foreground">🏛️ {{ badge_registration.university }}</span>
+                                {% endif %}
+                                <span class="rounded bg-secondary/70 px-2 py-0.5 text-foreground">🎓 {{ badge_registration.get_study_level_display }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Scannable QR Code -->
+                        <div class="rounded-2xl border border-border/60 bg-card/60 p-4 space-y-2">
+                            <div class="mx-auto size-44 rounded-xl bg-white p-2.5 flex items-center justify-center shadow-inner">
+                                <img src="{{ badge_qr_b64 }}" alt="QR Code Badge" class="size-full object-contain" />
+                            </div>
+                            <p class="font-mono text-xs font-bold tracking-widest text-primary">{{ badge_registration.ticket_code }}</p>
+                            <p class="text-[10px] font-mono text-muted-foreground">Scan with camera to validate check-in</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

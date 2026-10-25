@@ -157,3 +157,64 @@ class HackathonModelTest(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertFalse(HackathonRegistration.objects.filter(participant=self.organizer).exists())
 
+    def test_ai_metrics_dashboard_view(self):
+        url = reverse("hackathons:ai_metrics", kwargs={"slug": self.hackathon.slug})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "AI Performance &amp; Evaluation Metrics")
+        self.assertContains(response, "Multi-Class Confusion Matrix")
+        self.assertContains(response, "Macro F1")
+
+    def test_ai_benchmark_live_endpoint(self):
+        url = reverse("hackathons:ai_benchmark", kwargs={"slug": self.hackathon.slug})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data.get("success"))
+        bench = data.get("benchmark", {})
+        self.assertIn("uncached_latency_ms", bench)
+        self.assertIn("cached_latency_ms", bench)
+        self.assertIn("performance_gain_percent", bench)
+
+    def test_participant_badge_view(self):
+        # Register student first
+        reg = HackathonRegistration.objects.create(
+            hackathon=self.hackathon, participant=self.student, status=HackathonRegistration.Status.CONFIRMED
+        )
+        self.assertTrue(reg.ticket_code.startswith("HF-"))
+
+        self.client.login(username="student1", password="password123")
+        badge_url = reverse("hackathons:participant_badge", kwargs={"slug": self.hackathon.slug})
+        response = self.client.get(badge_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reg.ticket_code)
+        self.assertContains(response, "Official Event Credential")
+        self.assertContains(response, "data:image/png;base64,")
+
+    def test_organizer_checkin_validation(self):
+        reg = HackathonRegistration.objects.create(
+            hackathon=self.hackathon, participant=self.student, status=HackathonRegistration.Status.CONFIRMED
+        )
+        self.assertFalse(reg.checked_in)
+
+        # Organizer logs in and validates check-in
+        self.client.login(username="organizer1", password="password123")
+        checkin_url = reverse("hackathons:organizer_checkin", kwargs={
+            "slug": self.hackathon.slug,
+            "ticket_code": reg.ticket_code
+        })
+        
+        # GET checkin screen
+        get_resp = self.client.get(checkin_url)
+        self.assertEqual(get_resp.status_code, 200)
+        self.assertContains(get_resp, reg.ticket_code)
+
+        # POST to confirm door check-in
+        post_resp = self.client.post(checkin_url)
+        self.assertEqual(post_resp.status_code, 200)
+        reg.refresh_from_db()
+        self.assertTrue(reg.checked_in)
+        self.assertIsNotNone(reg.checked_in_at)
+        self.assertContains(post_resp, "✓ PARTICIPANT CHECKED-IN")
+
+

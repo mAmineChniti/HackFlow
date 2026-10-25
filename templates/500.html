@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}500 — Server Error — HackFlow{% endblock %}
+
+{% block content %}
+<div class="relative min-h-[70vh] flex items-center justify-center py-16">
+    <div class="container-page max-w-lg text-center space-y-6">
+        <div class="inline-flex items-center gap-2 rounded-full border border-destructive/30 bg-destructive/10 px-3 py-1 font-mono text-xs text-destructive">
+            <span class="size-1.5 rounded-full bg-destructive animate-pulse"></span>
+            Error 500 • Internal Server Error
+        </div>
+
+        <h1 class="text-6xl font-black tracking-tight text-foreground sm:text-7xl">
+            5<span class="text-destructive">0</span>0
+        </h1>
+
+        <p class="text-sm text-muted-foreground leading-relaxed">
+            Our systems encountered an unexpected exception. The technical incident has been logged and is under inspection.
+        </p>
+
+        <div class="flex items-center justify-center gap-3 pt-4">
+            <a href="{% url 'hackathons:list' %}" class="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-mono text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all">
+                Return to Hackathons
+            </a>
+            <a href="/" class="inline-flex items-center gap-2 rounded-xl border border-border/80 bg-background/60 px-5 py-2.5 font-mono text-xs font-medium text-foreground hover:bg-secondary transition-all">
+                Home
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
