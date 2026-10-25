@@ -68,6 +68,7 @@
         const btn = document.getElementById("ai-suggest-btn");
         const status = document.getElementById("ai-status");
         const result = document.getElementById("ai-result");
+        const inviteUrl = "{% url 'teams:send_invitation' team.pk %}";
 
         function el(tag, text, className) {
             const node = document.createElement(tag);
@@ -78,6 +79,47 @@
 
         function badge(text, className) {
             return el("span", text, "inline-flex rounded-full border px-2 py-0.5 text-xs " + className);
+        }
+
+        function inviteButton(s) {
+            const wrapper = el("div", "", "flex flex-wrap items-center gap-3");
+            const button = el("button", "Inviter", "inline-flex h-8 items-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60");
+            button.type = "button";
+            button.setAttribute("aria-label", "Inviter " + s.username + " dans l'équipe");
+            const feedback = el("span", "", "text-xs text-muted-foreground");
+            feedback.setAttribute("role", "status");
+            feedback.setAttribute("aria-live", "polite");
+
+            button.addEventListener("click", async function () {
+                button.disabled = true;
+                feedback.textContent = "Envoi…";
+                try {
+                    const body = new URLSearchParams({username: s.username});
+                    const response = await fetch(inviteUrl, {
+                        method: "POST",
+                        headers: {
+                            "X-CSRFToken": "{{ csrf_token }}",
+                            "X-Requested-With": "XMLHttpRequest",
+                        },
+                        body: body,
+                    });
+                    const data = await response.json();
+                    if (response.ok) {
+                        button.textContent = "Invitation envoyée";
+                        feedback.textContent = "";
+                    } else {
+                        feedback.textContent = data.error || "Échec de l'invitation.";
+                        button.disabled = false;
+                    }
+                } catch (e) {
+                    feedback.textContent = "Erreur réseau : réessayez.";
+                    button.disabled = false;
+                }
+            });
+
+            wrapper.appendChild(button);
+            wrapper.appendChild(feedback);
+            return wrapper;
         }
 
         function render(data) {
@@ -109,6 +151,7 @@
                 });
                 item.appendChild(skills);
                 item.appendChild(el("p", s.reasons.join(" ; "), "text-muted-foreground"));
+                item.appendChild(inviteButton(s));
                 list.appendChild(item);
             });
             result.appendChild(list);

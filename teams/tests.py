@@ -724,3 +724,23 @@ class InvitationViewTests(BaseTeamTestCase):
         self.client.post(f"/teams/invitations/{invitation.pk}/cancel/")
         invitation.refresh_from_db()
         self.assertEqual(invitation.status, "pending")
+
+
+class SuggestionInviteFlowTests(BaseTeamTestCase):
+    def test_every_suggested_username_can_be_invited(self):
+        SkillProfile.objects.create(
+            user=self.outsider, main_role="backend", skills="django, sql", looking_for_team=True
+        )
+        self.client.force_login(self.leader)
+        with patch("teams.ai.generate_text", side_effect=ai.AIUnavailable("down")):
+            data = self.client.post(f"/teams/{self.team.pk}/suggest/").json()
+        usernames = [s["username"] for s in data["suggestions"]]
+        self.assertIn(self.outsider.username, usernames)
+        for username in usernames:
+            response = self.client.post(
+                f"/teams/{self.team.pk}/invite/",
+                {"username": username},
+                HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+            )
+            self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(Invitation.objects.filter(status="pending").count(), len(usernames))
