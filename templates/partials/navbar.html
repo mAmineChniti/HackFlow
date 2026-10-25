@@ -1,3 +1,5 @@
+{% load sponsor_tags %}
+{% can_manage_sponsors user as user_can_manage_sponsors %}
 <header class="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 header-blur">
     <div class="container-page flex h-16 items-center justify-between gap-4">
         <div class="flex items-center gap-8">
@@ -22,6 +24,7 @@
                 <a href="{% url 'core:home' %}#challenges" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Challenges</a>
                 <a href="{% url 'core:home' %}#leaderboard" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Leaderboard</a>
                 <a href="{% url 'core:home' %}#organizers" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">For organizers</a>
+                <a href="{% url 'core:home' %}#sponsors" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Sponsors</a>
             </nav>
         </div>
 
@@ -102,6 +105,14 @@
                             Solve a challenge
                         </a>
                     </c-dropdown_menu.item>
+                    {% if user_can_manage_sponsors %}
+                    <c-dropdown_menu.item>
+                        <a href="{% url 'sponsors:dashboard' %}" class="flex w-full items-center gap-2 text-foreground">
+                            <c-lucideicon.badge-dollar-sign class="size-4 text-primary" />
+                            Dashboard Sponsors
+                        </a>
+                    </c-dropdown_menu.item>
+                    {% endif %}
                     {% if user.profile.role == 'organizer' or user.profile.role == 'admin' or user.is_staff or user.is_superuser %}
                     <c-dropdown_menu.item>
                         <a href="{% url 'projects:admin_dashboard' %}" class="flex w-full items-center gap-2 text-primary font-medium">

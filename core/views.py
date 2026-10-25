@@ -173,7 +173,7 @@ TESTIMONIALS = [
 def home(request):
     return render(
         request,
-        "home.html",
+        "core/home.html",
         {
             "hackathons": HACKATHONS,
             "challenges": CHALLENGES,
