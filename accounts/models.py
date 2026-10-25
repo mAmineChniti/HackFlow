@@ -2,14 +2,13 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
-
 class Profile(models.Model):
     class Role(models.TextChoices):
-        ADMIN = "admin", "Administrator"
+        STUDENT = "student", "Student / Participant"
         ORGANIZER = "organizer", "Organizer"
-        STUDENT = "student", "Student"
-        JUDGE = "judge", "Judge"
+        JUDGE = "judge", "Judge / Jury"
         MENTOR = "mentor", "Mentor"
+        ADMIN = "admin", "Administrator"
 
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -17,11 +16,11 @@ class Profile(models.Model):
         related_name="profile",
     )
     role = models.CharField(
-        max_length=20,
+        max_length=25,
         choices=Role.choices,
         default=Role.STUDENT,
         verbose_name="Role",
-        help_text="User role across the HackFlow platform",
+        help_text="Global account role in HackFlow",
     )
     email_verified = models.BooleanField(default=False)
     email_verified_at = models.DateTimeField(blank=True, null=True)

@@ -3,29 +3,35 @@
 {% block title %}500 — Server Error — HackFlow{% endblock %}
 
 {% block content %}
-<div class="relative min-h-[70vh] flex items-center justify-center py-16">
-    <div class="container-page max-w-lg text-center space-y-6">
-        <div class="inline-flex items-center gap-2 rounded-full border border-destructive/30 bg-destructive/10 px-3 py-1 font-mono text-xs text-destructive">
-            <span class="size-1.5 rounded-full bg-destructive animate-pulse"></span>
-            Error 500 • Internal Server Error
+<section class="min-h-[70vh] flex items-center justify-center px-4 py-16 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full text-center space-y-6">
+        <div class="relative mx-auto flex h-24 w-24 items-center justify-center rounded-2xl border border-border bg-card/60 shadow-lg backdrop-blur">
+            <span class="text-4xl">⚡</span>
+            <span class="absolute -top-2 -right-2 inline-flex items-center rounded-full bg-destructive/10 border border-destructive/20 px-2 py-0.5 text-[11px] font-semibold text-destructive">
+                500
+            </span>
         </div>
 
-        <h1 class="text-6xl font-black tracking-tight text-foreground sm:text-7xl">
-            5<span class="text-destructive">0</span>0
-        </h1>
+        <div class="space-y-2">
+            <h1 class="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+                Internal Server Error
+            </h1>
+            <p class="text-sm text-muted-foreground">
+                Something went wrong on our end. The technical incident has been logged and is under inspection.
+            </p>
+        </div>
 
-        <p class="text-sm text-muted-foreground leading-relaxed">
-            Our systems encountered an unexpected exception. The technical incident has been logged and is under inspection.
-        </p>
-
-        <div class="flex items-center justify-center gap-3 pt-4">
-            <a href="{% url 'hackathons:list' %}" class="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-mono text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all">
-                Return to Hackathons
+        <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <a href="{% url 'core:home' %}" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors">
+                Back to Home
             </a>
-            <a href="/" class="inline-flex items-center gap-2 rounded-xl border border-border/80 bg-background/60 px-5 py-2.5 font-mono text-xs font-medium text-foreground hover:bg-secondary transition-all">
-                Home
+            <a href="{% url 'hackathons:list' %}" class="inline-flex items-center justify-center rounded-lg border border-border bg-background px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-accent transition-colors">
+                Hackathons
             </a>
+            <button onclick="window.location.reload()" class="inline-flex items-center justify-center rounded-lg border border-border bg-background px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-accent transition-colors cursor-pointer">
+                Try Again
+            </button>
         </div>
     </div>
-</div>
+</section>
 {% endblock %}

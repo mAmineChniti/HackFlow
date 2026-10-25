@@ -90,6 +90,12 @@ Custom `accounts` app built on Django's auth views: email-or-username login,
 email verification, password reset/change, account settings and account
 deletion.
 
+Signup only offers the non-privileged roles (`student`, `judge`, `mentor`).
+The `organizer` and `admin` roles — which can see every draft, review projects
+and export all team data — are granted by an administrator through the Django
+admin (`Profiles`), and the global role is read-only on the account settings
+page.
+
 | Route | Purpose |
 | --- | --- |
 | `/accounts/signup/` | Register (username, email, password) |
@@ -128,6 +134,65 @@ Run the test suite with a PostgreSQL test database:
 ```bash
 python manage.py test
 ```
+
+## Utility Scripts
+
+Utility scripts for development and testing are located in the `scripts/` directory:
+
+```bash
+# Set up test accounts with various roles (refuses to run when DEBUG is off)
+TEST_ACCOUNT_PASSWORD='at-least-12-chars' python scripts/setup_test_accounts.py
+
+# Reset the admin password
+TEST_ADMIN_PASSWORD='at-least-12-chars' python scripts/reset_admin.py
+
+# List all users (read-only)
+python scripts/list_users.py
+```
+
+Both password environment variables are required and must be at least 12
+characters — the scripts have no default passwords, because they create
+privileged accounts.
+
+## Configuration
+
+### Timezone
+
+The default timezone is set to `Africa/Tunis`. To override for multi-region deployments:
+
+```bash
+export TIME_ZONE=UTC
+```
+
+### CORS Configuration
+
+CORS support is disabled by default. To enable for API endpoints:
+
+1. Uncomment `django-corsheaders` in `requirements.txt`
+2. Add `'corsheaders.middleware.CorsMiddleware'` to `MIDDLEWARE` in `HackFlow/settings.py`
+3. Uncomment `corsheaders` in `INSTALLED_APPS`
+4. Set environment variables:
+   ```bash
+   CORS_ALLOWED_ORIGINS=https://example.com,https://www.example.com
+   CORS_ALLOW_CREDENTIALS=False
+   ```
+
+### AI Features
+
+AI features use Groq API for both sponsors email generation and project analysis. Configure in `.env`:
+
+```bash
+GROQ_API_KEY=your_groq_api_key_here
+AI_MODEL=openai/gpt-oss-120b
+```
+
+The project evaluation endpoints are throttled per user (`AI_RATE_LIMIT_MAX`
+requests per `AI_RATE_LIMIT_WINDOW` seconds, default 20 per 60s) because each
+call is billed. Set `AI_RATE_LIMIT_MAX=0` to disable the throttle.
+
+Get your API key at: https://console.groq.com/keys
+
+Placeholder values will be rejected and fallback to standard templates.
 
 ## Deploy to Render
 

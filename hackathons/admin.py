@@ -116,4 +116,3 @@ class HackathonRegistrationAdmin(admin.ModelAdmin):
     def reset_check_in(self, request, queryset):
         updated = queryset.update(checked_in=False, checked_in_at=None)
         self.message_user(request, f"{updated} participant(s) check-in reset.")
-

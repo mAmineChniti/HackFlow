@@ -1,0 +1,558 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.title }} — HackFlow{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+    <!-- Breadcrumb & Back -->
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <a href="{% url 'projects:project_list' %}" class="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+            ← Back to Projects List
+        </a>
+        {% if can_review %}
+        <a href="{% url 'projects:admin_dashboard' %}" class="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline">
+            🛡️ Projects Admin Dashboard →
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Decision Banner if Rejected or Accepted -->
+    {% if project.status == 'rejected' and project.rejection_reason %}
+    <div class="mb-6 rounded-xl border border-destructive/30 bg-destructive/10 p-5 text-destructive shadow-sm">
+        <div class="flex items-start gap-3">
+            <span class="text-xl">⚠️</span>
+            <div>
+                <h3 class="text-sm font-bold"><span class="sr-only">Projet Refusé</span>Project Rejected</h3>
+                <p class="mt-1 text-xs leading-relaxed text-destructive/90">
+                    <strong>Rejection reason :</strong> {{ project.rejection_reason }}
+                </p>
+                {% if project.reviewed_by %}
+                <p class="mt-2 text-[11px] text-muted-foreground">
+                    Decision recorded by <strong>{{ project.reviewed_by.get_username }}</strong> on {{ project.reviewed_at|date:"d M Y at H:i" }}.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% elif project.status == 'accepted' and project.reviewed_by %}
+    <div class="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-emerald-500 shadow-sm flex items-center justify-between">
+        <div class="flex items-center gap-2.5 text-xs">
+            <span class="text-base">✓</span>
+            <span>This project has been <strong>reviewed and accepted</strong> for the hackathon by <strong>{{ project.reviewed_by.get_username }}</strong> on {{ project.reviewed_at|date:"d M Y at H:i" }}.</span>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Project Header -->
+    <div class="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div class="space-y-2">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="rounded-md bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                        {{ project.get_category_display }}
+                    </span>
+                    <span class="rounded-md bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">
+                        🏆 {{ project.hackathon|default:"HackFlow 2026" }}
+                    </span>
+                    {% if project.status == 'accepted' %}
+                        <span class="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-xs font-semibold text-emerald-500">
+                            ✓ Accepted
+                        </span>
+                    {% elif project.status == 'rejected' %}
+                        <span class="rounded-full bg-destructive/15 border border-destructive/30 px-2.5 py-0.5 text-xs font-semibold text-destructive">
+                            ✕ Rejected
+                        </span>
+                    {% elif project.status == 'submitted' %}
+                        <span class="rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-xs font-semibold text-amber-500">
+                            ⏳ Submitted (pending review)
+                        </span>
+                    {% else %}
+                        <span class="rounded-full border border-border px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                            Status : {{ project.get_status_display }}
+                        </span>
+                    {% endif %}
+                </div>
+                <h1 class="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+                    {{ project.title }}
+                </h1>
+                <p class="text-base text-muted-foreground">
+                    {{ project.tagline }}
+                </p>
+                <div class="flex flex-wrap items-center gap-4 text-xs text-muted-foreground pt-1">
+                    <span>Proposed by <strong class="text-foreground">{{ project.created_by.get_username }}</strong></span>
+                    <span>•</span>
+                    <span>Created on {{ project.created_at|date:"d M Y" }}</span>
+                    {% if project.submitted_at %}
+                    <span>•</span>
+                    <span>Submitted on {{ project.submitted_at|date:"d M Y at H:i" }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Action Buttons for Roles -->
+            <div class="flex flex-wrap items-center gap-2">
+                {% if can_review %}
+                    <!-- Action Organizer/Admin : Accept -->
+                    <form method="post" action="{% url 'projects:admin_review' project.slug %}" class="inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="decision" value="accept">
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <button type="submit" class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 transition shadow-xs">
+                            ✓ Accept Project
+                        </button>
+                    </form>
+                    <!-- Action Organizer/Admin : Reject with reason -->
+                    <button
+                        type="button"
+                        onclick="document.getElementById('reject-detail-box').classList.toggle('hidden')"
+                        class="rounded-lg bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90 transition shadow-xs"
+                    >
+                        ✕ Reject Project
+                    </button>
+                {% endif %}
+
+                {% if can_submit %}
+                    <!-- Action Team Member : Submit or Resubmit project -->
+                    <form method="post" action="{% url 'projects:project_submit' project.slug %}" class="inline" onsubmit='return confirm("{% if project.status == "rejected" %}Resubmit your project for review by the organizers?{% else %}Submit your project for review by the organizers?{% endif %}");'>
+                        {% csrf_token %}
+                        <button type="submit" class="rounded-lg bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition shadow-xs" aria-label="{% if project.status == 'rejected' %}Resubmit / Soumettre à nouveau{% else %}Submit / Soumettre{% endif %}">
+                            {% if project.status == 'rejected' %}
+                                <span class="sr-only">Soumettre à nouveau</span>🚀 Resubmit Project
+                            {% else %}
+                                <span class="sr-only">Soumettre</span>🚀 Submit Project
+                            {% endif %}
+                        </button>
+                    </form>
+                {% endif %}
+
+                {% if can_edit %}
+                    <a href="{% url 'projects:project_update' project.slug %}" class="rounded-lg border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground hover:bg-secondary/80" aria-label="Edit / Modifier">
+                        <span class="sr-only">Modifier</span>✏️ Edit
+                    </a>
+                {% endif %}
+
+                {% if can_run_ai %}
+                <!-- Action AI : Evaluate with Gemini -->
+                <button
+                    type="button"
+                    onclick="runAIEvaluation()"
+                    id="btn-run-ai"
+                    class="rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:from-purple-500 hover:to-indigo-500 transition shadow-sm inline-flex items-center gap-1.5"
+                >
+                    <span id="ai-eval-icon">✨</span> <span class="sr-only">Évaluer avec l'IA</span>Evaluate with AI
+                </button>
+                {% endif %}
+
+                {% if can_delete %}
+                    <a href="{% url 'projects:project_delete' project.slug %}" class="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20" aria-label="Delete / Supprimer">
+                        <span class="sr-only">Supprimer</span>🗑️ Delete
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Rejection Form Collapsible Box for Organizer / Admin -->
+        {% if can_review %}
+        <div id="reject-detail-box" class="hidden mt-6 border-t border-border/50 pt-4">
+            <div class="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                <h3 class="text-xs font-bold text-destructive mb-2 uppercase tracking-wider">
+                    Rejection Form — Mandatory reason
+                </h3>
+                <form method="post" action="{% url 'projects:admin_review' project.slug %}" class="space-y-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="decision" value="reject">
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <textarea
+                        name="rejection_reason"
+                        rows="3"
+                        required
+                        placeholder="Clearly state the reason for rejection..."
+                        class="w-full rounded-md border border-input bg-background p-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-destructive"
+                    ></textarea>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" onclick="document.getElementById('reject-detail-box').classList.add('hidden')" class="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground">
+                            Cancel
+                        </button>
+                        <button type="submit" class="rounded-md bg-destructive px-3.5 py-1.5 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90">
+                            Confirm Rejection
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Links: Demo / GitHub / Video -->
+        <div class="mt-6 flex flex-wrap items-center gap-3 border-t border-border/50 pt-4">
+            {% if project.repository_url %}
+                <a href="{{ project.repository_url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition">
+                    💻 GitHub Repo
+                </a>
+            {% endif %}
+            {% if project.demo_url %}
+                <a href="{{ project.demo_url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition">
+                    🚀 Live Demo
+                </a>
+            {% endif %}
+            {% if project.video_url %}
+                <a href="{{ project.video_url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition">
+                    🎥 Pitch Video
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Content: Description & Team -->
+    <div class="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <!-- Left Column: Description, Mentor Advice, AI, History -->
+        <div class="lg:col-span-2 space-y-6">
+            {% if can_run_ai %}
+            <!-- AI Evaluation Widget (Gemini) -->
+            <div id="ai-evaluation-container" class="hidden rounded-xl border border-purple-500/30 bg-purple-950/10 backdrop-blur-xs p-6 shadow-md transition-all">
+                <div class="flex items-center justify-between border-b border-purple-500/20 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-500/20 text-base">✨</span>
+                        <div>
+                            <h3 class="text-sm font-bold text-foreground"><span class="sr-only">Évaluation IA du Projet</span>AI Project Evaluation</h3>
+                            <p class="text-[11px] text-muted-foreground" id="ai-eval-source">Intelligent analysis</p>
+                        </div>
+                    </div>
+                    <div id="ai-score-badge" class="flex items-center gap-1.5 rounded-lg bg-purple-600/20 border border-purple-500/40 px-3 py-1 text-sm font-extrabold text-purple-600 dark:text-purple-300">
+                    </div>
+                </div>
+
+                <div id="ai-loading-state" class="py-8 text-center">
+                    <div class="inline-flex items-center gap-2 text-xs text-purple-600 dark:text-purple-400 font-medium">
+                        <svg class="animate-spin h-4 w-4 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                        AI analysis in progress with Gemini...
+                    </div>
+                </div>
+
+                <div id="ai-content-state" class="hidden mt-4 space-y-4">
+                    <div class="rounded-lg bg-card/60 border border-border/50 p-3.5">
+                        <h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">AI Jury Review</h4>
+                        <p id="ai-comment" class="text-xs text-foreground leading-relaxed"></p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="rounded-lg bg-emerald-500/5 border border-emerald-500/20 p-3">
+                            <h4 class="text-xs font-semibold text-emerald-500 flex items-center gap-1.5 mb-2">
+                                <span>✓</span> Key Strengths
+                            </h4>
+                            <ul id="ai-strengths" class="space-y-1.5 text-xs text-muted-foreground"></ul>
+                        </div>
+                        <div class="rounded-lg bg-amber-500/5 border border-amber-500/20 p-3">
+                            <h4 class="text-xs font-semibold text-amber-500 flex items-center gap-1.5 mb-2">
+                                <span>⚡</span> Improvement Areas
+                            </h4>
+                            <ul id="ai-weaknesses" class="space-y-1.5 text-xs text-muted-foreground"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="rounded-xl border border-border bg-card p-6 shadow-sm">
+                <h2 class="text-lg font-semibold text-foreground mb-4">About the Project</h2>
+                <div class="prose prose-invert max-w-none text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
+                    {{ project.description }}
+                </div>
+            </div>
+
+            <!-- Mentor Advice Section -->
+            {% if can_view_mentor_advice %}
+            <div id="mentor-advices-section" class="rounded-xl border border-indigo-500/30 bg-card p-6 shadow-sm space-y-4">
+                <div class="flex items-center justify-between border-b border-border/50 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-500 font-bold text-base">💡</span>
+                        <div>
+                            <h3 class="text-sm font-bold text-foreground"><span class="sr-only">Conseils du mentor</span>Mentor Advice</h3>
+                            <p class="text-[11px] text-muted-foreground">Mentorship & educational recommendations space</p>
+                        </div>
+                    </div>
+                    <span class="rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-xs font-semibold text-indigo-500">
+                        {{ mentor_advices|length }} advice{{ mentor_advices|length|pluralize }}
+                    </span>
+                </div>
+
+                {% if can_add_mentor_advice %}
+                <!-- Form reserved for mentors: text + Send Advice button -->
+                <form method="post" action="{% url 'projects:project_add_mentor_advice' project.slug %}" class="space-y-3 pt-1">
+                    {% csrf_token %}
+                    <div>
+                        <label for="id_texte" class="block text-xs font-medium text-foreground mb-1.5">
+                            Write advice for the team:
+                        </label>
+                        <textarea
+                            id="id_texte"
+                            name="texte"
+                            rows="3"
+                            required
+                            placeholder="Share your feedback, technical recommendations, or improvement areas for the team..."
+                            class="flex min-h-[90px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                        ></textarea>
+                    </div>
+                    <div class="flex justify-end">
+                        <button
+                            type="submit"
+                            id="btn-submit-mentor-advice"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500 transition shadow-sm"
+                        >
+                            <span>💬</span> <span class="sr-only">Envoyer le conseil</span>Send Advice
+                        </button>
+                    </div>
+                </form>
+                {% endif %}
+
+                <!-- Advice List (Read-only with mentor name and timestamp) -->
+                <div class="space-y-3 pt-2">
+                    {% if mentor_advices %}
+                        {% for conseil in mentor_advices %}
+                        <div class="rounded-lg border border-border/60 bg-muted/20 p-3.5 text-xs space-y-2">
+                            <div class="flex items-center justify-between text-muted-foreground">
+                                <span class="font-semibold text-foreground flex items-center gap-1.5">
+                                    <span class="text-indigo-400">👤</span>
+                                    Mentor : <strong>{{ conseil.mentor.get_full_name|default:conseil.mentor.username }}</strong>
+                                </span>
+                                <span class="text-[11px] font-mono text-muted-foreground whitespace-nowrap">
+                                    {{ conseil.date|date:"d M Y at H:i" }}
+                                </span>
+                            </div>
+                            <div class="text-foreground whitespace-pre-line leading-relaxed pl-3 border-l-2 border-indigo-500/40">
+                                {{ conseil.texte }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="rounded-lg border border-dashed border-border/70 p-4 text-center text-xs text-muted-foreground">
+                            No advice has been published yet for this project.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Decision & Submission History -->
+            {% if history %}
+            <div class="rounded-xl border border-border bg-card p-6 shadow-sm">
+                <h3 class="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
+                    <span class="sr-only">Historique des décisions et soumissions</span>&#128220; Decision &amp; Submission History
+                </h3>
+                <div class="space-y-3">
+                    {% for entry in history %}
+                    <div class="rounded-lg border border-border/60 bg-muted/20 p-3.5 text-xs">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="font-semibold text-foreground flex items-center gap-1.5">
+                                {% if entry.action == "submitted" %}
+                                    <span class="text-primary">&#128640;</span> Project submitted by <strong>{{ entry.acteur.get_username }}</strong>
+                                {% elif entry.action == "soumis_a_nouveau" %}
+                                    <span class="text-amber-500">&#128640;</span> <span class="sr-only">Projet soumis à nouveau par</span>Project resubmitted by <strong>{{ entry.acteur.get_username }}</strong>
+                                {% elif entry.action == "accepte" %}
+                                    <span class="text-emerald-500">&#10003;</span> Accepted by <strong>{{ entry.acteur.get_username }}</strong>
+                                {% elif entry.action == "refuse" %}
+                                    <span class="text-destructive">&#10005;</span> Rejected by <strong>{{ entry.acteur.get_username }}</strong>
+                                {% elif entry.action == "en_evaluation" %}
+                                    <span class="text-blue-500">&#128269;</span> Placed under review by <strong>{{ entry.acteur.get_username }}</strong>
+                                {% elif entry.action == "finaliste" %}
+                                    <span class="text-violet-500">&#127941;</span> Marked finalist by <strong>{{ entry.acteur.get_username }}</strong>
+                                {% elif entry.action == "laureat" %}
+                                    <span class="text-yellow-500">&#127942;</span> Declared winner by <strong>{{ entry.acteur.get_username }}</strong>
+                                {% else %}
+                                    <span>&#128204;</span> {{ entry.get_action_display }} by <strong>{{ entry.acteur.get_username }}</strong>
+                                {% endif %}
+                            </span>
+                            <span class="text-[11px] font-mono text-muted-foreground whitespace-nowrap">
+                                {{ entry.date|date:"d/m/Y H:i" }}
+                            </span>
+                        </div>
+                        {% if entry.commentaire %}
+                        <div class="mt-2 rounded bg-destructive/10 border border-destructive/20 p-2 text-destructive">
+                            <strong class="font-semibold">Reason :</strong> {{ entry.commentaire }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column : Team Members -->
+        <div class="space-y-6">
+            <div class="rounded-xl border border-border bg-card p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-base font-semibold text-foreground">Team ({{ memberships|length }})</h2>
+                    {% if can_manage_members %}
+                        <span class="rounded bg-secondary px-2 py-0.5 text-[11px] text-muted-foreground">Collaborators</span>
+                    {% else %}
+                        <span class="rounded bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[11px] text-amber-500 font-medium"><span class="sr-only">🔒 Équipe verrouillée</span>🔒 Team locked</span>
+                    {% endif %}
+                </div>
+
+                <div class="divide-y divide-border/50">
+                    {% for m in memberships %}
+                        <div class="flex items-center justify-between py-3">
+                            <div class="flex items-center gap-2.5">
+                                <div class="h-8 w-8 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center text-xs">
+                                    {{ m.user.get_username|slice:":1"|upper }}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-foreground">{{ m.user.get_username }}</p>
+                                    <p class="text-xs text-muted-foreground">{{ m.get_role_display }}</p>
+                                </div>
+                            </div>
+
+                            {% if can_manage_members and m.user != project.created_by %}
+                                <form method="post" action="{% url 'projects:member_remove' project.slug m.id %}" onsubmit="return confirm('Remove this member?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-xs text-destructive hover:underline" aria-label="Remove / Retirer">
+                                        <span class="sr-only">Retirer</span>Remove
+                                    </button>
+                                </form>
+                            {% elif can_manage_members and m.user == request.user and m.user != project.created_by %}
+                                <form method="post" action="{% url 'projects:member_remove' project.slug m.id %}" onsubmit="return confirm('Leave the project?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-xs text-muted-foreground hover:text-destructive">
+                                        Leave
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% empty %}
+                        <p class="text-xs text-muted-foreground py-2">No members added yet.</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Add Member Form (Visible only by Project Lead when draft/rejected) -->
+                {% if can_manage_members and member_form %}
+                    <div class="mt-6 border-t border-border/50 pt-4">
+                        <h3 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3" aria-label="Add Student / Ajouter un étudiant">
+                            <span class="sr-only">Ajouter un étudiant</span>Add Student
+                        </h3>
+                        {% if member_form.fields.user.queryset.exists %}
+                            <form method="post" action="{% url 'projects:member_add' project.slug %}" class="space-y-3">
+                                {% csrf_token %}
+                                <div>
+                                    <label class="block text-xs text-muted-foreground mb-1">Student</label>
+                                    {{ member_form.user }}
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-muted-foreground mb-1">Role</label>
+                                    {{ member_form.role }}
+                                </div>
+                                <button type="submit" class="w-full rounded-md bg-secondary py-1.5 text-xs font-medium text-secondary-foreground hover:bg-secondary/80">
+                                    + Add to Team
+                                </button>
+                            </form>
+                        {% else %}
+                            <p class="text-xs text-muted-foreground py-1">
+                                No other students available to add to this team.
+                            </p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Build list items with textContent: AI output (and the project text it is
+// derived from) must never be interpreted as HTML.
+function renderAiList(container, items, bulletClass, emptyText) {
+    container.textContent = "";
+    if (!items || items.length === 0) {
+        const empty = document.createElement("li");
+        empty.className = "text-muted-foreground";
+        empty.textContent = emptyText;
+        container.appendChild(empty);
+        return;
+    }
+    items.forEach(function (item) {
+        const li = document.createElement("li");
+        li.className = "flex items-start gap-1.5";
+        const bullet = document.createElement("span");
+        bullet.className = bulletClass + " mt-0.5";
+        bullet.textContent = "•";
+        const text = document.createElement("span");
+        text.textContent = String(item);
+        li.appendChild(bullet);
+        li.appendChild(text);
+        container.appendChild(li);
+    });
+}
+
+function runAIEvaluation() {
+    const container = document.getElementById("ai-evaluation-container");
+    const loadingState = document.getElementById("ai-loading-state");
+    const contentState = document.getElementById("ai-content-state");
+    const scoreBadge = document.getElementById("ai-score-badge");
+    const commentEl = document.getElementById("ai-comment");
+    const strengthsEl = document.getElementById("ai-strengths");
+    const weaknessesEl = document.getElementById("ai-weaknesses");
+    const sourceEl = document.getElementById("ai-eval-source");
+    const btn = document.getElementById("btn-run-ai");
+    const icon = document.getElementById("ai-eval-icon");
+
+    container.classList.remove("hidden");
+    container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    loadingState.classList.remove("hidden");
+    contentState.classList.add("hidden");
+
+    btn.disabled = true;
+    icon.textContent = "⏳";
+
+    fetch("{% url 'projects:ai_analyze' project.slug %}", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": "{{ csrf_token }}",
+            "Content-Type": "application/json"
+        }
+    })
+    .then(response => response.json().catch(() => ({})).then(payload => {
+        if (!response.ok) {
+            throw new Error(payload.error || ("HTTP error " + response.status));
+        }
+        return payload;
+    }))
+    .then(data => {
+        loadingState.classList.add("hidden");
+        contentState.classList.remove("hidden");
+
+        scoreBadge.textContent = "";
+        scoreBadge.appendChild(document.createTextNode("⭐ "));
+        const scoreValue = document.createElement("span");
+        scoreValue.textContent = String(data.score);
+        scoreBadge.appendChild(scoreValue);
+        scoreBadge.appendChild(document.createTextNode("/10"));
+
+        if (data.source_key === "cache") {
+            sourceEl.textContent = "Cached evaluation";
+        } else if (data.source_key === "remote") {
+            sourceEl.textContent = "Evaluated live with " + (data.source || "the AI model");
+        } else {
+            sourceEl.textContent = "Evaluated by the built-in heuristic engine";
+        }
+
+        commentEl.textContent = data.comment || "Evaluation completed.";
+
+        renderAiList(strengthsEl, data.strengths, "text-emerald-500", "None specified.");
+        renderAiList(weaknessesEl, data.weaknesses, "text-amber-500", "None specified.");
+
+        btn.disabled = false;
+        icon.textContent = "✨";
+    })
+    .catch(error => {
+        console.error("AI Error:", error);
+        loadingState.classList.add("hidden");
+        contentState.classList.remove("hidden");
+        scoreBadge.textContent = "⚠️ Error";
+        commentEl.textContent = error.message || "Unable to evaluate this project at the moment. Please try again later.";
+        strengthsEl.textContent = "";
+        weaknessesEl.textContent = "";
+        btn.disabled = false;
+        icon.textContent = "✨";
+    });
+}
+</script>
+{% endblock %}

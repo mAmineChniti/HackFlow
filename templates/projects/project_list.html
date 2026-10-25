@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Hackathon Projects — HackFlow{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <!-- Header Section -->
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-border/50 pb-6">
+        <div>
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary mb-2">
+                Projects Module
+            </span>
+            <h1 class="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                Projects & Hackathons
+            </h1>
+            <p class="mt-1 text-sm text-muted-foreground">
+                Discover innovative solutions built by student teams or submit your own project.
+            </p>
+        </div>
+        <div class="flex items-center gap-3">
+            {% if user_role == 'admin' or user_role == 'organizer' %}
+            <a href="{% url 'projects:admin_dashboard' %}" class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-medium text-primary shadow-sm transition hover:bg-primary/20">
+                <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                Admin / Organizer Area
+            </a>
+            {% endif %}
+            {% if can_create %}
+            <a href="{% url 'projects:project_create' %}" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition hover:bg-primary/90">
+                + New Project
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Filters & Search -->
+    <div class="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <form method="get" class="flex flex-1 items-center gap-2 max-w-md">
+            <div class="relative w-full">
+                <input
+                    type="text"
+                    name="q"
+                    value="{{ query }}"
+                    placeholder="Search by title, keyword..."
+                    class="h-10 w-full rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+            </div>
+            {% if selected_category %}
+                <input type="hidden" name="category" value="{{ selected_category }}">
+            {% endif %}
+            <button type="submit" class="rounded-md bg-secondary px-3.5 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/80">
+                Search
+            </button>
+            {% if query or selected_category %}
+                <a href="{% url 'projects:project_list' %}" class="text-xs text-muted-foreground underline hover:text-foreground">
+                    Reset
+                </a>
+            {% endif %}
+        </form>
+
+        <!-- Category Filter -->
+        <div class="flex flex-wrap items-center gap-1.5">
+            <a
+                href="?{% if query %}q={{ query }}&{% endif %}"
+                class="rounded-full px-3 py-1 text-xs font-medium transition {% if not selected_category %}bg-primary text-primary-foreground{% else %}bg-secondary text-secondary-foreground hover:bg-secondary/80{% endif %}"
+            >
+                All
+            </a>
+            {% for cat_val, cat_label in categories %}
+                <a
+                    href="?category={{ cat_val }}{% if query %}&q={{ query }}{% endif %}"
+                    class="rounded-full px-3 py-1 text-xs font-medium transition {% if selected_category == cat_val %}bg-primary text-primary-foreground{% else %}bg-secondary text-secondary-foreground hover:bg-secondary/80{% endif %}"
+                >
+                    {{ cat_label }}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Projects Grid -->
+    <div class="mt-8">
+        {% if projects %}
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {% for project in projects %}
+                    <div class="group relative flex flex-col justify-between rounded-xl border border-border bg-card p-5 shadow-sm transition hover:border-primary/50 hover:shadow-md">
+                        <div>
+                            <!-- Card Header -->
+                            <div class="flex items-start justify-between gap-2">
+                                <span class="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                                    {{ project.get_category_display }}
+                                </span>
+                                <span class="rounded-full border border-border px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                                    {{ project.get_status_display }}
+                                </span>
+                            </div>
+
+                            <!-- Title & Tagline -->
+                            <h2 class="mt-3 text-lg font-semibold text-foreground group-hover:text-primary transition">
+                                <a href="{% url 'projects:project_detail' project.slug %}">
+                                    {{ project.title }}
+                                </a>
+                            </h2>
+                            <p class="mt-1 text-xs text-muted-foreground line-clamp-2">
+                                {{ project.tagline }}
+                            </p>
+                        </div>
+
+                        <!-- Card Footer -->
+                        <div class="mt-6 border-t border-border/50 pt-3">
+                            <div class="flex items-center justify-between text-xs text-muted-foreground">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="inline-block h-6 w-6 rounded-full bg-secondary text-center leading-6 font-semibold text-foreground">
+                                        {{ project.created_by.get_username|slice:":1"|upper }}
+                                    </span>
+                                    <span>{{ project.created_by.get_username }}</span>
+                                </div>
+                                <span class="flex items-center gap-1">
+                                    👥 {{ project.members.count }} member{{ project.members.count|pluralize }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="rounded-xl border border-dashed border-border p-12 text-center">
+                <div class="text-4xl">🚀</div>
+                <h3 class="mt-2 text-base font-semibold text-foreground">No projects found</h3>
+                <p class="mt-1 text-sm text-muted-foreground">
+                    Be the first team to submit a project for this hackathon!
+                </p>
+                <div class="mt-4">
+                    <a href="{% url 'projects:project_create' %}" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90">
+                        Create a Project
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

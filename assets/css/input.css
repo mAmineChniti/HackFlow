@@ -5,6 +5,7 @@
 
 /* Explicit source globs so Tailwind sees templates and view data classes. */
 @source "../../templates/**/*.html";
+@source "../../sponsors/templates/**/*.html";
 @source "../../core/**/*.py";
 
 /* ---------------------------------------------------------------------------

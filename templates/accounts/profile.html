@@ -83,6 +83,15 @@
 
                 {% include "accounts/_form_field.html" with field=form.username %}
                 {% include "accounts/_form_field.html" with field=form.email %}
+                <div class="space-y-2">
+                    <span class="text-sm font-medium leading-none">Role</span>
+                    <p class="flex h-9 items-center rounded-md border border-input bg-muted/40 px-3 text-sm text-muted-foreground">
+                        {{ profile.get_role_display }}
+                    </p>
+                    <p class="text-xs leading-relaxed text-muted-foreground">
+                        Roles are granted by the HackFlow team. Contact an organizer if your role is incorrect.
+                    </p>
+                </div>
 
                 <div class="flex items-center gap-2 text-xs text-muted-foreground">
                     {% if profile.email_verified %}

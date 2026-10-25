@@ -179,7 +179,7 @@ def home(request):
 
     return render(
         request,
-        "home.html",
+        "core/home.html",
         {
             "hackathons": db_hackathons if db_hackathons else HACKATHONS,
             "using_db_hackathons": bool(db_hackathons),
