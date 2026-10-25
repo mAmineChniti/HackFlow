@@ -500,3 +500,130 @@ class InvitationModelTests(BaseTeamTestCase):
 
     def test_str(self):
         self.assertIn("En attente", str(self.make()))
+
+
+class InvitationServiceTests(BaseTeamTestCase):
+    def invite(self, invitee=None, team=None, invited_by=None):
+        return services.invite_user(
+            team=team or self.team,
+            invited_by=invited_by or self.leader,
+            invitee=invitee or self.member,
+            message="Rejoins-nous !",
+        )
+
+    # ---- inviter
+    def test_leader_can_invite(self):
+        invitation = self.invite()
+        self.assertEqual(invitation.status, Invitation.Status.PENDING)
+        self.assertEqual(invitation.invitee, self.member)
+
+    def test_non_leader_cannot_invite(self):
+        with self.assertRaises(services.TeamError):
+            self.invite(invitee=self.outsider, invited_by=self.member)
+
+    def test_cannot_invite_yourself(self):
+        with self.assertRaises(services.TeamError):
+            self.invite(invitee=self.leader)
+
+    def test_cannot_invite_when_team_is_full(self):
+        self.team.max_members = 1
+        self.team.save()
+        with self.assertRaises(services.TeamError):
+            self.invite()
+
+    def test_cannot_invite_user_already_in_a_team_of_the_hackathon(self):
+        services.join_team(team=self.team, user=self.member, role="backend")
+        with self.assertRaises(services.TeamError):
+            self.invite()
+
+    def test_cannot_invite_twice_while_pending(self):
+        self.invite()
+        with self.assertRaises(services.TeamError):
+            self.invite()
+
+    def test_can_invite_again_after_decline(self):
+        invitation = self.invite()
+        services.decline_invitation(invitation=invitation, user=self.member)
+        self.invite()
+        self.assertEqual(Invitation.objects.filter(status="pending").count(), 1)
+
+    # ---- accepter
+    def test_accept_adds_member_with_profile_role_and_skills(self):
+        SkillProfile.objects.create(user=self.member, main_role="frontend", skills="react, css")
+        invitation = self.invite()
+        services.accept_invitation(invitation=invitation, user=self.member)
+        membership = self.team.members.get(user=self.member)
+        self.assertEqual(membership.role, "frontend")
+        self.assertEqual(membership.skills, "react, css")
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.status, Invitation.Status.ACCEPTED)
+        self.assertIsNotNone(invitation.responded_at)
+
+    def test_accept_without_profile_uses_other_role(self):
+        invitation = self.invite()
+        services.accept_invitation(invitation=invitation, user=self.member)
+        self.assertEqual(self.team.members.get(user=self.member).role, "other")
+
+    def test_accept_by_someone_else_is_refused(self):
+        invitation = self.invite()
+        with self.assertRaises(services.TeamError):
+            services.accept_invitation(invitation=invitation, user=self.outsider)
+        self.assertFalse(self.team.members.filter(user=self.outsider).exists())
+
+    def test_accept_twice_is_refused(self):
+        invitation = self.invite()
+        services.accept_invitation(invitation=invitation, user=self.member)
+        with self.assertRaises(services.TeamError):
+            services.accept_invitation(invitation=invitation, user=self.member)
+
+    def test_accept_fails_if_team_became_full_and_stays_pending(self):
+        self.team.max_members = 2
+        self.team.save()
+        first = self.invite(invitee=self.member)
+        second = self.invite(invitee=self.outsider)
+        services.accept_invitation(invitation=first, user=self.member)
+        with self.assertRaises(services.TeamError):
+            services.accept_invitation(invitation=second, user=self.outsider)
+        second.refresh_from_db()
+        self.assertEqual(second.status, Invitation.Status.PENDING)
+
+    def test_accept_cancels_other_pending_invitations_for_same_hackathon(self):
+        other_team = services.create_team(
+            leader=self.outsider, name="Beta Team", description="",
+            hackathon=self.hackathon, max_members=4,
+        )
+        first = self.invite()
+        second = self.invite(team=other_team, invited_by=self.outsider)
+        services.accept_invitation(invitation=first, user=self.member)
+        second.refresh_from_db()
+        self.assertEqual(second.status, Invitation.Status.CANCELLED)
+
+    # ---- refuser / annuler
+    def test_decline(self):
+        invitation = self.invite()
+        services.decline_invitation(invitation=invitation, user=self.member)
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.status, Invitation.Status.DECLINED)
+        self.assertFalse(self.team.members.filter(user=self.member).exists())
+
+    def test_decline_by_someone_else_is_refused(self):
+        invitation = self.invite()
+        with self.assertRaises(services.TeamError):
+            services.decline_invitation(invitation=invitation, user=self.outsider)
+
+    def test_leader_can_cancel(self):
+        invitation = self.invite()
+        services.cancel_invitation(invitation=invitation, user=self.leader)
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.status, Invitation.Status.CANCELLED)
+
+    def test_invitee_cannot_cancel(self):
+        invitation = self.invite()
+        with self.assertRaises(services.TeamError):
+            services.cancel_invitation(invitation=invitation, user=self.member)
+
+    def test_cannot_cancel_a_processed_invitation(self):
+        invitation = self.invite()
+        services.decline_invitation(invitation=invitation, user=self.member)
+        with self.assertRaises(services.TeamError):
+            services.cancel_invitation(invitation=invitation, user=self.leader)

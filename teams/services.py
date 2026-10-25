@@ -1,6 +1,7 @@
 from django.db import transaction
+from django.utils import timezone
 
-from .models import SkillProfile, Team, TeamMember
+from .models import Invitation, SkillProfile, Team, TeamMember
 
 
 class TeamError(Exception):
@@ -126,3 +127,84 @@ def suggest_candidates(team, limit=3):
             )
     results.sort(key=lambda r: (-r["score"], r["user"].username))
     return analysis, results[:limit]
+
+
+# ------------------------------------------------------------ Invitations
+@transaction.atomic
+def invite_user(*, team, invited_by, invitee, message=""):
+    team = Team.objects.select_for_update().get(pk=team.pk)
+    if team.leader_id != invited_by.pk:
+        raise TeamError("Seul le chef d'équipe peut inviter.")
+    if invitee.pk == invited_by.pk:
+        raise TeamError("Vous ne pouvez pas vous inviter vous-même.")
+    if team.is_full:
+        raise TeamError("L'équipe est déjà complète.")
+    if TeamMember.objects.filter(user=invitee, team__hackathon=team.hackathon).exists():
+        raise TeamError("Cet utilisateur fait déjà partie d'une équipe pour ce hackathon.")
+    if Invitation.objects.filter(
+        team=team, invitee=invitee, status=Invitation.Status.PENDING
+    ).exists():
+        raise TeamError("Une invitation est déjà en attente pour cet utilisateur.")
+    return Invitation.objects.create(
+        team=team, invitee=invitee, invited_by=invited_by, message=message[:200]
+    )
+
+
+def _lock_invitation(invitation):
+    return (
+        Invitation.objects.select_for_update(of=("self",))
+        .select_related("team")
+        .get(pk=invitation.pk)
+    )
+
+
+@transaction.atomic
+def accept_invitation(*, invitation, user):
+    invitation = _lock_invitation(invitation)
+    if invitation.invitee_id != user.pk:
+        raise TeamError("Cette invitation ne vous est pas destinée.")
+    if invitation.status != Invitation.Status.PENDING:
+        raise TeamError("Cette invitation n'est plus en attente.")
+
+    profile = SkillProfile.objects.filter(user=user).first()
+    role = profile.main_role if profile else TeamMember.Role.OTHER
+    skills = profile.skills if profile else ""
+    join_team(team=invitation.team, user=user, role=role, skills=skills)
+
+    now = timezone.now()
+    invitation.status = Invitation.Status.ACCEPTED
+    invitation.responded_at = now
+    invitation.save(update_fields=["status", "responded_at"])
+    # Ses autres invitations en attente pour ce hackathon n'ont plus de sens.
+    Invitation.objects.filter(
+        invitee=user,
+        status=Invitation.Status.PENDING,
+        team__hackathon=invitation.team.hackathon,
+    ).exclude(pk=invitation.pk).update(status=Invitation.Status.CANCELLED, responded_at=now)
+    return invitation
+
+
+@transaction.atomic
+def decline_invitation(*, invitation, user):
+    invitation = _lock_invitation(invitation)
+    if invitation.invitee_id != user.pk:
+        raise TeamError("Cette invitation ne vous est pas destinée.")
+    if invitation.status != Invitation.Status.PENDING:
+        raise TeamError("Cette invitation n'est plus en attente.")
+    invitation.status = Invitation.Status.DECLINED
+    invitation.responded_at = timezone.now()
+    invitation.save(update_fields=["status", "responded_at"])
+    return invitation
+
+
+@transaction.atomic
+def cancel_invitation(*, invitation, user):
+    invitation = _lock_invitation(invitation)
+    if invitation.team.leader_id != user.pk:
+        raise TeamError("Seul le chef d'équipe peut annuler une invitation.")
+    if invitation.status != Invitation.Status.PENDING:
+        raise TeamError("Cette invitation n'est plus en attente.")
+    invitation.status = Invitation.Status.CANCELLED
+    invitation.responded_at = timezone.now()
+    invitation.save(update_fields=["status", "responded_at"])
+    return invitation
