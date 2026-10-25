@@ -171,10 +171,14 @@ CORS support is disabled by default. To enable for API endpoints:
 
 ### AI Features
 
-AI features require API keys to be configured:
+AI features use Groq API for both sponsors email generation and project analysis. Configure in `.env`:
 
-- **Sponsors email generation**: Set `ANTHROPIC_API_KEY` in `.env`
-- **Project analysis**: Set `GEMINI_API_KEY` in `.env`
+```bash
+GROQ_API_KEY=your_groq_api_key_here
+AI_MODEL=openai/gpt-oss-120b
+```
+
+Get your API key at: https://console.groq.com/keys
 
 Placeholder values will be rejected and fallback to standard templates.
 

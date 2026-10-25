@@ -4,7 +4,7 @@ Générateur de messages de prospection par Intelligence Artificielle (Staff onl
 Règles de sécurité et RGPD :
 - Données transmises au LLM : STRICTEMENT nom, secteur, description publique, et infos publiques du hackathon.
 - Données STRICTEMENT EXCLUES : amount, notes, contact_name, contact_email (aucun secret ni donnée sensible).
-- En l'absence de clé API (ANTHROPIC_API_KEY vide), ou en cas d'erreur/timeout (15s) :
+- En l'absence de clé API (GROQ_API_KEY vide), ou en cas d'erreur/timeout (15s) :
   repli transparent sur le modèle standard via compose_email() avec notification explicite.
 - Aucun envoi direct : le texte est injecté dans le formulaire pour relecture et édition par l'organisateur.
 """
@@ -23,7 +23,7 @@ from sponsors.services import check_and_increment_email_rate_limit, compose_emai
 logger = logging.getLogger(__name__)
 
 # Modèle et prompt système lisibles et configurables
-DEFAULT_AI_MODEL = "claude-haiku-5-5"
+DEFAULT_AI_MODEL = "openai/gpt-oss-120b"
 API_TIMEOUT_SECONDS = 15
 
 PROMPT_SYSTEM_EMAIL = (
@@ -42,11 +42,11 @@ PROMPT_SYSTEM_EMAIL = (
 
 def get_ai_config() -> tuple:
     """Get the API key and model from the environment or Django settings."""
-    api_key = os.getenv("ANTHROPIC_API_KEY", getattr(settings, "ANTHROPIC_API_KEY", "")).strip()
+    api_key = os.getenv("GROQ_API_KEY", getattr(settings, "GROQ_API_KEY", "")).strip()
     model = os.getenv("AI_MODEL", getattr(settings, "AI_MODEL", DEFAULT_AI_MODEL)).strip() or DEFAULT_AI_MODEL
     # Reject placeholder or empty keys
-    if not api_key or api_key.lower() in ("", "none", "null") or "your_api_key" in api_key.lower():
-        logger.warning("ANTHROPIC_API_KEY not configured or contains placeholder - using fallback")
+    if not api_key or api_key.lower() in ("", "none", "null") or "your_api_key" in api_key.lower() or "gsk_" not in api_key:
+        logger.warning("GROQ_API_KEY not configured or contains placeholder - using fallback")
         return "", model
     return api_key, model
 
@@ -150,15 +150,17 @@ def generate_prospecting_email(
     sanitized_data = build_sanitized_ai_payload(sponsor, hackathon, tone=tone)
 
     headers = {
-        "x-api-key": api_key,
-        "anthropic-version": "2023-06-01",
+        "Authorization": f"Bearer {api_key}",
         "content-type": "application/json",
     }
     request_body = json.dumps({
         "model": model,
         "max_tokens": 600,
-        "system": PROMPT_SYSTEM_EMAIL,
         "messages": [
+            {
+                "role": "system",
+                "content": PROMPT_SYSTEM_EMAIL,
+            },
             {
                 "role": "user",
                 "content": sanitized_data["user_instructions"],
@@ -169,15 +171,15 @@ def generate_prospecting_email(
     # 4. Appel avec timeout court (15 secondes) et repli transparent en cas d'erreur
     try:
         req = urllib.request.Request(
-            "https://api.anthropic.com/v1/messages",
+            "https://api.groq.com/openai/v1/chat/completions",
             data=request_body,
             headers=headers,
             method="POST",
         )
         with urllib.request.urlopen(req, timeout=API_TIMEOUT_SECONDS) as resp:
             data = json.loads(resp.read().decode("utf-8"))
-            content_blocks = data.get("content", [])
-            raw_text = content_blocks[0].get("text", "") if content_blocks else ""
+            choices = data.get("choices", [])
+            raw_text = choices[0].get("message", {}).get("content", "") if choices else ""
 
             if raw_text:
                 subject, body = parse_llm_response(raw_text)
