@@ -25,9 +25,10 @@ class TeamListView(ListView):
     paginate_by = 9
 
     def get_queryset(self):
-        qs = (
+                qs = (
             Team.objects.select_related("hackathon", "leader")
             .annotate(member_count=Count("members"))
+            .order_by("-created_at")
         )
         q = self.request.GET.get("q", "").strip()
         hackathon = self.request.GET.get("hackathon", "").strip()
