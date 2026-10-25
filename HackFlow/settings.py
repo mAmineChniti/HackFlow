@@ -201,7 +201,7 @@ SPONSORS_USE_PROFILE_ROLE = env_bool("SPONSORS_USE_PROFILE_ROLE", False)
 SPONSORS_USE_GROUP_ROLES = env_bool("SPONSORS_USE_GROUP_ROLES", False)
 
 LANGUAGE_CODE = "en-us"
-TIME_ZONE = "Africa/Tunis"
+TIME_ZONE = os.getenv("TIME_ZONE", "Africa/Tunis")
 USE_I18N = True
 USE_TZ = True
 

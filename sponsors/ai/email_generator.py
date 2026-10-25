@@ -44,6 +44,10 @@ def get_ai_config() -> tuple:
     """Get the API key and model from the environment or Django settings."""
     api_key = os.getenv("ANTHROPIC_API_KEY", getattr(settings, "ANTHROPIC_API_KEY", "")).strip()
     model = os.getenv("AI_MODEL", getattr(settings, "AI_MODEL", DEFAULT_AI_MODEL)).strip() or DEFAULT_AI_MODEL
+    # Reject placeholder or empty keys
+    if not api_key or api_key.lower() in ("", "none", "null") or "your_api_key" in api_key.lower():
+        logger.warning("ANTHROPIC_API_KEY not configured or contains placeholder - using fallback")
+        return "", model
     return api_key, model
 
 

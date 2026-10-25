@@ -29,7 +29,9 @@ CATEGORY_CHOICES = {
 def _get_gemini_model():
     """Initialise et retourne le modèle Gemini si une clé valide est disponible."""
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    if not api_key or "your_gemini_api_key" in api_key:
+    # Reject placeholder or empty keys
+    if not api_key or "your_gemini_api_key" in api_key or api_key.lower() in ("", "none", "null"):
+        logger.warning("GEMINI_API_KEY not configured or contains placeholder - using fallback")
         return None
     try:
         import google.generativeai as genai
