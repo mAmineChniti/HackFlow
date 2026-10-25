@@ -10,11 +10,9 @@ from django.core.cache import cache
 from django.db import DataError, transaction
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
-from django.utils.decorators import method_decorator
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django.views import View
-from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import FormView
 
 from .emails import send_verification_email
@@ -84,7 +82,6 @@ class LoginView(auth_views.LoginView):
         )
 
 
-@method_decorator(csrf_exempt, name="dispatch")
 class SignupView(FormView):
     template_name = "accounts/signup.html"
     form_class = HackFlowSignupForm
@@ -119,7 +116,6 @@ class SignupView(FormView):
         return super().form_valid(form)
 
 
-@method_decorator(csrf_exempt, name="dispatch")
 class LogoutView(View):
     def post(self, request, *args, **kwargs):
         logout(request)

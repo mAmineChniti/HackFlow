@@ -457,6 +457,31 @@
 </div>
 
 <script>
+// Build list items with textContent: AI output (and the project text it is
+// derived from) must never be interpreted as HTML.
+function renderAiList(container, items, bulletClass, emptyText) {
+    container.textContent = "";
+    if (!items || items.length === 0) {
+        const empty = document.createElement("li");
+        empty.className = "text-muted-foreground";
+        empty.textContent = emptyText;
+        container.appendChild(empty);
+        return;
+    }
+    items.forEach(function (item) {
+        const li = document.createElement("li");
+        li.className = "flex items-start gap-1.5";
+        const bullet = document.createElement("span");
+        bullet.className = bulletClass + " mt-0.5";
+        bullet.textContent = "•";
+        const text = document.createElement("span");
+        text.textContent = String(item);
+        li.appendChild(bullet);
+        li.appendChild(text);
+        container.appendChild(li);
+    });
+}
+
 function runAIEvaluation() {
     const container = document.getElementById("ai-evaluation-container");
     const loadingState = document.getElementById("ai-loading-state");
@@ -484,51 +509,35 @@ function runAIEvaluation() {
             "Content-Type": "application/json"
         }
     })
-    .then(response => {
+    .then(response => response.json().catch(() => ({})).then(payload => {
         if (!response.ok) {
-            throw new Error("HTTP error " + response.status);
+            throw new Error(payload.error || ("HTTP error " + response.status));
         }
-        return response.json();
-    })
+        return payload;
+    }))
     .then(data => {
         loadingState.classList.add("hidden");
         contentState.classList.remove("hidden");
 
-        scoreBadge.innerHTML = `⭐ <span>${data.score}</span>/10`;
+        scoreBadge.textContent = "";
+        scoreBadge.appendChild(document.createTextNode("⭐ "));
+        const scoreValue = document.createElement("span");
+        scoreValue.textContent = String(data.score);
+        scoreBadge.appendChild(scoreValue);
+        scoreBadge.appendChild(document.createTextNode("/10"));
 
-        if (data.source === "cache") {
+        if (data.source_key === "cache") {
             sourceEl.textContent = "Cached evaluation";
-        } else if (data.source === "gemini") {
-            sourceEl.textContent = "Evaluated live with Gemini AI";
+        } else if (data.source_key === "remote") {
+            sourceEl.textContent = "Evaluated live with " + (data.source || "the AI model");
         } else {
-            sourceEl.textContent = "Evaluated by AI Engine";
+            sourceEl.textContent = "Evaluated by the built-in heuristic engine";
         }
 
         commentEl.textContent = data.comment || "Evaluation completed.";
 
-        strengthsEl.innerHTML = "";
-        if (data.strengths && data.strengths.length > 0) {
-            data.strengths.forEach(s => {
-                const li = document.createElement("li");
-                li.className = "flex items-start gap-1.5";
-                li.innerHTML = `<span class="text-emerald-500 mt-0.5">•</span> <span>${s}</span>`;
-                strengthsEl.appendChild(li);
-            });
-        } else {
-            strengthsEl.innerHTML = "<li class='text-muted-foreground'>None specified.</li>";
-        }
-
-        weaknessesEl.innerHTML = "";
-        if (data.weaknesses && data.weaknesses.length > 0) {
-            data.weaknesses.forEach(w => {
-                const li = document.createElement("li");
-                li.className = "flex items-start gap-1.5";
-                li.innerHTML = `<span class="text-amber-500 mt-0.5">•</span> <span>${w}</span>`;
-                weaknessesEl.appendChild(li);
-            });
-        } else {
-            weaknessesEl.innerHTML = "<li class='text-muted-foreground'>None specified.</li>";
-        }
+        renderAiList(strengthsEl, data.strengths, "text-emerald-500", "None specified.");
+        renderAiList(weaknessesEl, data.weaknesses, "text-amber-500", "None specified.");
 
         btn.disabled = false;
         icon.textContent = "✨";
@@ -537,10 +546,10 @@ function runAIEvaluation() {
         console.error("AI Error:", error);
         loadingState.classList.add("hidden");
         contentState.classList.remove("hidden");
-        scoreBadge.innerHTML = "⚠️ Error";
-        commentEl.textContent = "Unable to evaluate this project at the moment. Please try again later.";
-        strengthsEl.innerHTML = "";
-        weaknessesEl.innerHTML = "";
+        scoreBadge.textContent = "⚠️ Error";
+        commentEl.textContent = error.message || "Unable to evaluate this project at the moment. Please try again later.";
+        strengthsEl.textContent = "";
+        weaknessesEl.textContent = "";
         btn.disabled = false;
         icon.textContent = "✨";
     });

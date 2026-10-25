@@ -1,5 +1,19 @@
 from django.contrib import admin
+from django.core.exceptions import PermissionDenied
+
+from . import services
 from .models import ConseilMentor, HistoriqueProjet, Project, ProjectMember
+
+# Status changes performed through the admin must reach the immutable audit log,
+# otherwise HistoriqueProjet stops being a complete record of decisions.
+STATUS_TO_HISTORY_ACTION = {
+    Project.Status.SUBMITTED: HistoriqueProjet.Action.SUBMITTED,
+    Project.Status.UNDER_REVIEW: HistoriqueProjet.Action.UNDER_REVIEW,
+    Project.Status.ACCEPTED: HistoriqueProjet.Action.ACCEPTED,
+    Project.Status.REJECTED: HistoriqueProjet.Action.REJECTED,
+    Project.Status.FINALIST: HistoriqueProjet.Action.FINALIST,
+    Project.Status.WINNER: HistoriqueProjet.Action.WINNER,
+}
 
 
 class HistoriqueProjetInline(admin.TabularInline):
@@ -110,30 +124,84 @@ class ProjectAdmin(admin.ModelAdmin):
 
     @admin.action(description="✅ Valider / Accepter les projets sélectionnés")
     def accept_selected_projects(self, request, queryset):
-        from django.utils import timezone
-        updated = queryset.update(
-            status=Project.Status.ACCEPTED,
-            rejection_reason="",
-            reviewed_by=request.user,
-            reviewed_at=timezone.now(),
+        # Goes through services.review_project so each decision is written to
+        # HistoriqueProjet and invalid statuses are skipped instead of forced.
+        accepted = skipped = 0
+        for project in queryset:
+            try:
+                services.review_project(project, request.user, "accept")
+            except (PermissionDenied, ValueError):
+                skipped += 1
+                continue
+            accepted += 1
+        self._report_action(
+            request, accepted, skipped, "accepté(s) avec succès"
         )
-        self.message_user(request, f"{updated} projet(s) accepté(s) avec succès.")
 
     @admin.action(description="❌ Refuser les projets sélectionnés")
     def reject_selected_projects(self, request, queryset):
-        from django.utils import timezone
-        updated = queryset.update(
-            status=Project.Status.REJECTED,
-            rejection_reason="Refusé depuis l'administration Django.",
-            reviewed_by=request.user,
-            reviewed_at=timezone.now(),
-        )
-        self.message_user(request, f"{updated} projet(s) refusé(s).")
+        rejected = skipped = 0
+        for project in queryset:
+            try:
+                services.review_project(
+                    project,
+                    request.user,
+                    "reject",
+                    "Refusé depuis l'administration Django.",
+                )
+            except (PermissionDenied, ValueError):
+                skipped += 1
+                continue
+            rejected += 1
+        self._report_action(request, rejected, skipped, "refusé(s)")
 
     @admin.action(description="⏳ Marquer en cours d'évaluation (Under Review)")
     def mark_under_review(self, request, queryset):
-        updated = queryset.update(status=Project.Status.UNDER_REVIEW)
-        self.message_user(request, f"{updated} projet(s) passé(s) en cours d'évaluation.")
+        updated = skipped = 0
+        for project in queryset:
+            try:
+                services.change_project_status(
+                    project, request.user, Project.Status.UNDER_REVIEW
+                )
+            except (PermissionDenied, ValueError):
+                skipped += 1
+                continue
+            updated += 1
+        self._report_action(
+            request, updated, skipped, "passé(s) en cours d'évaluation"
+        )
+
+    def _report_action(self, request, done: int, skipped: int, label: str):
+        message = f"{done} projet(s) {label}."
+        if skipped:
+            message += (
+                f" {skipped} ignoré(s) : statut non évaluable ou décision déjà appliquée."
+            )
+        self.message_user(request, message)
+
+    def save_model(self, request, obj, form, change):
+        """Record admin status edits (change form and list_editable) in history."""
+        previous_status = None
+        if change and obj.pk:
+            previous_status = (
+                Project.objects.filter(pk=obj.pk)
+                .values_list("status", flat=True)
+                .first()
+            )
+
+        super().save_model(request, obj, form, change)
+
+        if previous_status and previous_status != obj.status:
+            action = STATUS_TO_HISTORY_ACTION.get(obj.status)
+            if action:
+                services.create_history_entry(
+                    obj,
+                    action,
+                    request.user,
+                    commentaire=obj.rejection_reason
+                    if obj.status == Project.Status.REJECTED
+                    else "",
+                )
 
     @admin.display(description="Nb Membres")
     def members_count(self, obj):

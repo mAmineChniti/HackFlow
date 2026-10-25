@@ -87,7 +87,7 @@ def _fallback_analyse(title: str, tagline: str, description: str, category: str)
         "strengths": strengths,
         "weaknesses": weaknesses,
         "source": "moteur IA heuristique (configurez GEMINI_API_KEY dans .env pour le modèle distant)",
-        "error": None,
+        "source_key": "heuristic",
     }
 
 
@@ -139,12 +139,14 @@ Réponds UNIQUEMENT sous forme de JSON strict et valide :
             "strengths": data.get("strengths", [])[:3],
             "weaknesses": data.get("weaknesses", [])[:3],
             "source": "Google Gemini 1.5 Flash",
-            "error": None,
+            "source_key": "remote",
         }
     except Exception as e:
-        logger.warning(f"Erreur appel Gemini analyse_project: {e}")
+        # Log the detail server-side only: returning str(e) to the browser can
+        # expose endpoint URLs, project ids and credential-related messages.
+        logger.warning("Erreur appel Gemini analyse_project: %s", e)
         fallback = _fallback_analyse(title, tagline, description, category)
-        fallback["error"] = str(e)
+        fallback["failed"] = True
         return fallback
 
 
@@ -180,7 +182,7 @@ def _fallback_detect_category(title: str, description: str) -> dict:
         "confidence": confidence,
         "reason": f"Mots-clés pertinents détectés pour la catégorie {CATEGORY_CHOICES.get(best_cat, 'Autre')}.",
         "source": "Analyse sémantique locale",
-        "error": None,
+        "source_key": "heuristic",
     }
 
 
@@ -229,10 +231,10 @@ Réponds UNIQUEMENT sous forme de JSON strict :
             "confidence": data.get("confidence", "moyenne"),
             "reason": data.get("reason", "Catégorie déterminée par analyse sémantique Gemini."),
             "source": "Google Gemini 1.5 Flash",
-            "error": None,
+            "source_key": "remote",
         }
     except Exception as e:
-        logger.warning(f"Erreur appel Gemini detect_category: {e}")
+        logger.warning("Erreur appel Gemini detect_category: %s", e)
         fallback = _fallback_detect_category(title, description)
-        fallback["error"] = str(e)
+        fallback["failed"] = True
         return fallback

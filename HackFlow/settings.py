@@ -9,9 +9,12 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+INSECURE_DEV_SECRET_KEY = "django-insecure-dev-only-change-me"
 
 load_dotenv(BASE_DIR / ".env")
 load_dotenv()
@@ -25,8 +28,15 @@ def env_list(name: str, default: str = "") -> list:
     return [x.strip() for x in os.getenv(name, default).split(",") if x.strip()]
 
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-dev-only-change-me")
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", INSECURE_DEV_SECRET_KEY)
 DEBUG = env_bool("DJANGO_DEBUG", True)
+
+# Refuse to boot in production with the public development key: it signs
+# sessions and password-reset tokens, so it must never be the shipped default.
+if not DEBUG and SECRET_KEY == INSECURE_DEV_SECRET_KEY:
+    raise ImproperlyConfigured(
+        "DJANGO_SECRET_KEY must be set to a unique value when DJANGO_DEBUG=False."
+    )
 ALLOWED_HOSTS = env_list(
     "DJANGO_ALLOWED_HOSTS",
     "localhost,127.0.0.1,[::1],testserver" if DEBUG else "",
@@ -155,6 +165,10 @@ LOGIN_LOCKOUT_SECONDS = int(os.getenv("LOGIN_LOCKOUT_SECONDS", "900"))
 EMAIL_VERIFICATION_RESEND_COOLDOWN = int(
     os.getenv("EMAIL_VERIFICATION_RESEND_COOLDOWN", "60")
 )
+# AI endpoints cost money per call, so they are throttled per user.
+# Set AI_RATE_LIMIT_MAX to 0 to disable the throttle.
+AI_RATE_LIMIT_MAX = int(os.getenv("AI_RATE_LIMIT_MAX", "20"))
+AI_RATE_LIMIT_WINDOW = int(os.getenv("AI_RATE_LIMIT_WINDOW", "60"))
 
 # Cache: local-memory for development, Redis for production with multiple workers.
 # Login throttling and email verification cooldowns require a shared cache in multi-worker setups.
