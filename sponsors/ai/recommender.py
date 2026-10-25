@@ -78,9 +78,9 @@ def get_sponsor_text(sponsor: Sponsor) -> str:
 
 
 def extract_top_keywords(
-    hackathon_vec: np.ndarray,
-    sponsor_vec: np.ndarray,
-    feature_names: np.ndarray,
+    hackathon_vec: Any,
+    sponsor_vec: Any,
+    feature_names: Any,
     top_k: int = 3,
 ) -> List[str]:
     """

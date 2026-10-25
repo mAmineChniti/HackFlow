@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Register: {{ hackathon.title }} — HackFlow{% endblock %}
+
+{% block content %}
+<div class="container-page py-10 md:py-14 max-w-3xl">
+    <!-- Breadcrumb / Back -->
+    <div class="mb-6">
+        <a href="{{ hackathon.get_absolute_url }}" class="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
+            <c-lucideicon.arrow-left class="size-3.5" />
+            Back to Hackathon Details
+        </a>
+    </div>
+
+    <!-- Main Registration Card -->
+    <div class="relative overflow-hidden rounded-2xl border border-border/80 bg-card/70 p-6 md:p-10 shadow-2xl backdrop-blur-md space-y-8">
+        
+        <!-- Header -->
+        <div class="border-b border-border/60 pb-6">
+            <div class="flex flex-wrap items-center gap-2 mb-3">
+                <span class="rounded-md border border-primary/30 bg-primary/10 px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-wider text-primary">
+                    {{ hackathon.category }}
+                </span>
+                <span class="rounded-md border border-border/70 bg-background/60 px-2.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+                    {{ hackathon.get_mode_display }}
+                </span>
+                {% if is_full %}
+                <span class="rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-amber-400">
+                    Capacity Reached — Waitlist
+                </span>
+                {% endif %}
+            </div>
+
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                Register for {{ hackathon.title }}
+            </h1>
+            <p class="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                Complete this form to officially register. Your responses help organizers configure resources and match you with complementary teammates.
+            </p>
+        </div>
+
+        <!-- Notification Banner if event full (Waitlist) -->
+        {% if is_full %}
+        <div class="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-xs text-amber-300">
+            <div class="flex items-start gap-3">
+                <span class="text-lg">⏳</span>
+                <div>
+                    <strong class="font-semibold text-amber-200">Waitlist Mode Active:</strong>
+                    <p class="mt-1 leading-relaxed text-amber-300/90">
+                        The maximum capacity ({{ hackathon.max_participants }} participants) has been reached. Submitting this form adds you to the <strong>priority waitlist</strong>. If an approved participant withdraws before the deadline, you will automatically be promoted to confirmed and notified immediately via email.
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- AI Team Matchmaking hint -->
+        <div class="rounded-xl border border-primary/30 bg-gradient-to-r from-primary/10 via-background to-secondary/15 p-4">
+            <div class="flex items-start gap-3">
+                <span class="text-lg">🤖</span>
+                <div class="space-y-0.5 text-xs">
+                    <p class="font-semibold text-foreground">Smart Team Matchmaking</p>
+                    <p class="text-muted-foreground leading-relaxed text-[11px]">
+                        Specify your key skills and experience level accurately. HackFlow can recommend balanced, complementary teammates (e.g., Full-Stack Engineer + ML Specialist + UI/UX Designer).
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if form.non_field_errors %}
+        <c-alert variant="destructive">
+            <c-alert.description>
+                {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+                {% endfor %}
+            </c-alert.description>
+        </c-alert>
+        {% endif %}
+
+        <form method="post" class="space-y-8">
+            {% csrf_token %}
+
+            <!-- SECTION 1 : Academic Profile -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 border-b border-border/40 pb-2">
+                    <c-lucideicon.graduation-cap class="size-4 text-primary" />
+                    <h2 class="text-sm font-semibold tracking-wide text-foreground">1. Academic Background</h2>
+                </div>
+
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-medium text-foreground flex items-center justify-between">
+                            <span>University / Institution <strong class="text-destructive">*</strong></span>
+                            <span class="text-[10px] uppercase font-mono text-muted-foreground">Required</span>
+                        </label>
+                        {{ form.university }}
+                        {% for error in form.university.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-medium text-foreground flex items-center justify-between">
+                            <span>Study Level <strong class="text-destructive">*</strong></span>
+                            <span class="text-[10px] uppercase font-mono text-muted-foreground">Required</span>
+                        </label>
+                        {{ form.study_level }}
+                        {% for error in form.study_level.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2 : Skills & Experience -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 border-b border-border/40 pb-2">
+                    <c-lucideicon.code-2 class="size-4 text-primary" />
+                    <h2 class="text-sm font-semibold tracking-wide text-foreground">2. Technical Skills & Experience</h2>
+                </div>
+
+                <!-- Experience level -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-medium text-foreground flex items-center justify-between">
+                        <span>Overall Experience Level <strong class="text-destructive">*</strong></span>
+                        <span class="text-[10px] uppercase font-mono text-muted-foreground">Required</span>
+                    </label>
+                    {{ form.experience_level }}
+                    {% for error in form.experience_level.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                </div>
+
+                <!-- Skills Checkboxes -->
+                <div class="space-y-2">
+                    <label class="text-xs font-medium text-foreground flex items-center justify-between">
+                        <span>Key Skills (Select all that apply) <strong class="text-destructive">*</strong></span>
+                        <span class="text-[10px] uppercase font-mono text-muted-foreground">Select at least 1</span>
+                    </label>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                        {% for choice in form.selected_skills %}
+                        <label class="group flex items-center gap-2.5 rounded-lg border border-border/80 bg-card/60 px-3 py-2.5 text-xs text-foreground cursor-pointer select-none transition-all hover:border-primary/50 hover:bg-card/90 [&:has(:checked)]:border-primary [&:has(:checked)]:bg-primary/10 [&:has(:checked)]:text-primary [&_input]:size-4 [&_input]:shrink-0 [&_input]:accent-primary [&_input]:cursor-pointer">
+                            {{ choice.tag }}
+                            <span class="font-medium tracking-tight text-xs">{{ choice.choice_label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% for error in form.selected_skills.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                </div>
+
+                <!-- Other skills -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-medium text-foreground">
+                        Other Skills & Technologies (comma-separated)
+                    </label>
+                    {{ form.other_skills }}
+                    <p class="text-[11px] text-muted-foreground">Ex: PyTorch, Docker, Flutter, PostgreSQL, ThreeJS, Go...</p>
+                    {% for error in form.other_skills.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                </div>
+            </div>
+
+            <!-- SECTION 3 : Team & Logistics -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 border-b border-border/40 pb-2">
+                    <c-lucideicon.users class="size-4 text-primary" />
+                    <h2 class="text-sm font-semibold tracking-wide text-foreground">3. Team & Preferences</h2>
+                </div>
+
+                <!-- Seeking team checkbox -->
+                <div class="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3.5">
+                    <div class="pt-0.5">
+                        {{ form.seeking_team }}
+                    </div>
+                    <label for="{{ form.seeking_team.id_for_label }}" class="cursor-pointer space-y-0.5">
+                        <span class="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                            🤝 Looking for a team for this hackathon
+                        </span>
+                        <p class="text-[11px] text-muted-foreground leading-relaxed">
+                            Check this box if you don't have a team yet. Your profile will be suggested to other builders searching for skills like yours.
+                        </p>
+                    </label>
+                </div>
+
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <!-- T-shirt / Dietary -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-medium text-foreground">T-shirt Size & Dietary Restrictions</label>
+                        {{ form.tshirt_dietary }}
+                        <p class="text-[11px] text-muted-foreground">Ex: Size M — Vegetarian, Gluten-free, or None...</p>
+                        {% for error in form.tshirt_dietary.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <!-- Portfolio / LinkedIn -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-medium text-foreground">GitHub or LinkedIn Profile</label>
+                        {{ form.portfolio_url }}
+                        <p class="text-[11px] text-muted-foreground">Allows peers and organizers to discover your portfolio.</p>
+                        {% for error in form.portfolio_url.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                    </div>
+                </div>
+
+                <!-- Motivation -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-medium text-foreground">Motivation & Project Ideas (short text)</label>
+                    {{ form.motivation }}
+                    {% for error in form.motivation.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                </div>
+            </div>
+
+            <!-- SECTION 4 : Code of Conduct & Rules -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 border-b border-border/40 pb-2">
+                    <c-lucideicon.shield-check class="size-4 text-primary" />
+                    <h2 class="text-sm font-semibold tracking-wide text-foreground">4. Rules & Code of Conduct</h2>
+                </div>
+
+                <div class="rounded-xl border border-border/80 bg-background/50 p-4 space-y-3">
+                    <div class="flex items-start gap-3">
+                        <div class="pt-0.5">
+                            {{ form.accepted_rules }}
+                        </div>
+                        <label for="{{ form.accepted_rules.id_for_label }}" class="cursor-pointer text-xs text-foreground leading-relaxed">
+                            <strong class="font-semibold text-primary">I agree to the official hackathon rules and guidelines <span class="text-destructive">*</span></strong>
+                            <p class="mt-1 text-[11px] text-muted-foreground leading-relaxed">
+                                I commit to writing all original code within the official competition window, upholding the code of conduct, and respecting evaluation criteria and fair play on HackFlow.
+                            </p>
+                        </label>
+                    </div>
+                    {% for error in form.accepted_rules.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                </div>
+            </div>
+
+            <!-- Submit buttons -->
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-border/60">
+                <c-button_link href="{{ hackathon.get_absolute_url }}" variant="outline" size="lg">
+                    Cancel
+                </c-button_link>
+                <c-button type="submit" size="lg" class="{% if is_full %}bg-amber-600 hover:bg-amber-700 text-white{% endif %}">
+                    {% if is_full %}
+                    <c-lucideicon.clock class="size-4" />
+                    Join Priority Waitlist
+                    {% else %}
+                    <c-lucideicon.check class="size-4" />
+                    Confirm Registration
+                    {% endif %}
+                </c-button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

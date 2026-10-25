@@ -19,8 +19,8 @@
             </a>
 
             <nav class="hidden items-center gap-1 lg:flex" aria-label="Main navigation">
+                <a href="{% url 'hackathons:list' %}" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Hackathons</a>
                 <a href="{% url 'projects:project_list' %}" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Projects</a>
-                <a href="{% url 'core:home' %}#hackathons" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Hackathons</a>
                 <a href="{% url 'core:home' %}#challenges" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Challenges</a>
                 <a href="{% url 'core:home' %}#leaderboard" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Leaderboard</a>
                 <a href="{% url 'core:home' %}#organizers" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">For organizers</a>
@@ -48,7 +48,15 @@
                             {{ user.username|slice:":2" }}
                         </span>
                         <span class="hidden max-w-28 truncate lg:inline">{{ user.username }}</span>
-                        {% if user.profile.role %}
+                        {% if user.profile.is_admin_user %}
+                        <span class="hidden sm:inline-flex rounded-md border border-rose-500/40 bg-rose-500/15 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-rose-400 shadow-xs">
+                            Admin
+                        </span>
+                        {% elif user.profile.is_organizer_user %}
+                        <span class="hidden sm:inline-flex rounded-md border border-primary/40 bg-primary/15 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wider text-primary">
+                            Org
+                        </span>
+                        {% elif user.profile.role %}
                         <span class="hidden sm:inline-flex items-center rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[10px] font-medium text-primary">
                             {{ user.profile.get_role_display }}
                         </span>
@@ -58,21 +66,23 @@
                 </c-dropdown_menu.trigger>
 
                 <c-dropdown_menu.content class="right-0 top-full mt-2 w-64">
-                    <c-dropdown_menu.label class="flex flex-col gap-1 py-2">
+                    <c-dropdown_menu.label class="flex flex-col gap-1.5 py-2.5">
                         <div class="flex items-center justify-between gap-2">
-                            <span class="truncate text-sm font-medium text-foreground">{{ user.username }}</span>
+                            <span class="truncate text-sm font-semibold text-foreground">{{ user.username }}</span>
                             {% if user.profile.role %}
-                            <span class="inline-flex items-center rounded-md bg-primary/10 border border-primary/25 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-primary">
+                            <span class="inline-flex items-center rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider {{ user.profile.role_badge_colors }}">
                                 {{ user.profile.get_role_display }}
                             </span>
                             {% endif %}
                         </div>
                         <span class="truncate text-xs font-normal text-muted-foreground">{{ user.email|default:"No email on file" }}</span>
-                        <span class="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider
-                            {% if user.profile.email_verified %}border-primary/25 bg-primary/10 text-primary{% else %}border-amber-600/30 bg-amber-500/10 text-amber-700 dark:text-amber-300{% endif %}">
-                            <span class="size-1.5 rounded-full {% if user.profile.email_verified %}bg-primary{% else %}bg-amber-500{% endif %}"></span>
-                            {% if user.profile.email_verified %}Email verified{% else %}Verify email{% endif %}
-                        </span>
+                        <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+                            <span class="inline-flex w-fit items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider
+                                {% if user.profile.email_verified %}border-primary/25 bg-primary/10 text-primary{% else %}border-amber-600/30 bg-amber-500/10 text-amber-700 dark:text-amber-300{% endif %}">
+                                <span class="size-1 rounded-full {% if user.profile.email_verified %}bg-primary{% else %}bg-amber-500{% endif %}"></span>
+                                {% if user.profile.email_verified %}Email verified{% else %}Verify email{% endif %}
+                            </span>
+                        </div>
                     </c-dropdown_menu.label>
                     <c-dropdown_menu.separator />
                     <c-dropdown_menu.item>
@@ -94,7 +104,13 @@
                         </a>
                     </c-dropdown_menu.item>
                     <c-dropdown_menu.item>
-                        <a href="{% url 'core:home' %}#hackathons" class="flex w-full items-center gap-2 text-foreground">
+                        <a href="{% url 'hackathons:dashboard' %}" class="flex w-full items-center gap-2 text-foreground">
+                            <c-lucideicon.layout-dashboard class="size-4 text-muted-foreground" />
+                            My Hackathons
+                        </a>
+                    </c-dropdown_menu.item>
+                    <c-dropdown_menu.item>
+                        <a href="{% url 'hackathons:list' %}" class="flex w-full items-center gap-2 text-foreground">
                             <c-lucideicon.calendar class="size-4 text-muted-foreground" />
                             Browse events
                         </a>

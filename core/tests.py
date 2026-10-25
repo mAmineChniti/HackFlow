@@ -6,4 +6,3 @@ class HomePageTests(TestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "HackFlow")
-        self.assertContains(response, "Neon Nights 2026")

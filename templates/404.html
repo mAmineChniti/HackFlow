@@ -17,15 +17,18 @@
                 Page Not Found
             </h1>
             <p class="text-sm text-muted-foreground">
-                The page you're looking for might have been removed, had its name changed, or is temporarily unavailable.
+                The page, hackathon, or submission you are looking for does not exist or may have been relocated.
             </p>
         </div>
 
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-            <a href="{% url 'core:home' %}" class="w-full sm:w-auto inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors">
+        <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <a href="{% url 'core:home' %}" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors">
                 Back to Home
             </a>
-            <a href="{% url 'projects:project_list' %}" class="w-full sm:w-auto inline-flex items-center justify-center rounded-lg border border-border bg-background px-5 py-2.5 text-xs font-semibold text-foreground hover:bg-accent transition-colors">
+            <a href="{% url 'hackathons:list' %}" class="inline-flex items-center justify-center rounded-lg border border-border bg-background px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-accent transition-colors">
+                Browse Hackathons
+            </a>
+            <a href="{% url 'projects:project_list' %}" class="inline-flex items-center justify-center rounded-lg border border-border bg-background px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-accent transition-colors">
                 Explore Projects
             </a>
         </div>

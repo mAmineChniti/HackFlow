@@ -362,7 +362,7 @@
                     Pick a weekend. Find a team. Ship something you're proud of.
                 </p>
             </div>
-            <c-button_link href="#join" variant="outline" size="sm" class="w-fit">
+            <c-button_link href="{% url 'hackathons:list' %}" variant="outline" size="sm" class="w-fit">
                 View all events
                 <c-lucideicon.arrow-right />
             </c-button_link>
@@ -371,19 +371,33 @@
         <div class="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {% for event in hackathons %}
             <c-card class="group flex flex-col overflow-hidden border-border/70 bg-card/50 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40">
-                <div class="relative h-28 overflow-hidden border-b border-border/60 {{ event.gradient }}">
-                    <div class="absolute inset-0 bg-grid-pattern opacity-30"></div>
+                <div class="relative h-28 overflow-hidden border-b border-border/60 {% if event.gradient %}{{ event.gradient }}{% else %}bg-gradient-to-br from-primary/20 via-background to-secondary/30{% endif %}">
+                    {% if event.banner_image %}
+                        <img src="{{ event.banner_image.url }}" alt="{{ event.title }}" class="absolute inset-0 size-full object-cover opacity-60" />
+                    {% else %}
+                        <div class="absolute inset-0 bg-grid-pattern opacity-30"></div>
+                    {% endif %}
                     <div class="relative flex h-full flex-col justify-between p-5">
                         <div class="flex items-center justify-between gap-2">
                             <span class="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{{ event.category }}</span>
-                            <c-badge variant="{{ event.badge_variant }}" class="shrink-0 backdrop-blur-sm">{{ event.status }}</c-badge>
+                            <c-badge variant="{% if event.badge_variant %}{{ event.badge_variant }}{% elif event.status == 'registration_open' %}default{% else %}outline{% endif %}" class="shrink-0 backdrop-blur-sm">
+                                {% if event.get_status_display %}{{ event.get_status_display }}{% else %}{{ event.status }}{% endif %}
+                            </c-badge>
                         </div>
-                        <p class="font-mono text-[11px] text-muted-foreground">{{ event.code }}</p>
+                        <p class="font-mono text-[11px] text-muted-foreground">{% if event.code %}{{ event.code }}{% else %}// HackFlow challenge{% endif %}</p>
                     </div>
                 </div>
 
                 <c-card.header class="pb-3">
-                    <c-card.title class="text-lg">{{ event.name }}</c-card.title>
+                    <c-card.title class="text-lg">
+                        {% if event.get_absolute_url %}
+                        <a href="{{ event.get_absolute_url }}" class="hover:text-primary transition-colors">
+                            {{ event.title }}
+                        </a>
+                        {% else %}
+                        {{ event.name }}
+                        {% endif %}
+                    </c-card.title>
                     <c-card.description>{{ event.tagline }}</c-card.description>
                 </c-card.header>
 
@@ -391,34 +405,38 @@
                     <div class="grid grid-cols-2 gap-x-3 gap-y-2.5 text-xs">
                         <div class="flex items-center gap-2 text-muted-foreground">
                             <c-lucideicon.calendar class="size-3.5 shrink-0" />
-                            {{ event.dates }}
+                            {% if event.dates %}{{ event.dates }}{% else %}{{ event.start_date|date:"d M" }} – {{ event.end_date|date:"d M" }}{% endif %}
                         </div>
                         <div class="flex items-center gap-2 text-muted-foreground">
                             <c-lucideicon.map-pin class="size-3.5 shrink-0" />
-                            {{ event.mode }}
+                            {% if event.get_mode_display %}{{ event.get_mode_display }}{% else %}{{ event.mode }}{% endif %}
                         </div>
                         <div class="flex items-center gap-2 text-muted-foreground">
                             <c-lucideicon.trophy class="size-3.5 shrink-0" />
-                            <span class="font-medium text-foreground">{{ event.prize }}</span>
+                            <span class="font-medium text-foreground">{% if event.prize_pool %}{{ event.prize_pool }}{% else %}{{ event.prize }}{% endif %}</span>
                         </div>
                         <div class="flex items-center gap-2 text-muted-foreground">
                             <c-lucideicon.users class="size-3.5 shrink-0" />
-                            {{ event.registered|intcomma }} registered
+                            {% if event.registered_count != None %}{{ event.registered_count }}{% else %}{{ event.registered|intcomma }}{% endif %} registered
                         </div>
                     </div>
 
                     <div class="space-y-1.5">
                         <div class="flex items-center justify-between text-[11px] text-muted-foreground">
-                            <span>{{ event.registered|intcomma }} / {{ event.capacity|intcomma }} spots</span>
-                            <span class="font-mono">{% widthratio event.registered event.capacity 100 %}%</span>
+                            <span>
+                                {% if event.registered_count != None %}{{ event.registered_count }} / {{ event.max_participants }}{% else %}{{ event.registered|intcomma }} / {{ event.capacity|intcomma }}{% endif %} spots
+                            </span>
+                            <span class="font-mono">
+                                {% if event.registration_progress_percent != None %}{{ event.registration_progress_percent }}%{% else %}{% widthratio event.registered event.capacity 100 %}%{% endif %}
+                            </span>
                         </div>
-                        <c-progress value="{{ event.registered }}" max="{{ event.capacity }}" />
+                        <c-progress value="{% if event.registered_count != None %}{{ event.registered_count }}{% else %}{{ event.registered }}{% endif %}" max="{% if event.max_participants %}{{ event.max_participants }}{% else %}{{ event.capacity }}{% endif %}" />
                     </div>
                 </c-card.content>
 
                 <c-card.footer class="pt-0">
-                    <c-button_link href="#join" variant="outline" size="sm" class="w-full">
-                        {% if event.badge_variant == "outline" %}Join waitlist{% else %}Register interest{% endif %}
+                    <c-button_link href="{% if event.get_absolute_url %}{{ event.get_absolute_url }}{% else %}{% url 'hackathons:list' %}{% endif %}" variant="outline" size="sm" class="w-full">
+                        {% if event.badge_variant == "outline" or event.status == 'cancelled' %}Voir détails{% else %}Participer / Détails{% endif %}
                         <c-lucideicon.arrow-right />
                     </c-button_link>
                 </c-card.footer>

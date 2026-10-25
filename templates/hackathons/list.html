@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Hackathons — HackFlow{% endblock %}
+{% block meta_description %}Explore all tech, student and AI hackathons hosted on HackFlow.{% endblock %}
+
+{% block content %}
+<div class="relative overflow-hidden py-12 md:py-16">
+    <!-- Background glow decoration -->
+    <div class="pointer-events-none absolute -top-40 left-1/2 -z-10 h-96 w-[700px] -translate-x-1/2 rounded-full bg-primary/10 blur-[130px]"></div>
+
+    <div class="container-page space-y-10">
+        <!-- Header & Action -->
+        <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between border-b border-border/60 pb-8">
+            <div class="max-w-2xl space-y-3">
+                <div class="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-xs font-medium text-primary">
+                    <span class="size-1.5 rounded-full bg-primary animate-pulse"></span>
+                    Event Directory
+                </div>
+                <h1 class="text-3xl font-semibold tracking-tight text-balance sm:text-4xl lg:text-5xl">
+                    Find your next <span class="text-gradient">Hackathon</span>.
+                </h1>
+                <p class="text-sm text-muted-foreground sm:text-base leading-relaxed">
+                    Discover impactful challenges, team up with multidisciplinary builders, and ship products that matter.
+                </p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+                {% if user.is_authenticated %}
+                    {% if user.profile.is_organizer_user %}
+                    <c-button_link href="{% url 'hackathons:dashboard' %}" variant="outline" size="default">
+                        <c-lucideicon.layout-dashboard class="size-4" />
+                        Organizer Dashboard
+                    </c-button_link>
+                    <c-button_link href="{% url 'hackathons:create' %}" size="default">
+                        <c-lucideicon.plus class="size-4" />
+                        Host a Hackathon
+                    </c-button_link>
+                    {% elif user.profile.is_student_user %}
+                    <c-button_link href="{% url 'hackathons:dashboard' %}" variant="outline" size="default">
+                        <c-lucideicon.calendar-check class="size-4" />
+                        My Registrations
+                    </c-button_link>
+                    {% elif user.profile.is_judge_user or user.profile.is_mentor_user %}
+                    <c-button_link href="{% url 'hackathons:dashboard' %}" variant="outline" size="default">
+                        <c-lucideicon.clipboard-list class="size-4" />
+                        Assigned Hackathons
+                    </c-button_link>
+                    {% endif %}
+                {% else %}
+                <c-button_link href="{% url 'accounts:signup' %}" size="default">
+                    <c-lucideicon.user-plus class="size-4" />
+                    Join HackFlow Free
+                </c-button_link>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Search & Filter bar (HTMX enabled) -->
+        <div class="rounded-xl border border-border/70 bg-card/40 p-4 backdrop-blur-sm">
+            <form
+                id="filter-form"
+                hx-get="{% url 'hackathons:list' %}"
+                hx-target="#hackathon-grid-container"
+                hx-trigger="input changed delay:400ms, change, submit"
+                hx-push-url="true"
+                class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+            >
+                <!-- Search input -->
+                <div class="relative sm:col-span-2 lg:col-span-1">
+                    <c-lucideicon.search class="absolute left-3 top-2.5 size-4 text-muted-foreground pointer-events-none" />
+                    <input
+                        type="text"
+                        name="q"
+                        value="{{ search_query }}"
+                        placeholder="Search by keywords, tags, tech..."
+                        class="flex h-9 w-full rounded-md border border-input bg-background/60 pl-9 pr-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                    />
+                </div>
+
+                <!-- Status Select -->
+                <div>
+                    <select
+                        name="status"
+                        class="flex h-9 w-full rounded-md border border-input bg-background/60 px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                        <option value="">All statuses</option>
+                        {% for val, label in status_choices %}
+                        <option value="{{ val }}" {% if selected_status == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Mode Select -->
+                <div>
+                    <select
+                        name="mode"
+                        class="flex h-9 w-full rounded-md border border-input bg-background/60 px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                        <option value="">All modes</option>
+                        {% for val, label in mode_choices %}
+                        <option value="{{ val }}" {% if selected_mode == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Ordering Select -->
+                <div>
+                    <select
+                        name="ordering"
+                        class="flex h-9 w-full rounded-md border border-input bg-background/60 px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                        <option value="start_date">Upcoming dates</option>
+                        <option value="newest">Recently added</option>
+                        <option value="popular">Most popular</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+
+        <!-- Results Grid with HTMX target -->
+        <div id="hackathon-grid-container" class="relative min-h-[300px]">
+            {% include "hackathons/partials/_hackathon_grid.html" %}
+        </div>
+    </div>
+</div>
+{% endblock %}

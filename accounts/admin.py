@@ -68,3 +68,4 @@ class ProfileAdmin(admin.ModelAdmin):
     def mark_unverified(self, request, queryset):
         for profile in queryset:
             profile.reset_email_verification()
+
