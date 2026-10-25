@@ -11,6 +11,7 @@ from django.urls import reverse
 from . import ai, services
 from .forms import JoinTeamForm, TeamForm
 from .models import Hackathon, SkillProfile, Team, TeamMember
+from .management.commands.evaluate_matching import evaluate
 
 User = get_user_model()
 
@@ -469,3 +470,11 @@ class AISuggestionTests(BaseTeamTestCase):
         self.team.save()
         self.login(self.leader)
         self.assertEqual(self.client.post(self.url).status_code, 400)
+
+
+
+class MatchingEvaluationTests(TestCase):
+    def test_matching_beats_random_selection(self):
+        result = evaluate()
+        self.assertGreaterEqual(result["precision"], 0.8)
+        self.assertGreater(result["precision"], result["baseline"])
