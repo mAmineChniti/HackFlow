@@ -11,8 +11,20 @@
         {% endif %}
     </div>
 
+    {% if field.field.widget.input_type == 'select' or field.field.choices %}
+    <select
+        name="{{ field.html_name }}"
+        id="{{ field.id_for_label }}"
+        {% if field.field.required %}required{% endif %}
+        class="flex h-10 w-full rounded-md border border-input bg-card/90 px-3 py-2 text-sm text-foreground shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring [&>option]:bg-card [&>option]:text-foreground {% if field.errors %}border-destructive focus-visible:ring-destructive{% endif %}"
+    >
+        {% for val, label in field.field.choices %}
+        <option value="{{ val }}" {% if field.value == val or field.field.initial == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    {% else %}
     <input
-        type="{{ field.field.widget.input_type }}"
+        type="{{ field.field.widget.input_type|default:'text' }}"
         name="{{ field.html_name }}"
         id="{{ field.id_for_label }}"
         {% if field.field.widget.input_type != 'password' %}value="{{ field.value|default_if_none:'' }}"{% endif %}
@@ -23,6 +35,7 @@
         {% if field.errors %}aria-invalid="true"{% endif %}
         class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm {% if field.errors %}border-destructive focus-visible:ring-destructive{% endif %}"
     >
+    {% endif %}
 
     {% if field.help_text %}
     <div class="text-xs leading-relaxed text-muted-foreground [&_ul]:list-disc [&_ul]:space-y-0.5 [&_ul]:pl-4">

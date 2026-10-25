@@ -14,6 +14,12 @@ from django.views.generic import (
     UpdateView,
 )
 
+from .emails import (
+    check_and_notify_capacity_thresholds,
+    send_organizer_new_registration_email,
+    send_student_registration_email,
+    send_waitlist_promoted_email,
+)
 from .forms import HackathonForm, RegistrationForm, ScheduleForm
 from .models import Hackathon, HackathonRegistration, HackathonSchedule
 
@@ -76,7 +82,6 @@ class HackathonListView(ListView):
         return context
 
     def render_to_response(self, context, **response_kwargs):
-        # Support HTMX dynamic live search and filtering!
         if self.request.headers.get("HX-Request"):
             return render(
                 self.request,
@@ -93,14 +98,16 @@ class HackathonDetailView(DetailView):
     slug_url_kwarg = "slug"
 
     def get_queryset(self):
-        # Allow organizer or superuser to view unpublished hackathons
         user = self.request.user
         if user.is_authenticated and (user.is_superuser or user.is_staff):
             return Hackathon.objects.all()
         if user.is_authenticated:
             return Hackathon.objects.filter(
-                Q(is_published=True) | Q(organizer=user)
-            )
+                Q(is_published=True)
+                | Q(organizer=user)
+                | Q(judges=user)
+                | Q(mentors=user)
+            ).distinct()
         return Hackathon.objects.filter(is_published=True)
 
     def get_context_data(self, **kwargs):
@@ -109,9 +116,16 @@ class HackathonDetailView(DetailView):
         context["schedule_items"] = hackathon.schedule_items.all().order_by("scheduled_at")
         context["faqs"] = hackathon.faqs.all().order_by("order")
         context["registration_form"] = RegistrationForm()
-        context["now"] = timezone.now()
+        now = timezone.now()
+        context["now"] = now
 
-        # Check if current user is registered
+        context["is_registration_upcoming"] = hackathon.is_registration_upcoming
+        context["is_registration_open"] = hackathon.is_registration_open
+        context["is_registration_closed"] = hackathon.is_registration_closed
+        context["is_full"] = hackathon.is_full
+        is_deadline_passed = hackathon.is_registration_closed
+        context["is_deadline_passed"] = is_deadline_passed
+
         is_registered = False
         user_registration = None
         if self.request.user.is_authenticated:
@@ -122,31 +136,55 @@ class HackathonDetailView(DetailView):
 
         context["is_registered"] = is_registered
         context["user_registration"] = user_registration
+        context["can_unregister"] = is_registered and not is_deadline_passed
         context["is_organizer"] = (
             self.request.user.is_authenticated
             and (self.request.user == hackathon.organizer or self.request.user.is_superuser)
         )
+        context["is_assigned_judge"] = (
+            self.request.user.is_authenticated
+            and hackathon.judges.filter(id=self.request.user.id).exists()
+        )
+        context["is_assigned_mentor"] = (
+            self.request.user.is_authenticated
+            and hackathon.mentors.filter(id=self.request.user.id).exists()
+        )
         return context
 
 
-class HackathonCreateView(LoginRequiredMixin, CreateView):
+class HackathonCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Hackathon
     form_class = HackathonForm
     template_name = "hackathons/form.html"
+
+    def test_func(self):
+        user = self.request.user
+        return (
+            user.is_superuser
+            or (hasattr(user, "profile") and user.profile.is_organizer_user)
+        )
+
+    def handle_no_permission(self):
+        messages.error(
+            self.request,
+            "Access restricted: Only Organizers and Administrators can host hackathons. "
+            f"You are currently signed in as a {getattr(self.request.user, 'profile', None) and self.request.user.profile.get_role_display() or 'Student'}."
+        )
+        return redirect("hackathons:list")
 
     def form_valid(self, form):
         form.instance.organizer = self.request.user
         response = super().form_valid(form)
         messages.success(
             self.request,
-            f"Le hackathon '{self.object.title}' a été créé avec succès !",
+            f"Hackathon '{self.object.title}' has been successfully created!",
         )
         return response
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["page_title"] = "Créer un Hackathon"
-        context["action_label"] = "Publier l'événement"
+        context["page_title"] = "Create a Hackathon"
+        context["action_label"] = "Publish Hackathon"
         return context
 
 
@@ -160,18 +198,25 @@ class HackathonUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         hackathon = self.get_object()
         return self.request.user == hackathon.organizer or self.request.user.is_superuser
 
+    def handle_no_permission(self):
+        messages.error(
+            self.request,
+            "You do not have permission to edit this hackathon. Only the organizer or an administrator can modify it."
+        )
+        return redirect("hackathons:list")
+
     def form_valid(self, form):
         response = super().form_valid(form)
         messages.success(
             self.request,
-            f"Les informations du hackathon '{self.object.title}' ont été mises à jour.",
+            f"Hackathon '{self.object.title}' details updated successfully.",
         )
         return response
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["page_title"] = f"Modifier : {self.object.title}"
-        context["action_label"] = "Enregistrer les modifications"
+        context["page_title"] = f"Edit Hackathon: {self.object.title}"
+        context["action_label"] = "Save Changes"
         context["is_edit"] = True
         return context
 
@@ -189,38 +234,105 @@ class HackathonDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     def delete(self, request, *args, **kwargs):
         hackathon = self.get_object()
         title = hackathon.title
-        messages.info(request, f"Le hackathon '{title}' a été supprimé.")
+        messages.info(request, f"Hackathon '{title}' has been deleted.")
         return super().delete(request, *args, **kwargs)
 
 
 @login_required
 def register_participant(request, slug):
-    """Register the authenticated user for the hackathon."""
     hackathon = get_object_or_404(Hackathon, slug=slug)
+    now = timezone.now()
 
-    if not hackathon.is_registration_open:
-        messages.error(request, "Les inscriptions pour ce hackathon sont actuellement fermées.")
+    # 0. Role check: only students (or superusers) can register as participants
+    if request.user == hackathon.organizer:
+        messages.error(
+            request,
+            "As the organizer of this event, you cannot register as a participant.",
+        )
         return redirect("hackathons:detail", slug=slug)
 
-    if HackathonRegistration.objects.filter(hackathon=hackathon, participant=request.user).exists():
-        messages.info(request, "Vous êtes déjà inscrit(e) à ce hackathon.")
+    if (
+        hasattr(request.user, "profile")
+        and not request.user.profile.is_student_user
+        and not request.user.is_superuser
+    ):
+        messages.error(
+            request,
+            f"Registration as a participant is reserved for students. Your current role is {request.user.profile.get_role_display()}.",
+        )
         return redirect("hackathons:detail", slug=slug)
 
-    if hackathon.registered_count >= hackathon.max_participants:
-        messages.error(request, "Désolé, la capacité maximale de participants est atteinte.")
+    # 1. Registration not yet open
+    if hackathon.registration_start and now < hackathon.registration_start:
+        messages.info(
+            request,
+            f"Registration for '{hackathon.title}' is not open yet. It opens on {hackathon.registration_start.strftime('%b %d, %Y at %H:%M')}.",
+        )
         return redirect("hackathons:detail", slug=slug)
+
+    # 2. Registration deadline passed
+    if hackathon.registration_deadline and now > hackathon.registration_deadline:
+        messages.error(
+            request,
+            f"The registration deadline for '{hackathon.title}' passed on {hackathon.registration_deadline.strftime('%b %d, %Y at %H:%M')}.",
+        )
+        return redirect("hackathons:detail", slug=slug)
+
+    # 3. Overall status check
+    if hackathon.status != Hackathon.Status.REGISTRATION_OPEN:
+        messages.error(request, "Registration is currently closed for this hackathon.")
+        return redirect("hackathons:detail", slug=slug)
+
+    # 4. Check if already registered
+    existing_reg = HackathonRegistration.objects.filter(
+        hackathon=hackathon, participant=request.user
+    ).first()
+    if existing_reg:
+        messages.info(
+            request,
+            f"You are already registered for this hackathon (Status: {existing_reg.get_status_display()}).",
+        )
+        return redirect("hackathons:detail", slug=slug)
+
+    # 5. Determine if registration is confirmed or waitlist
+    is_full = hackathon.is_full
+    target_status = (
+        HackathonRegistration.Status.WAITLIST
+        if is_full
+        else HackathonRegistration.Status.CONFIRMED
+    )
 
     if request.method == "POST":
-        form = RegistrationForm(request.POST)
+        registration = HackathonRegistration(
+            hackathon=hackathon,
+            participant=request.user,
+            status=target_status,
+        )
+        form = RegistrationForm(request.POST, instance=registration)
         if form.is_valid():
-            reg = form.save(commit=False)
-            reg.hackathon = hackathon
-            reg.participant = request.user
-            reg.save()
-            messages.success(
-                request,
-                f"Félicitations ! Vous êtes bien inscrit(e) à {hackathon.title}.",
-            )
+            prev_confirmed_count = hackathon.registered_count
+            saved_reg = form.save(commit=False)
+            saved_reg.hackathon = hackathon
+            saved_reg.participant = request.user
+            saved_reg.status = target_status
+            saved_reg.save()
+            form.save_m2m()
+
+            # Registration emails disabled as requested
+            # send_student_registration_email(saved_reg)
+            # send_organizer_new_registration_email(saved_reg)
+
+            if saved_reg.status == HackathonRegistration.Status.CONFIRMED:
+                messages.success(
+                    request,
+                    f"Congratulations! Your registration for '{hackathon.title}' is confirmed.",
+                )
+            else:
+                messages.warning(
+                    request,
+                    f"Maximum capacity reached. You have been placed on the priority waitlist for '{hackathon.title}'.",
+                )
+
             return redirect("hackathons:detail", slug=slug)
     else:
         form = RegistrationForm()
@@ -228,38 +340,104 @@ def register_participant(request, slug):
     return render(
         request,
         "hackathons/register.html",
-        {"hackathon": hackathon, "form": form},
+        {
+            "hackathon": hackathon,
+            "form": form,
+            "is_full": is_full,
+        },
     )
 
 
 @login_required
 def unregister_participant(request, slug):
-    """Unregister the authenticated user from the hackathon."""
     if request.method == "POST":
         hackathon = get_object_or_404(Hackathon, slug=slug)
+        now = timezone.now()
+
+        # Strict check: Student can unregister only BEFORE the deadline
+        if hackathon.registration_deadline and now > hackathon.registration_deadline:
+            messages.error(
+                request,
+                f"Cannot unregister: The deadline ({hackathon.registration_deadline.strftime('%b %d, %Y at %H:%M')}) has already passed.",
+            )
+            return redirect("hackathons:detail", slug=slug)
+
         reg = HackathonRegistration.objects.filter(
             hackathon=hackathon, participant=request.user
         ).first()
 
         if reg:
+            was_confirmed = (reg.status == HackathonRegistration.Status.CONFIRMED)
             reg.delete()
-            messages.info(request, f"Votre inscription à {hackathon.title} a été annulée.")
+            messages.info(request, f"Your registration for '{hackathon.title}' has been successfully cancelled.")
+
+            # If spot freed up, promote the first candidate on the waitlist
+            if was_confirmed:
+                promoted = (
+                    HackathonRegistration.objects.filter(
+                        hackathon=hackathon,
+                        status=HackathonRegistration.Status.WAITLIST,
+                    )
+                    .order_by("registered_at")
+                    .first()
+                )
+                if promoted:
+                    promoted.status = HackathonRegistration.Status.CONFIRMED
+                    promoted.save(update_fields=["status"])
+                    # send_waitlist_promoted_email(promoted)
         else:
-            messages.warning(request, "Vous n'étiez pas inscrit(e) à cet événement.")
+            messages.warning(request, "You were not registered for this event.")
 
     return redirect("hackathons:detail", slug=slug)
 
 
 @login_required
 def organizer_dashboard(request):
-    """Dashboard for organizers to manage their hackathons and see participant registrations."""
-    hackathons = (
-        Hackathon.objects.filter(organizer=request.user)
-        .annotate(total_registered=Count("registrations"))
-        .order_by("-created_at")
-    )
+    user = request.user
+    role = hasattr(user, "profile") and user.profile.role or "student"
+
+    if user.is_superuser or role == "admin":
+        hackathons = (
+            Hackathon.objects.all()
+            .annotate(total_registered=Count("registrations"))
+            .order_by("-created_at")
+        )
+        dashboard_title = "Admin Portal — All Platform Hackathons"
+    elif role == "judge":
+        hackathons = (
+            Hackathon.objects.filter(judges=user)
+            .annotate(total_registered=Count("registrations"))
+            .order_by("-created_at")
+        )
+        dashboard_title = "Judge Portal — Assigned Hackathons for Evaluation"
+    elif role == "mentor":
+        hackathons = (
+            Hackathon.objects.filter(mentors=user)
+            .annotate(total_registered=Count("registrations"))
+            .order_by("-created_at")
+        )
+        dashboard_title = "Mentor Portal — Assigned Hackathons for Mentoring"
+    elif role == "organizer":
+        hackathons = (
+            Hackathon.objects.filter(organizer=user)
+            .annotate(total_registered=Count("registrations"))
+            .order_by("-created_at")
+        )
+        dashboard_title = "Organizer Dashboard — Hosted Hackathons"
+    else:  # Student
+        hackathons = (
+            Hackathon.objects.filter(registrations__participant=user)
+            .annotate(total_registered=Count("registrations"))
+            .order_by("-created_at")
+        )
+        dashboard_title = "Student Dashboard — My Registered Hackathons"
+
     return render(
         request,
         "hackathons/dashboard.html",
-        {"hackathons": hackathons},
+        {
+            "hackathons": hackathons,
+            "dashboard_title": dashboard_title,
+            "user_role": role,
+        },
     )

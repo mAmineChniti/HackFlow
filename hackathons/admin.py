@@ -38,28 +38,28 @@ class HackathonAdmin(admin.ModelAdmin):
     inlines = [HackathonScheduleInline, HackathonFAQInline, HackathonRegistrationInline]
 
     fieldsets = (
-        ("Informations générales", {
+        ("General Information", {
             "fields": ("title", "slug", "tagline", "description", "category", "banner_image"),
         }),
-        ("Dates & Planning", {
+        ("Dates & Milestones", {
             "fields": ("registration_start", "registration_deadline", "start_date", "end_date"),
         }),
-        ("Modalité & Lieu", {
+        ("Mode & Venue", {
             "fields": ("mode", "location"),
         }),
-        ("Capacité & Équipes", {
+        ("Capacity & Team Constraints", {
             "fields": ("max_participants", "min_team_size", "max_team_size"),
         }),
-        ("Prix & Niveau", {
+        ("Prizes & Difficulty", {
             "fields": ("prize_pool", "difficulty"),
         }),
-        ("Règlement & Ressources", {
+        ("Rules & Resources", {
             "fields": ("rules", "resources_link", "contact_email"),
         }),
-        ("Publication", {
+        ("Visibility & Ownership", {
             "fields": ("organizer", "status", "is_published"),
         }),
-        ("Métadonnées", {
+        ("Metadata", {
             "fields": ("created_at", "updated_at"),
             "classes": ("collapse",),
         }),
@@ -67,7 +67,7 @@ class HackathonAdmin(admin.ModelAdmin):
 
     def registered_count(self, obj):
         return obj.registered_count
-    registered_count.short_description = "Inscrits"
+    registered_count.short_description = "Registered"
 
 
 @admin.register(HackathonRegistration)

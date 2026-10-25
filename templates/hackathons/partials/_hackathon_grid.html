@@ -51,7 +51,7 @@
             <div class="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
                 <div class="flex items-center gap-2 text-muted-foreground">
                     <c-lucideicon.calendar class="size-3.5 shrink-0 text-primary" />
-                    <span>{{ hackathon.start_date|date:"d M" }} – {{ hackathon.end_date|date:"d M Y" }}</span>
+                    <span>{{ hackathon.start_date|date:"M d" }} – {{ hackathon.end_date|date:"M d, Y" }}</span>
                 </div>
                 <div class="flex items-center gap-2 text-muted-foreground">
                     <c-lucideicon.map-pin class="size-3.5 shrink-0 text-primary" />
@@ -59,18 +59,18 @@
                 </div>
                 <div class="flex items-center gap-2 text-muted-foreground">
                     <c-lucideicon.users class="size-3.5 shrink-0 text-primary" />
-                    <span>{{ hackathon.total_registered|default:hackathon.registered_count }} inscrits</span>
+                    <span>{{ hackathon.total_registered|default:hackathon.registered_count }} registered</span>
                 </div>
                 <div class="flex items-center gap-2 text-muted-foreground">
                     <c-lucideicon.shield-check class="size-3.5 shrink-0 text-primary" />
-                    <span>Équipe: {{ hackathon.min_team_size }}-{{ hackathon.max_team_size }} pers.</span>
+                    <span>Team: {{ hackathon.min_team_size }}-{{ hackathon.max_team_size }} pers.</span>
                 </div>
             </div>
 
             <!-- Capacity Progress -->
             <div class="space-y-1.5">
                 <div class="flex items-center justify-between text-[11px] text-muted-foreground">
-                    <span>{{ hackathon.registered_count }} / {{ hackathon.max_participants }} places</span>
+                    <span>{{ hackathon.registered_count }} / {{ hackathon.max_participants }} spots</span>
                     <span class="font-mono">{{ hackathon.registration_progress_percent }}%</span>
                 </div>
                 <c-progress value="{{ hackathon.registered_count }}" max="{{ hackathon.max_participants }}" />
@@ -80,7 +80,7 @@
         <!-- Footer -->
         <c-card.footer class="pt-0">
             <c-button_link href="{{ hackathon.get_absolute_url }}" variant="outline" size="sm" class="w-full justify-between group-hover:border-primary/50">
-                <span>Découvrir l'événement</span>
+                <span>View Event Details</span>
                 <c-lucideicon.arrow-right class="size-3.5 transition-transform group-hover:translate-x-1" />
             </c-button_link>
         </c-card.footer>
@@ -90,13 +90,13 @@
         <div class="mx-auto flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <c-lucideicon.calendar-off class="size-6" />
         </div>
-        <h3 class="mt-4 text-base font-semibold">Aucun hackathon trouvé</h3>
+        <h3 class="mt-4 text-base font-semibold">No hackathons found</h3>
         <p class="mt-2 text-sm text-muted-foreground">
-            Aucun événement ne correspond à vos filtres actuels. Essayez de réinitialiser vos critères.
+            No events match your current filter criteria. Try resetting your search filters.
         </p>
         <div class="mt-6">
             <c-button_link href="{% url 'hackathons:list' %}" variant="outline" size="sm">
-                Réinitialiser les filtres
+                Reset filters
             </c-button_link>
         </div>
     </div>

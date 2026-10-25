@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Supprimer {{ object.title }} — HackFlow{% endblock %}
+{% block title %}Delete {{ object.title }} — HackFlow{% endblock %}
 
 {% block content %}
 <div class="container-page py-16 max-w-xl">
@@ -9,28 +9,28 @@
             <span class="flex size-10 items-center justify-center rounded-full bg-destructive/10">
                 <c-lucideicon.alert-triangle class="size-5" />
             </span>
-            <h1 class="text-xl font-bold">Confirmer la suppression</h1>
+            <h1 class="text-xl font-bold">Confirm Deletion</h1>
         </div>
 
         <p class="text-sm text-muted-foreground leading-relaxed">
-            Êtes-vous absolument sûr de vouloir supprimer définitivement le hackathon
-            <strong class="text-foreground">"{{ object.title }}"</strong> ?
+            Are you sure you want to permanently delete the hackathon
+            <strong class="text-foreground">"{{ object.title }}"</strong>?
         </p>
 
         <c-alert variant="destructive" class="my-6">
             <c-alert.description>
-                Cette action est irréversible. Les inscriptions associées ainsi que le programme de cet événement seront supprimés.
+                This action is irreversible. All associated participant registrations, schedule milestones, and event data will be permanently removed.
             </c-alert.description>
         </c-alert>
 
         <form method="post" class="flex items-center justify-end gap-3">
             {% csrf_token %}
             <c-button_link href="{{ object.get_absolute_url }}" variant="outline" size="default">
-                Annuler
+                Cancel
             </c-button_link>
             <c-button type="submit" variant="destructive" size="default">
                 <c-lucideicon.trash-2 class="size-4" />
-                Supprimer définitivement
+                Delete Permanently
             </c-button>
         </form>
     </c-card>

@@ -1,9 +1,8 @@
-from django.test import SimpleTestCase
+from django.test import TestCase
 
 
-class HomePageTests(SimpleTestCase):
+class HomePageTests(TestCase):
     def test_home_page_renders(self):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "HackFlow")
-        self.assertContains(response, "Neon Nights 2026")

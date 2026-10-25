@@ -1,3 +1,4 @@
+
 from django import forms
 from django.contrib.auth.forms import (
     AuthenticationForm,
@@ -48,6 +49,9 @@ class HackFlowAuthenticationForm(AuthenticationForm):
     }
 
 
+from .models import Profile
+
+
 class HackFlowSignupForm(UserCreationForm):
     email = forms.EmailField(
         label=_("Email"),
@@ -58,6 +62,28 @@ class HackFlowSignupForm(UserCreationForm):
                 "placeholder": "you@example.com",
             }
         ),
+    )
+    role = forms.ChoiceField(
+        label=_("Role"),
+        choices=[
+            (Profile.Role.STUDENT, _("Student")),
+            (Profile.Role.ORGANIZER, _("Organizer")),
+            (Profile.Role.JUDGE, _("Judge")),
+            (Profile.Role.MENTOR, _("Mentor")),
+            (Profile.Role.ADMIN, _("Administrator")),
+        ],
+        initial=Profile.Role.STUDENT,
+        required=False,
+        widget=forms.Select(
+            attrs={
+                "class": (
+                    "flex h-10 w-full rounded-md border border-input bg-card/90 px-3 py-2 "
+                    "text-sm text-foreground shadow-xs transition-colors focus-visible:outline-hidden "
+                    "focus-visible:ring-1 focus-visible:ring-ring"
+                )
+            }
+        ),
+        help_text=_("Select your platform role according to your responsibilities."),
     )
 
     class Meta(UserCreationForm.Meta):
@@ -111,10 +137,14 @@ class HackFlowSignupForm(UserCreationForm):
         return email
 
     def save(self, commit=True):
-        user = super().save(commit=False)
+        user = super().save(commit=commit)
         user.email = self.cleaned_data["email"]
+        role = self.cleaned_data.get("role", Profile.Role.STUDENT)
         if commit:
             user.save()
+            profile, _ = Profile.objects.get_or_create(user=user)
+            profile.role = role
+            profile.save(update_fields=["role"])
         return user
 
 
