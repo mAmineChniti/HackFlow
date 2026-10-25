@@ -11,10 +11,15 @@ from projects import services
 
 User = get_user_model()
 
+# Note: Test accounts use simple password "pwd" for test fixtures only.
+# These are ephemeral - created during test runs and destroyed afterward.
+# This is acceptable for automated tests but not for production credentials.
+
 
 class ProjectPermissionsTestCase(TestCase):
     def setUp(self):
         # 1. Comptes avec rôles globaux
+        # Note: Using simple password "pwd" for test accounts only (ephemeral test data)
         self.admin_user = User.objects.create_user(
             username="admin_test", email="admin@test.com", password="pwd", is_superuser=True, is_staff=True
         )

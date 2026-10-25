@@ -129,6 +129,59 @@ Run the test suite with a PostgreSQL test database:
 python manage.py test
 ```
 
+## Utility Scripts
+
+Utility scripts for development and testing are located in the `scripts/` directory:
+
+```bash
+# Set up test accounts with various roles
+python scripts/setup_test_accounts.py
+
+# Reset admin password
+python scripts/reset_admin.py
+
+# List all users
+python scripts/list_users.py
+```
+
+Test account passwords can be configured via environment variables (see `.env.example`).
+
+## Configuration
+
+### Timezone
+
+The default timezone is set to `Africa/Tunis`. To override for multi-region deployments:
+
+```bash
+export TIME_ZONE=UTC
+```
+
+### CORS Configuration
+
+CORS support is disabled by default. To enable for API endpoints:
+
+1. Uncomment `django-corsheaders` in `requirements.txt`
+2. Add `'corsheaders.middleware.CorsMiddleware'` to `MIDDLEWARE` in `HackFlow/settings.py`
+3. Uncomment `corsheaders` in `INSTALLED_APPS`
+4. Set environment variables:
+   ```bash
+   CORS_ALLOWED_ORIGINS=https://example.com,https://www.example.com
+   CORS_ALLOW_CREDENTIALS=False
+   ```
+
+### AI Features
+
+AI features use Groq API for both sponsors email generation and project analysis. Configure in `.env`:
+
+```bash
+GROQ_API_KEY=your_groq_api_key_here
+AI_MODEL=openai/gpt-oss-120b
+```
+
+Get your API key at: https://console.groq.com/keys
+
+Placeholder values will be rejected and fallback to standard templates.
+
 ## Deploy to Render
 
 1. Push the repository to GitHub.

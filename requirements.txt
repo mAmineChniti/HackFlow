@@ -1,4 +1,4 @@
-Django>=5.2,<5.3
+Django>=5.2,<6.0
 psycopg[binary]>=3.2,<4.0
 dj-database-url>=2.1.0
 python-dotenv>=1.0.0
@@ -7,5 +7,8 @@ whitenoise>=6.6.0
 django-cotton>=1.6.0
 cotton-icons>=0.3.0,<0.4.0
 django-htmx>=1.21.0
+Pillow>=10.0.0
+scikit-learn>=1.4.0
+openpyxl>=3.1.0
 # CORS support (uncomment when adding API endpoints)
 # django-corsheaders>=4.0.0
