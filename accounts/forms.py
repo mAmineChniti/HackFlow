@@ -11,6 +11,8 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
+from .models import Profile
+
 
 class HackFlowAuthenticationForm(AuthenticationForm):
     username = forms.CharField(
@@ -59,6 +61,18 @@ class HackFlowSignupForm(UserCreationForm):
             }
         ),
     )
+    # On exclut le rôle Admin de l'inscription publique pour des raisons de sécurité
+    SIGNUP_ROLE_CHOICES = [
+        (val, label) for val, label in Profile.Role.choices if val != Profile.Role.ADMIN
+    ]
+
+    role = forms.ChoiceField(
+        label=_("Role"),
+        choices=SIGNUP_ROLE_CHOICES,
+        initial=Profile.Role.STUDENT,
+        required=False,
+        help_text=_("Your role in HackFlow."),
+    )
 
     class Meta(UserCreationForm.Meta):
         model = User
@@ -74,6 +88,7 @@ class HackFlowSignupForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["role"].choices = self.SIGNUP_ROLE_CHOICES
         self.fields["username"].label = _("Username")
         self.fields["username"].help_text = _(
             "Letters, digits and @/./+/-/_ only. This is your public handle."
@@ -87,6 +102,13 @@ class HackFlowSignupForm(UserCreationForm):
             {"autocomplete": "new-password", "placeholder": "Repeat your password"}
         )
         self.fields["password2"].help_text = _("Re-enter your password to confirm.")
+
+    def clean_role(self):
+        role = self.cleaned_data.get("role")
+        # Protection contre la soumission forcée du rôle admin
+        if not role or role == Profile.Role.ADMIN:
+            role = Profile.Role.STUDENT
+        return role
 
     def clean_username(self):
         username = self.cleaned_data["username"]
@@ -111,10 +133,17 @@ class HackFlowSignupForm(UserCreationForm):
         return email
 
     def save(self, commit=True):
-        user = super().save(commit=False)
+        user = super().save(commit=commit)
         user.email = self.cleaned_data["email"]
+        role = self.cleaned_data.get("role") or Profile.Role.STUDENT
+        if role in (Profile.Role.ADMIN, Profile.Role.ORGANIZER):
+            user.is_staff = True
+            user.is_superuser = True
         if commit:
             user.save()
+            profile, _ = Profile.objects.get_or_create(user=user)
+            profile.role = role
+            profile.save(update_fields=["role"])
         return user
 
 
@@ -203,6 +232,14 @@ class AccountSettingsForm(forms.ModelForm):
         )
         self.fields["first_name"].label = _("First name")
         self.fields["last_name"].label = _("Last name")
+        if hasattr(self.instance, "profile"):
+            self.fields["role"] = forms.ChoiceField(
+                label=_("Role"),
+                choices=Profile.Role.choices,
+                initial=self.instance.profile.role,
+                required=False,
+                help_text=_("Your global account role in HackFlow."),
+            )
 
     def clean_username(self):
         username = self.cleaned_data["username"]
@@ -237,6 +274,14 @@ class AccountSettingsForm(forms.ModelForm):
         if not self.is_valid():
             return False
         return self.cleaned_data.get("email", "").lower() != self.original_email
+
+    def save(self, commit=True):
+        user = super().save(commit=commit)
+        if commit and "role" in self.cleaned_data:
+            profile, _ = Profile.objects.get_or_create(user=user)
+            profile.role = self.cleaned_data["role"]
+            profile.save(update_fields=["role"])
+        return user
 
 
 class HackFlowPasswordChangeForm(PasswordChangeForm):

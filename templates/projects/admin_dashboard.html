@@ -1,0 +1,517 @@
+{% extends "base.html" %}
+
+{% block title %}Projects Administration — HackFlow{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+
+    <!-- Admin Header -->
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-border/60 pb-6">
+        <div>
+            <div class="flex items-center gap-2 mb-2">
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-primary/15 border border-primary/25 px-2.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-primary">
+                    🛡️ Administrator Area
+                </span>
+                <span class="text-xs text-muted-foreground">• Staff Restricted Access</span>
+            </div>
+            <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                Dashboard — Project Review & Evaluation
+            </h1>
+            <p class="mt-1 text-sm text-muted-foreground">
+                View statistics, filter submissions, and register acceptance or rejection decisions.
+            </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="{% url 'projects:project_list' %}" class="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3.5 py-2 text-xs font-medium text-foreground hover:bg-accent transition">
+                🌐 Public Catalog
+            </a>
+            <a href="{% url 'projects:export_csv' %}{% if query or status_filter or category_filter %}?{% if query %}q={{ query }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if category_filter %}category={{ category_filter }}{% endif %}{% endif %}"
+               class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3.5 py-2 text-xs font-medium text-emerald-600 hover:bg-emerald-500/20 transition">
+                📥 Export CSV
+            </a>
+            <a href="{% url 'projects:export_pdf' %}{% if query or status_filter or category_filter %}?{% if query %}q={{ query }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if category_filter %}category={{ category_filter }}{% endif %}{% endif %}"
+               class="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3.5 py-2 text-xs font-medium text-rose-600 hover:bg-rose-500/20 transition">
+                📄 Export PDF
+            </a>
+            <a href="{% url 'admin:projects_project_changelist' %}" target="_blank" class="inline-flex items-center gap-1.5 rounded-lg border border-border bg-secondary px-3.5 py-2 text-xs font-medium text-secondary-foreground hover:bg-secondary/80 transition">
+                ⚙️ Django Admin
+            </a>
+        </div>
+    </div>
+
+    <!-- 1. PROJECT STATISTICS (KPIs) -->
+    <div>
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+            📊 Global Statistics
+        </h2>
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            <!-- Total -->
+            <div class="rounded-xl border border-border/70 bg-card p-4 shadow-xs">
+                <p class="text-xs font-medium text-muted-foreground">Total Projects</p>
+                <p class="mt-2 text-2xl font-bold text-foreground">{{ stats.total }}</p>
+                <p class="mt-1 text-[11px] text-muted-foreground">{{ stats.total_members }} member(s) involved</p>
+            </div>
+            <!-- Submitted (pending) -->
+            <div class="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 shadow-xs">
+                <p class="text-xs font-medium text-amber-500">Pending (Submitted)</p>
+                <p class="mt-2 text-2xl font-bold text-amber-500">{{ stats.submitted }}</p>
+                <p class="mt-1 text-[11px] text-muted-foreground">To evaluate</p>
+            </div>
+            <!-- Accepted -->
+            <div class="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 shadow-xs">
+                <p class="text-xs font-medium text-emerald-500">Accepted Projects</p>
+                <p class="mt-2 text-2xl font-bold text-emerald-500">{{ stats.accepted }}</p>
+                <p class="mt-1 text-[11px] text-muted-foreground">Approved for hackathon</p>
+            </div>
+            <!-- Rejected -->
+            <div class="rounded-xl border border-destructive/30 bg-destructive/5 p-4 shadow-xs">
+                <p class="text-xs font-medium text-destructive">Rejected Projects</p>
+                <p class="mt-2 text-2xl font-bold text-destructive">{{ stats.rejected }}</p>
+                <p class="mt-1 text-[11px] text-muted-foreground">With rejection reason</p>
+            </div>
+            <!-- Under Review -->
+            <div class="rounded-xl border border-blue-500/30 bg-blue-500/5 p-4 shadow-xs">
+                <p class="text-xs font-medium text-blue-500">Under Review</p>
+                <p class="mt-2 text-2xl font-bold text-blue-500">{{ stats.under_review }}</p>
+                <p class="mt-1 text-[11px] text-muted-foreground">Jury evaluation</p>
+            </div>
+            <!-- Drafts -->
+            <div class="rounded-xl border border-border/70 bg-card p-4 shadow-xs">
+                <p class="text-xs font-medium text-muted-foreground">Drafts</p>
+                <p class="mt-2 text-2xl font-bold text-muted-foreground">{{ stats.draft }}</p>
+                <p class="mt-1 text-[11px] text-muted-foreground">Not submitted</p>
+            </div>
+        </div>
+
+        <!-- Category Distribution -->
+        {% if stats.categories %}
+        <div class="mt-4 rounded-xl border border-border/70 bg-card p-4 shadow-xs">
+            <div class="flex items-center justify-between mb-3">
+                <p class="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <span class="sr-only">Répartition des projets par catégorie</span>📁 Project Distribution by Category
+                </p>
+                <span class="text-[11px] text-muted-foreground font-mono">
+                    {{ stats.total }} project{{ stats.total|pluralize }} total
+                </span>
+            </div>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+                {% for cat in stats.categories %}
+                <div class="rounded-lg border border-border/60 bg-muted/30 p-3 flex flex-col justify-between hover:border-primary/40 transition">
+                    <div>
+                        <p class="truncate text-xs font-semibold text-foreground" title="{{ cat.label }}">
+                            {{ cat.label }}
+                        </p>
+                        <div class="mt-1.5 mb-2.5 flex items-baseline justify-between">
+                            <span class="text-lg font-bold text-foreground">
+                                {{ cat.count }} <span class="text-[11px] font-normal text-muted-foreground">project{{ cat.count|pluralize }}</span>
+                            </span>
+                            <span class="text-xs font-bold font-mono text-primary">
+                                {{ cat.percentage }}%
+                            </span>
+                        </div>
+                    </div>
+                    <!-- Visible Progress Bar -->
+                    <div class="w-full bg-secondary rounded-full h-2.5 overflow-hidden border border-border/50">
+                        <div
+                            class="bg-gradient-to-r from-primary to-indigo-500 h-2.5 rounded-full transition-all duration-300"
+                            style="width: {{ cat.percentage }}%; min-width: {% if cat.count > 0 %}8px{% else %}0{% endif %};"
+                            role="progressbar"
+                            aria-valuenow="{{ cat.percentage }}"
+                            aria-valuemin="0"
+                            aria-valuemax="100"
+                        ></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 2. ADVANCED SEARCH & FILTERS -->
+    <div class="rounded-xl border border-border/70 bg-card p-5 shadow-xs">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-foreground flex items-center gap-2">
+                🔍 Search and Filter Projects
+            </h2>
+            <span class="text-xs font-mono text-muted-foreground">
+                Results: <strong class="text-foreground">{{ filtered_count }}</strong> project(s)
+            </span>
+        </div>
+
+        <form method="get" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <!-- Search Title / Keyword -->
+            <div>
+                <label class="block text-[11px] font-medium text-muted-foreground mb-1">Title or keyword</label>
+                <input
+                    type="text"
+                    name="q"
+                    value="{{ query }}"
+                    placeholder="e.g. AI, SmartCity, Eco..."
+                    class="h-9 w-full rounded-md border border-input bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+            </div>
+
+            <!-- Filter Team or Member -->
+            <div>
+                <label class="block text-[11px] font-medium text-muted-foreground mb-1">Team or Member</label>
+                <input
+                    type="text"
+                    name="team"
+                    value="{{ team_query }}"
+                    placeholder="Lead or member name..."
+                    class="h-9 w-full rounded-md border border-input bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+            </div>
+
+            <!-- Filter Hackathon -->
+            <div>
+                <label class="block text-[11px] font-medium text-muted-foreground mb-1">Hackathon</label>
+                <input
+                    type="text"
+                    name="hackathon"
+                    value="{{ hackathon_filter }}"
+                    placeholder="e.g. HackFlow 2026..."
+                    list="hackathons-datalist"
+                    class="h-9 w-full rounded-md border border-input bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                <datalist id="hackathons-datalist">
+                    {% for h in available_hackathons %}
+                    <option value="{{ h }}"></option>
+                    {% endfor %}
+                </datalist>
+            </div>
+
+            <!-- Filter Category -->
+            <div>
+                <label class="block text-[11px] font-medium text-muted-foreground mb-1">Category</label>
+                <select
+                    name="category"
+                    class="h-9 w-full rounded-md border border-input bg-background px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                    <option value="">All categories</option>
+                    {% for cat_val, cat_label in categories %}
+                    <option value="{{ cat_val }}" {% if category_filter == cat_val %}selected{% endif %}>{{ cat_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Filter Status -->
+            <div>
+                <label class="block text-[11px] font-medium text-muted-foreground mb-1">Status</label>
+                <select
+                    name="status"
+                    class="h-9 w-full rounded-md border border-input bg-background px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                    <option value="">All statuses</option>
+                    {% for st_val, st_label in statuses %}
+                    <option value="{{ st_val }}" {% if status_filter == st_val %}selected{% endif %}>{{ st_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Filter Buttons -->
+            <div class="sm:col-span-2 lg:col-span-5 flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-border/40">
+                {% if query or team_query or hackathon_filter or category_filter or status_filter %}
+                <a href="{% url 'projects:admin_dashboard' %}" class="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition">
+                    ✕ Reset filters
+                </a>
+                {% endif %}
+                <button type="submit" class="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition">
+                    Filter projects
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- 3. PROJECTS LIST TABLE & DECISIONS -->
+    <div class="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+        <div class="border-b border-border/60 bg-muted/30 px-6 py-4 flex items-center justify-between">
+            <div>
+                <h3 class="text-sm font-semibold text-foreground">Projects List</h3>
+                <p class="text-xs text-muted-foreground">View details, deliverables and validate accept or reject decisions.</p>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-muted/40 border-b border-border text-muted-foreground uppercase text-[10px] tracking-wider">
+                    <tr>
+                        <th class="py-3 px-4">Project & Hackathon</th>
+                        <th class="py-3 px-4">Team & Creator</th>
+                        <th class="py-3 px-4">Category</th>
+                        <th class="py-3 px-4">Current Status</th>
+                        <th class="py-3 px-4">Score</th>
+                        <th class="py-3 px-4">External Links</th>
+                        <th class="py-3 px-4">Decision & Reason</th>
+                        <th class="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border/60 text-foreground">
+                    {% for p in projects %}
+                    <tr class="hover:bg-muted/20 transition-colors">
+                        <!-- Project & Hackathon -->
+                        <td class="py-3.5 px-4">
+                            <a href="{% url 'projects:project_detail' p.slug %}" class="font-semibold text-primary hover:underline text-sm block">
+                                {{ p.title }}
+                            </a>
+                            <p class="text-xs text-muted-foreground truncate max-w-xs" title="{{ p.tagline }}">
+                                {{ p.tagline }}
+                            </p>
+                            <span class="inline-block mt-1 font-mono text-[10px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">
+                                🏆 {{ p.hackathon|default:"HackFlow 2026" }}
+                            </span>
+                        </td>
+
+                        <!-- Team & Roles -->
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center gap-1.5">
+                                <span class="size-5 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-[10px]">
+                                    {{ p.created_by.get_username|slice:":1"|upper }}
+                                </span>
+                                <span class="font-medium text-foreground">{{ p.created_by.get_username }}</span>
+                            </div>
+                            <div class="mt-1.5 flex flex-wrap gap-1 max-w-[200px]">
+                                {% for m in p.team_memberships.all %}
+                                <span class="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground border border-border/50" title="{{ m.user.get_username }}">
+                                    <span class="font-medium text-foreground">{{ m.user.get_username }}</span>: {{ m.get_role_display }}
+                                </span>
+                                {% empty %}
+                                <span class="text-[10px] text-muted-foreground">Solo (Lead)</span>
+                                {% endfor %}
+                            </div>
+                        </td>
+
+                        <!-- Category -->
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            <span class="rounded bg-secondary/80 px-2 py-0.5 text-[11px] font-medium text-secondary-foreground">
+                                {{ p.get_category_display }}
+                            </span>
+                        </td>
+
+                        <!-- Status -->
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            {% if p.status == 'accepted' %}
+                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-500">
+                                    <span class="size-1.5 rounded-full bg-emerald-500"></span> Accepted
+                                </span>
+                            {% elif p.status == 'rejected' %}
+                                <span class="inline-flex items-center gap-1 rounded-full bg-destructive/10 border border-destructive/30 px-2.5 py-0.5 text-[11px] font-semibold text-destructive">
+                                    <span class="size-1.5 rounded-full bg-destructive"></span> Rejected
+                                </span>
+                            {% elif p.status == 'submitted' %}
+                                <span class="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 text-[11px] font-semibold text-amber-500">
+                                    <span class="size-1.5 rounded-full bg-amber-500"></span> Submitted
+                                </span>
+                            {% elif p.status == 'under_review' %}
+                                <span class="inline-flex items-center gap-1 rounded-full bg-blue-500/10 border border-blue-500/30 px-2.5 py-0.5 text-[11px] font-semibold text-blue-500">
+                                    <span class="size-1.5 rounded-full bg-blue-500"></span> Under Review
+                                </span>
+                            {% elif p.status == 'finalist' %}
+                                <span class="inline-flex items-center gap-1 rounded-full bg-purple-500/10 border border-purple-500/30 px-2.5 py-0.5 text-[11px] font-semibold text-purple-400">
+                                    ⭐ Finalist
+                                </span>
+                            {% elif p.status == 'winner' %}
+                                <span class="inline-flex items-center gap-1 rounded-full bg-yellow-500/10 border border-yellow-500/30 px-2.5 py-0.5 text-[11px] font-semibold text-yellow-500">
+                                    🏆 Winner
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center gap-1 rounded-full bg-muted border border-border px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                                    {{ p.get_status_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Score -->
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            <form method="post" action="{% url 'projects:project_score' p.slug %}" class="flex items-center gap-1.5">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <select name="score"
+                                    class="h-8 rounded border border-input bg-background px-1.5 text-[11px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                                >
+                                    <option value="">--</option>
+                                    {% for i in score_range %}
+                                    <option value="{{ i }}" {% if p.score == i %}selected{% endif %}>{{ i }}/10</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit"
+                                    class="rounded bg-primary/20 border border-primary/30 px-1.5 py-1 text-[10px] font-semibold text-primary hover:bg-primary/30 transition"
+                                    title="Save score"
+                                >
+                                    ✓
+                                </button>
+                            </form>
+                            {% if p.score %}
+                            <p class="mt-1 text-[10px] font-bold text-primary">{{ p.score }}/10</p>
+                            {% endif %}
+                        </td>
+
+                        <!-- External Links -->
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            <div class="flex items-center gap-1.5">
+                                {% if p.repository_url %}
+                                <a href="{{ p.repository_url }}" target="_blank" rel="noopener noreferrer" class="rounded p-1 bg-background border border-border text-foreground hover:text-primary" title="GitHub Code">
+                                    💻
+                                </a>
+                                {% endif %}
+                                {% if p.demo_url %}
+                                <a href="{{ p.demo_url }}" target="_blank" rel="noopener noreferrer" class="rounded p-1 bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30" title="Live Demo">
+                                    🚀
+                                </a>
+                                {% endif %}
+                                {% if p.video_url %}
+                                <a href="{{ p.video_url }}" target="_blank" rel="noopener noreferrer" class="rounded p-1 bg-background border border-border text-foreground hover:text-primary" title="Pitch Video">
+                                    🎥
+                                </a>
+                                {% endif %}
+                                {% if not p.repository_url and not p.demo_url and not p.video_url %}
+                                <span class="text-[10px] text-muted-foreground">No links</span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Decision & Reason -->
+                        <td class="py-3.5 px-4 max-w-xs">
+                            {% if p.status == 'rejected' and p.rejection_reason %}
+                                <div class="rounded-md border border-destructive/20 bg-destructive/10 p-2 text-[11px] text-destructive">
+                                    <p class="font-semibold flex items-center gap-1">⚠️ Reason :</p>
+                                    <p class="mt-0.5 leading-snug">{{ p.rejection_reason }}</p>
+                                </div>
+                            {% elif p.status == 'accepted' %}
+                                <span class="text-[11px] text-emerald-500 font-medium">Approved</span>
+                            {% endif %}
+                            {% if p.reviewed_by %}
+                                <p class="mt-1 text-[10px] text-muted-foreground">
+                                    By {{ p.reviewed_by.get_username }} on {{ p.reviewed_at|date:"d M Y H:i" }}
+                                </p>
+                            {% endif %}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                            <div class="flex items-center justify-end gap-1.5">
+                                <a href="{% url 'projects:project_detail' p.slug %}" class="rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground hover:bg-accent transition" title="View details">
+                                    👁️ Details
+                                </a>
+
+                                <!-- Review buttons : ONLY for submitted or under_review -->
+                                {% if p.status == 'submitted' or p.status == 'under_review' %}
+                                <!-- Direct Accept -->
+                                <form method="post" action="{% url 'projects:admin_review' p.slug %}" class="inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="decision" value="accept">
+                                    <button
+                                        type="submit"
+                                        class="rounded-md bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-emerald-500 transition shadow-xs"
+                                        title="Accept project"
+                                    >
+                                        ✓ Accept
+                                    </button>
+                                </form>
+
+                                <!-- Reject Modal -->
+                                <button
+                                    type="button"
+                                    onclick="openRejectModal('{{ p.slug }}', '{{ p.title|escapejs }}')"
+                                    class="rounded-md bg-destructive/90 px-2.5 py-1 text-xs font-medium text-destructive-foreground hover:bg-destructive transition shadow-xs"
+                                    title="Reject project with reason"
+                                >
+                                    ✕ Reject
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="py-12 text-center text-sm text-muted-foreground">
+                            No projects match your search criteria.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- REJECTION MODAL -->
+<div id="reject-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl">
+        <div class="flex items-start justify-between mb-4">
+            <div>
+                <h3 class="text-lg font-bold text-foreground">Reject Project</h3>
+                <p id="modal-project-title" class="text-xs text-muted-foreground mt-0.5 font-medium"></p>
+            </div>
+            <button type="button" onclick="closeRejectModal()" class="text-muted-foreground hover:text-foreground text-lg leading-none">
+                ✕
+            </button>
+        </div>
+
+        <form id="reject-form" method="post" action="" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="decision" value="reject">
+
+            <div>
+                <label for="rejection-reason-input" class="block text-xs font-semibold text-foreground mb-1.5">
+                    Mandatory rejection reason *
+                </label>
+                <textarea
+                    id="rejection-reason-input"
+                    name="rejection_reason"
+                    rows="4"
+                    required
+                    placeholder="Clearly explain the reason for rejection (e.g. incomplete solution, off-topic, requirements not met)..."
+                    class="w-full rounded-md border border-input bg-background p-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-destructive"
+                ></textarea>
+                <p class="mt-1 text-[11px] text-muted-foreground">
+                    This reason will be stored and displayed to the project team.
+                </p>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/50">
+                <button
+                    type="button"
+                    onclick="closeRejectModal()"
+                    class="rounded-md border border-border px-3.5 py-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="submit"
+                    class="rounded-md bg-destructive px-4 py-2 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90 transition shadow-sm"
+                >
+                    Confirm Rejection
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openRejectModal(slug, title) {
+        var modal = document.getElementById('reject-modal');
+        var form = document.getElementById('reject-form');
+        var titleElem = document.getElementById('modal-project-title');
+        var textarea = document.getElementById('rejection-reason-input');
+
+        form.action = '/projects/admin-dashboard/' + slug + '/review/';
+        titleElem.textContent = 'Project : « ' + title + ' »';
+        textarea.value = '';
+        modal.classList.remove('hidden');
+        textarea.focus();
+    }
+
+    function closeRejectModal() {
+        var modal = document.getElementById('reject-modal');
+        modal.classList.add('hidden');
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeRejectModal();
+        }
+    });
+</script>
+{% endblock %}

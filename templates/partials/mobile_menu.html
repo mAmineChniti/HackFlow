@@ -18,8 +18,15 @@
             <span class="flex size-10 items-center justify-center rounded-full bg-primary/15 font-mono text-xs font-medium uppercase text-primary">
                 {{ user.username|slice:":2" }}
             </span>
-            <div class="min-w-0">
-                <p class="truncate text-sm font-medium">{{ user.username }}</p>
+            <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-2">
+                    <p class="truncate text-sm font-medium">{{ user.username }}</p>
+                    {% if user.profile.role %}
+                    <span class="inline-flex items-center rounded-md bg-primary/10 border border-primary/25 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-primary">
+                        {{ user.profile.get_role_display }}
+                    </span>
+                    {% endif %}
+                </div>
                 <p class="truncate text-xs text-muted-foreground">{{ user.email|default:"No email on file" }}</p>
                 <span class="mt-1.5 inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider
                     {% if user.profile.email_verified %}border-primary/25 bg-primary/10 text-primary{% else %}border-amber-600/30 bg-amber-500/10 text-amber-700 dark:text-amber-300{% endif %}">
@@ -31,6 +38,7 @@
         {% endif %}
 
         <nav class="mt-6 flex flex-col gap-1" aria-label="Mobile navigation">
+            <a href="{% url 'projects:project_list' %}" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Projects</a>
             <a href="{% url 'core:home' %}#hackathons" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Hackathons</a>
             <a href="{% url 'core:home' %}#challenges" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Challenges</a>
             <a href="{% url 'core:home' %}#leaderboard" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Leaderboard</a>
@@ -42,7 +50,11 @@
 
         <div class="flex flex-col gap-2">
             {% if user.is_authenticated %}
-            <c-button_link href="{% url 'core:home' %}#hackathons" class="w-full" @click="hideSheet()">
+            <c-button_link href="{% url 'projects:project_create' %}" class="w-full" @click="hideSheet()">
+                New Project
+                <c-lucideicon.plus-circle />
+            </c-button_link>
+            <c-button_link href="{% url 'core:home' %}#hackathons" variant="outline" class="w-full" @click="hideSheet()">
                 Start hacking
                 <c-lucideicon.arrow-right />
             </c-button_link>

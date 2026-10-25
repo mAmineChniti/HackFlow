@@ -4,10 +4,24 @@ from django.utils import timezone
 
 
 class Profile(models.Model):
+    class Role(models.TextChoices):
+        STUDENT = "student", "Student / Participant"
+        ORGANIZER = "organizer", "Organizer"
+        JUDGE = "judge", "Judge / Jury"
+        MENTOR = "mentor", "Mentor"
+        ADMIN = "admin", "Administrator"
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="profile",
+    )
+    role = models.CharField(
+        max_length=25,
+        choices=Role.choices,
+        default=Role.STUDENT,
+        verbose_name="Role",
+        help_text="Global account role in HackFlow",
     )
     email_verified = models.BooleanField(default=False)
     email_verified_at = models.DateTimeField(blank=True, null=True)
