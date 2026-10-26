@@ -1,3 +1,7 @@
+{% load sponsor_tags project_tags %}
+{% can_manage_sponsors user as user_can_manage_sponsors %}
+{% is_organizer user as user_is_organizer %}
+{% is_admin user as user_is_admin %}
 <c-sheet class="lg:hidden">
     <c-sheet.content side="right" class="w-[88%] max-w-sm">
         <c-sheet.header>
@@ -42,7 +46,7 @@
             <a href="{% url 'core:home' %}#challenges" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Challenges</a>
             <a href="{% url 'core:home' %}#leaderboard" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Leaderboard</a>
             <a href="{% url 'core:home' %}#organizers" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">For organizers</a>
-            <a href="{% url 'core:home' %}#sponsors" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Sponsors</a>
+            <a href="{% url 'sponsors:public_list' %}" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Sponsors</a>
             <a href="{% url 'core:home' %}#faq" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">FAQ</a>
         </nav>
 
@@ -50,6 +54,16 @@
 
         <div class="flex flex-col gap-2">
             {% if user.is_authenticated %}
+            {% if user_can_manage_sponsors or user_is_organizer or user_is_admin or user.is_staff or user.is_superuser %}
+            <c-button_link href="{% url 'sponsors:dashboard' %}" class="w-full justify-start gap-2 border border-primary/40 bg-primary/10 text-primary hover:bg-primary/20" @click="hideSheet()">
+                <c-lucideicon.handshake class="size-4" />
+                Sponsors Dashboard
+            </c-button_link>
+            <c-button_link href="{% url 'sponsors:sponsor_create' %}" variant="outline" class="w-full justify-start gap-2" @click="hideSheet()">
+                <c-lucideicon.plus-circle class="size-4 text-primary" />
+                Add Sponsor
+            </c-button_link>
+            {% endif %}
             <c-button_link href="{% url 'projects:project_create' %}" class="w-full" @click="hideSheet()">
                 New Project
                 <c-lucideicon.plus-circle />

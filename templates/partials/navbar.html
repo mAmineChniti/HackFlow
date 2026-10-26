@@ -24,7 +24,7 @@
                 <a href="{% url 'core:home' %}#leaderboard" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Leaderboard</a>
                 <a href="{% url 'teams:list' %}" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Teams</a>
                 <a href="{% url 'core:home' %}#organizers" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">For organizers</a>
-                <a href="{% url 'core:home' %}#sponsors" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Sponsors</a>
+                <a href="{% url 'sponsors:public_list' %}" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Sponsors</a>
             </nav>
         </div>
 
@@ -146,11 +146,29 @@
                             Solve a challenge
                         </a>
                     </c-dropdown_menu.item>
-                    {% if user_can_manage_sponsors %}
+                    {% if user_can_manage_sponsors or user_is_organizer or user_is_admin or user.is_staff or user.is_superuser %}
                     <c-dropdown_menu.item>
                         <a href="{% url 'sponsors:dashboard' %}" class="flex w-full items-center gap-2 text-foreground">
-                            <c-lucideicon.badge-dollar-sign class="size-4 text-primary" />
-                            Dashboard Sponsors
+                            <c-lucideicon.handshake class="size-4 text-primary" />
+                            Sponsors Dashboard
+                        </a>
+                    </c-dropdown_menu.item>
+                    <c-dropdown_menu.item>
+                        <a href="{% url 'sponsors:sponsor_list' %}" class="flex w-full items-center gap-2 text-foreground">
+                            <c-lucideicon.building-2 class="size-4 text-muted-foreground" />
+                            Sponsors Directory
+                        </a>
+                    </c-dropdown_menu.item>
+                    <c-dropdown_menu.item>
+                        <a href="{% url 'sponsors:sponsor_create' %}" class="flex w-full items-center gap-2 text-primary font-medium">
+                            <c-lucideicon.plus-circle class="size-4 text-primary" />
+                            Add Sponsor
+                        </a>
+                    </c-dropdown_menu.item>
+                    <c-dropdown_menu.item>
+                        <a href="{% url 'sponsors:sponsorship_create' %}" class="flex w-full items-center gap-2 text-foreground">
+                            <c-lucideicon.file-plus-2 class="size-4 text-muted-foreground" />
+                            New Sponsorship
                         </a>
                     </c-dropdown_menu.item>
                     {% endif %}

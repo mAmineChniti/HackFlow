@@ -30,10 +30,20 @@
         </div>
 
         {% if user.profile.is_organizer_user %}
-        <c-button_link href="{% url 'hackathons:create' %}" size="default">
-            <c-lucideicon.plus class="size-4" />
-            Create New Hackathon
-        </c-button_link>
+        <div class="flex flex-wrap items-center gap-2">
+            <c-button_link href="{% url 'sponsors:dashboard' %}" variant="outline" size="default">
+                <c-lucideicon.handshake class="size-4 text-primary" />
+                Sponsors Dashboard
+            </c-button_link>
+            <c-button_link href="{% url 'sponsors:sponsor_create' %}" variant="outline" size="default" class="border-primary/40 bg-primary/10 text-primary hover:bg-primary/20">
+                <c-lucideicon.plus class="size-4" />
+                Add Sponsor
+            </c-button_link>
+            <c-button_link href="{% url 'hackathons:create' %}" size="default">
+                <c-lucideicon.plus class="size-4" />
+                Create New Hackathon
+            </c-button_link>
+        </div>
         {% else %}
         <c-button_link href="{% url 'hackathons:list' %}" variant="outline" size="default">
             <c-lucideicon.compass class="size-4" />
@@ -41,6 +51,41 @@
         </c-button_link>
         {% endif %}
     </div>
+
+    {% if user.profile.is_organizer_user %}
+    <!-- Organizer Sponsor Management Quick Hub -->
+    <div class="rounded-2xl border border-border/80 bg-card/60 p-5 shadow-xs">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-3">
+                <span class="flex size-10 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-primary">
+                    <c-lucideicon.handshake class="size-5" />
+                </span>
+                <div>
+                    <h2 class="text-base font-semibold text-foreground">Sponsors & Partnerships</h2>
+                    <p class="text-xs text-muted-foreground">Manage your hackathon partners, prospect new companies, and track commitments.</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <c-button_link href="{% url 'sponsors:sponsor_create' %}" size="sm">
+                    <c-lucideicon.plus class="size-3.5" />
+                    Add sponsor
+                </c-button_link>
+                <c-button_link href="{% url 'sponsors:sponsorship_create' %}" variant="outline" size="sm">
+                    <c-lucideicon.file-plus-2 class="size-3.5 text-muted-foreground" />
+                    New sponsorship
+                </c-button_link>
+                <c-button_link href="{% url 'sponsors:sponsor_list' %}" variant="outline" size="sm">
+                    <c-lucideicon.building-2 class="size-3.5 text-muted-foreground" />
+                    Directory
+                </c-button_link>
+                <c-button_link href="{% url 'sponsors:dashboard' %}" variant="ghost" size="sm" class="text-primary hover:text-primary/80">
+                    Open dashboard
+                    <c-lucideicon.arrow-right class="size-3.5" />
+                </c-button_link>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Table of hackathons -->
     {% if hackathons %}
