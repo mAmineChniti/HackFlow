@@ -262,7 +262,7 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
-# Fichiers uploadés (logos sponsors, banners, etc.)
+# Uploaded files (sponsor logos, banners, etc.)
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 # Django only serves /media/ in DEBUG. On a host without Nginx or object

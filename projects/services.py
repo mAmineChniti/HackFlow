@@ -1,7 +1,7 @@
 """
-Service métier de gestion des permissions pour HackFlow.
-Centralise toutes les règles d'accès et d'autorisation des utilisateurs selon leur rôle global
-et leur rôle au sein de l'équipe du projet.
+Permission service layer for HackFlow.
+Centralizes all access rules and authorization logic based on global role
+and project team role.
 """
 
 from django.core.exceptions import PermissionDenied
@@ -13,8 +13,8 @@ from .models import HistoriqueProjet, Project, ProjectMember
 
 def get_user_role(user) -> str:
     """
-    Retourne le rôle effectif d'un utilisateur.
-    Un superutilisateur est toujours traité comme 'admin'.
+    Returns the effective role of a user.
+    A superuser is always treated as 'admin'.
     """
     if not user or not user.is_authenticated:
         return "anonymous"
@@ -27,40 +27,40 @@ def get_user_role(user) -> str:
 
 
 def is_admin(user) -> bool:
-    """Vérifie si l'utilisateur a le rôle Admin (ou superuser)."""
+    """Check if user has Admin role (or is superuser)."""
     return get_user_role(user) == Profile.Role.ADMIN
 
 
 def is_organizer(user) -> bool:
-    """Vérifie si l'utilisateur est Organisateur (ou Admin)."""
+    """Check if user is Organizer (or Admin)."""
     role = get_user_role(user)
     return role in (Profile.Role.ORGANIZER, Profile.Role.ADMIN)
 
 
 def is_judge(user) -> bool:
-    """Vérifie si l'utilisateur est Jury."""
+    """Check if user is Judge."""
     return get_user_role(user) == Profile.Role.JUDGE
 
 
 def is_mentor(user) -> bool:
-    """Vérifie si l'utilisateur est Mentor."""
+    """Check if user is Mentor."""
     return get_user_role(user) == Profile.Role.MENTOR
 
 
 def is_student(user) -> bool:
-    """Vérifie si l'utilisateur est Étudiant."""
+    """Check if user is Student."""
     return get_user_role(user) == Profile.Role.STUDENT
 
 
 def get_team_membership(user, project):
-    """Retourne l'adhésion ProjectMember pour un utilisateur sur un projet donné."""
+    """Returns the ProjectMember membership for a user on a given project."""
     if not user or not user.is_authenticated or not project:
         return None
     return ProjectMember.objects.filter(project=project, user=user).first()
 
 
 def is_team_member(user, project) -> bool:
-    """Vérifie si l'utilisateur est membre de l'équipe du projet (ou son créateur)."""
+    """Check if user is a member of the project team (or its creator)."""
     if not user or not user.is_authenticated or not project:
         return False
     if project.created_by_id == user.id:
@@ -79,13 +79,13 @@ def is_project_lead(user, project) -> bool:
 
 
 # ==============================================================================
-# RÈGLES DE PERMISSIONS PAR ACTION
+# PERMISSION RULES BY ACTION
 # ==============================================================================
 
 
 def can_create_project(user) -> bool:
     """
-    Student peut créer un projet. Admin peut aussi.
+    Students can create a project. Admins can too.
     """
     if not user or not user.is_authenticated:
         return False
@@ -94,18 +94,18 @@ def can_create_project(user) -> bool:
 
 def can_view_project(user, project) -> bool:
     """
-    Règles de consultation d'un projet :
-    - Admin : voit tout.
-    - Organizer : voit tous les projets (brouillons inclus).
-    - Judge : voit uniquement les projets validés (status=accepted).
-    - Mentor : voit les projets des équipes qu'il accompagne (ou projets validés).
-    - Student : voit son propre projet (même brouillon) ou les projets validés des autres.
-    - Anonyme : voit uniquement les projets validés.
+    Project view permissions:
+    - Admin: sees everything.
+    - Organizer: sees all projects (including drafts).
+    - Judge: sees only accepted projects (status=accepted).
+    - Mentor: sees projects they mentor (or accepted projects).
+    - Student: sees their own project (even draft) or accepted projects of others.
+    - Anonymous: sees only accepted projects.
     """
     if not project:
         return False
 
-    # Projets validés/acceptés visibles par tous
+    # Accepted projects visible to everyone
     if project.status == Project.Status.ACCEPTED:
         return True
 
@@ -117,14 +117,14 @@ def can_view_project(user, project) -> bool:
         return True
 
     if role == Profile.Role.JUDGE:
-        # Judge ne voit QUE les projets validés
+        # Judge sees ONLY accepted projects
         return project.status == Project.Status.ACCEPTED
 
     if role == Profile.Role.MENTOR:
-        # Mentor voit les projets qu'il accompagne ou validés
+        # Mentor sees projects they mentor or accepted projects
         return is_team_member(user, project) or project.status == Project.Status.ACCEPTED
 
-    # Student : voit les projets de son équipe
+    # Student: sees their team's projects
     return is_team_member(user, project)
 
 
@@ -331,11 +331,11 @@ REVIEWABLE_STATUSES = {
 
 def can_review_project(user, project) -> bool:
     """
-    Organizer et Admin peuvent valider ou refuser un projet.
-    Règle stricte :
-    - L'action d'évaluation (acceptation / refus) est autorisée UNIQUEMENT pour les projets
-      au statut 'soumis' (submitted) ou 'en cours d'évaluation' (under_review).
-    - Jamais pour un projet en statut 'brouillon' (draft), ni pour les projets déjà acceptés/refusés.
+    Organizers and Admins can accept or reject a project.
+    Strict rule:
+    - Review action (accept/reject) is allowed ONLY for projects
+      with status 'submitted' or 'under_review'.
+    - Never for projects in 'draft' status, nor for already accepted/rejected projects.
     """
     if not user or not user.is_authenticated or not project:
         return False
@@ -346,9 +346,9 @@ def can_review_project(user, project) -> bool:
 
 def validate_review_permission(user, project):
     """
-    Vérifie côté serveur si le projet peut être évalué par l'utilisateur.
-    Lève PermissionDenied (HTTP 403) si l'utilisateur n'est pas autorisé
-    ou si le projet est en statut brouillon ou non évaluable.
+    Server-side check if the project can be reviewed by the user.
+    Raises PermissionDenied (HTTP 403) if user is not authorized
+    or if the project is in draft status or not reviewable.
     """
     if not user or not user.is_authenticated:
         raise PermissionDenied("Authentication required.")

@@ -13,22 +13,11 @@ SPONSOR_PERMISSIONS = {
 
 ROLE_PERMISSIONS = {
     "admin": SPONSOR_PERMISSIONS.copy(),
-    "organisateur": {"manage", "view_confidential", "contact", "export"},
-    "etudiant": set(),
-    "jury": set(),
-    "visiteur": set(),
-}
-
-# accounts.Profile.Role stores English values ("organizer", "student", ...),
-# while this module keys permissions on French labels. Without this mapping an
-# accounts organizer would silently get no sponsor permissions at all when
-# SPONSORS_USE_PROFILE_ROLE is enabled.
-PROFILE_ROLE_ALIASES = {
-    "admin": "admin",
-    "organizer": "organisateur",
-    "student": "etudiant",
-    "judge": "jury",
-    "mentor": "jury",
+    "organizer": {"manage", "view_confidential", "contact", "export"},
+    "student": set(),
+    "judge": set(),
+    "mentor": set(),
+    "visitor": set(),
 }
 
 
@@ -42,16 +31,16 @@ def _role_permissions():
 def get_user_roles(user) -> set[str]:
     """Return the user's roles; integrate future role sources here."""
     if not getattr(user, "is_authenticated", False):
-        return {"visiteur"}
+        return {"visitor"}
 
-    # Enable SPONSORS_USE_PROFILE_ROLE when the project adds profile.role.
+    # Use profile role when SPONSORS_USE_PROFILE_ROLE is enabled.
     if getattr(settings, "SPONSORS_USE_PROFILE_ROLE", False):
         profile = getattr(user, "profile", None)
         profile_role = getattr(profile, "role", None)
         if profile_role:
             normalized_role = str(profile_role).strip().lower()
             if normalized_role:
-                return {PROFILE_ROLE_ALIASES.get(normalized_role, normalized_role)}
+                return {normalized_role}
 
     # Enable SPONSORS_USE_GROUP_ROLES when Django groups become the role source.
     if getattr(settings, "SPONSORS_USE_GROUP_ROLES", False):
@@ -71,8 +60,8 @@ def get_user_roles(user) -> set[str]:
     if getattr(user, "is_superuser", False):
         return {"admin"}
     if getattr(user, "is_staff", False):
-        return {"organisateur"}
-    return {"etudiant"}
+        return {"organizer"}
+    return {"student"}
 
 
 def user_has_sponsor_permission(user, perm: str) -> bool:

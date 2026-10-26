@@ -1,9 +1,9 @@
 """
-Services métier pour le module Gestion des Sponsors — HackFlow ESPRIT.
+Business services for the Sponsor Management module — HackFlow ESPRIT.
 
-Contient :
-1. L'unique implémentation de transition des statuts avec verrouillage transactionnel (select_for_update).
-2. La composition et l'envoi d'emails aux sponsors avec gestion d'erreurs, audit trail et rate limiting.
+Contains:
+1. The single implementation of sponsorship status transitions with transactional locking (select_for_update).
+2. Composition and sending of sponsor emails with error handling, audit trail, and rate limiting.
 """
 
 import logging
@@ -22,8 +22,9 @@ EMAIL_RATE_LIMIT_WINDOW = 60
 
 
 # ==============================================================================
-# GESTION DES STATUTS (Unique source de vérité)
+# STATUS MANAGEMENT (Single source of truth)
 # ==============================================================================
+
 
 def change_sponsorship_status(
     sponsorship: Union[Sponsorship, int],
@@ -31,14 +32,14 @@ def change_sponsorship_status(
     changed_by: Optional[User] = None,
 ) -> Optional[StatusHistory]:
     """
-    Unique implémentation du changement de statut d'un partenariat dans l'application.
+    Unique implementation of sponsorship status change in the application.
 
-    Garanties :
-    1. Validation stricte du statut parmi StatusChoices.
-    2. Concurrence : verrouillage pessimiste via select_for_update() dans transaction.atomic().
-    3. Idempotence : si le nouveau statut est identique au statut actuel, aucune écriture
-       n'est effectuée et la fonction retourne None (pas de doublon dans StatusHistory).
-    4. Traçabilité : création d'une entrée StatusHistory atomiquement liée à la mise à jour.
+    Guarantees:
+    1. Strict validation of status against StatusChoices.
+    2. Concurrency: pessimistic locking via select_for_update() in transaction.atomic().
+    3. Idempotence: if new status equals current status, no write is performed
+       and the function returns None (no duplicate in StatusHistory).
+    4. Traceability: creation of a StatusHistory entry atomically linked to the update.
     """
     valid_statuses = dict(StatusChoices.choices)
     if new_status not in valid_statuses:
@@ -49,10 +50,10 @@ def change_sponsorship_status(
     sponsorship_id = sponsorship.pk if isinstance(sponsorship, Sponsorship) else sponsorship
 
     with transaction.atomic():
-        # Verrouillage pessimiste de la ligne en base de données
+        # Pessimistic locking of the database row
         locked_sponsorship = Sponsorship.objects.select_for_update().get(pk=sponsorship_id)
 
-        # Si le statut est identique, aucune modification ni historique
+        # If status is identical, no modification or history
         if locked_sponsorship.status == new_status:
             return None
 
@@ -67,7 +68,7 @@ def change_sponsorship_status(
             changed_by=changed_by,
         )
 
-        # Mettre à jour l'instance en mémoire si elle a été fournie
+        # Update the in-memory instance if it was provided
         if isinstance(sponsorship, Sponsorship):
             sponsorship.status = new_status
 
@@ -75,9 +76,8 @@ def change_sponsorship_status(
 
 
 # ==============================================================================
-# COMPOSITION ET ENVOI D'EMAILS AUX SPONSORS
+# EMAIL COMPOSITION AND SENDING
 # ==============================================================================
-
 EMAIL_TEMPLATES = {
     "invitation": {
         "label": "Sponsorship invitation",
@@ -129,8 +129,8 @@ def compose_email(
     template_key: str = "invitation",
 ) -> dict:
     """
-    Génère un objet et un corps de message préremplis selon le modèle choisi.
-    Cette fonction est conçue pour être branchée sur le service IA ultérieurement.
+    Generates a pre-filled email subject and body based on the chosen template.
+    This function is designed to be connected to an AI service later.
     """
     hackathon_name = hackathon.title if hackathon else "our next hackathon"
     contact_salutation = sponsor.contact_name or sponsor.name
@@ -156,8 +156,8 @@ def compose_email(
 
 def check_and_increment_email_rate_limit(user_id: int) -> bool:
     """
-    Vérifie et applique la limite anti-abus : max 5 emails par minute par utilisateur.
-    Retourne True si l'envoi est autorisé, False si la limite est dépassée.
+    Checks and enforces the anti-abuse limit: max 5 emails per minute per user.
+    Returns True if sending is allowed, False if limit is exceeded.
     """
     cache_key = f"sponsor_email_throttle_{user_id}"
     current_count = cache.get(cache_key, 0)
@@ -177,14 +177,14 @@ def send_sponsor_contact_email(
     ai_generated: bool = False,
 ) -> Tuple[SponsorEmailLog, bool]:
     """
-    Envoie un email au contact_email du sponsor et enregistre le journal d'audit SponsorEmailLog.
+    Sends an email to the sponsor's contact_email and records the audit log in SponsorEmailLog.
 
-    Sécurité et résilience :
-    - Le destinataire est STRICTEMENT sponsor.contact_email.
-    - Application de la limite de 5 emails par minute.
-    - Capture des exceptions sans crash : success=False enregistré dans le log.
-    - Traçabilité du flag ai_generated dans SponsorEmailLog.
-    - Retourne le tuple (log, success).
+    Security and resilience:
+    - Recipient is STRICTLY sponsor.contact_email.
+    - Enforces the 5 emails per minute limit.
+    - Captures exceptions without crashing: success=False recorded in log.
+    - Tracks ai_generated flag in SponsorEmailLog.
+    - Returns tuple (log, success).
     """
     recipient = (sponsor.contact_email or "").strip()
     if not recipient:
@@ -199,7 +199,7 @@ def send_sponsor_contact_email(
         )
         return log, False
 
-    # Vérification de la limite anti-abus (5/min)
+    # Rate limit check (5/min)
     if not check_and_increment_email_rate_limit(sent_by.pk):
         log = SponsorEmailLog.objects.create(
             sponsor=sponsor,

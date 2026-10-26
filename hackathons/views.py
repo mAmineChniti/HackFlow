@@ -31,6 +31,7 @@ from .emails import (
 )
 from .forms import HackathonForm, RegistrationForm, ScheduleForm
 from .models import Hackathon, HackathonRegistration, HackathonSchedule
+from projects.services import is_organizer, is_admin, is_student
 
 
 class HackathonListView(ListView):
@@ -206,7 +207,7 @@ class HackathonCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def test_func(self):
         user = self.request.user
-        return user.is_superuser or (hasattr(user, "profile") and user.profile.is_organizer_user)
+        return user.is_superuser or is_organizer(user)
 
     def handle_no_permission(self):
         messages.error(
@@ -297,7 +298,7 @@ def register_participant(request, slug):
 
     if (
         hasattr(request.user, "profile")
-        and not request.user.profile.is_student_user
+        and not is_student(request.user)
         and not request.user.is_superuser
     ):
         messages.error(

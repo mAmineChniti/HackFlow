@@ -57,18 +57,14 @@ PY
 if [ "${RESET_DB:-0}" = "1" ]; then
     echo "Resetting database schema..."
     python manage.py flush --noinput
-    python manage.py migrate --noinput --fake-initial
+    python manage.py migrate --noinput
 else
-    # Migrations/static collection belong to the web process. Workers set
-    # RUN_MIGRATIONS=0 and RUN_COLLECTSTATIC=0 so several containers never race
-    # over the same schema or static volume during startup.
+    # Migrations belong to the web process. Workers set
+    # RUN_MIGRATIONS=0 so several containers never race
+    # over the same schema during startup.
     if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then
         python manage.py migrate --noinput
     fi
-fi
-
-if [ "${RUN_COLLECTSTATIC:-1}" = "1" ]; then
-    python manage.py collectstatic --noinput
 fi
 
 # Demo data is on by default because this is a demo project. It runs only in
