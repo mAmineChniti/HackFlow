@@ -9,9 +9,7 @@ startup when ``SEED_DEMO_DATA=True``. It creates:
 * sponsors, sponsorships, status history and email logs
 * generated banner/logo images for the demo assets
 
-Passwords are never hardcoded. They must come from ``DEMO_ADMIN_PASSWORD`` and
-``DEMO_PASSWORD`` (or the corresponding command-line options), and both must be
-at least 12 characters long.
+All demo users share the same password: ``hackflow2026`` (12 chars min).
 """
 
 from __future__ import annotations
@@ -49,7 +47,7 @@ from sponsors.models import (
 User = get_user_model()
 
 EMAIL_DOMAIN = "hackflow.example"
-PASSWORD_MIN_LENGTH = 12
+DEMO_PASSWORD = "hackflow2026"  # Single password for all demo users (12+ chars)
 
 # (username, first_name, last_name, role, is_staff, is_superuser)
 DEMO_USERS = [
@@ -444,22 +442,6 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--password",
-            default="",
-            help=(
-                "Password for non-admin demo users. Defaults to the "
-                "DEMO_PASSWORD environment variable."
-            ),
-        )
-        parser.add_argument(
-            "--admin-password",
-            default="",
-            help=(
-                "Password for the demo admin. Defaults to the "
-                "DEMO_ADMIN_PASSWORD environment variable."
-            ),
-        )
-        parser.add_argument(
             "--reset-passwords",
             action="store_true",
             help="Reset passwords for demo users that already exist.",
@@ -471,28 +453,10 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        import os
-
-        admin_password = (options["admin_password"] or os.getenv("DEMO_ADMIN_PASSWORD", "")).strip()
-        user_password = (options["password"] or os.getenv("DEMO_PASSWORD", "")).strip()
-
-        if len(admin_password) < PASSWORD_MIN_LENGTH:
-            raise CommandError(
-                "DEMO_ADMIN_PASSWORD must be set to at least "
-                f"{PASSWORD_MIN_LENGTH} characters (or pass --admin-password)."
-            )
-        if len(user_password) < PASSWORD_MIN_LENGTH:
-            raise CommandError(
-                "DEMO_PASSWORD must be set to at least "
-                f"{PASSWORD_MIN_LENGTH} characters (or pass --password)."
-            )
-
         now = timezone.now()
         with transaction.atomic():
             users = self._seed_users(
                 now,
-                admin_password=admin_password,
-                user_password=user_password,
                 reset_passwords=options["reset_passwords"],
             )
             hackathons = self._seed_hackathons(
@@ -515,7 +479,7 @@ class Command(BaseCommand):
     # Users
     # ------------------------------------------------------------------
 
-    def _seed_users(self, now, *, admin_password, user_password, reset_passwords):
+    def _seed_users(self, now, *, reset_passwords):
         users = {}
         for username, first_name, last_name, role, is_staff, is_superuser in DEMO_USERS:
             user, created = User.objects.get_or_create(
@@ -534,9 +498,8 @@ class Command(BaseCommand):
             user.is_staff = is_staff
             user.is_superuser = is_superuser
 
-            password = admin_password if role == Profile.Role.ADMIN else user_password
             if created or reset_passwords:
-                user.set_password(password)
+                user.set_password(DEMO_PASSWORD)
             user.save()
 
             profile, _ = Profile.objects.get_or_create(user=user)
@@ -1494,6 +1457,6 @@ class Command(BaseCommand):
             f"{SponsorEmailLog.objects.filter(sponsor__name__in=sponsor_names).count()}"
         )
         self.stdout.write(
-            "Passwords are not printed. Use DEMO_ADMIN_PASSWORD for admin and "
-            "DEMO_PASSWORD for the other demo users."
+            "Passwords are not printed. All demo users share password: "
+            f"{DEMO_PASSWORD}"
         )

@@ -37,7 +37,6 @@ services:
     # The free plan has no background-worker tier, so this starts Gunicorn and
     # one solo Celery worker in the same 512 MB web instance.
     dockerCommand: sh /app/scripts/start-render.sh
-    maxShutdownDelaySeconds: 60
     # Free web services have an ephemeral filesystem: sponsor logos uploaded
     # at runtime are lost on redeploy/restart. Use object storage or a paid
     # plan with a persistent disk for durable media.
@@ -87,16 +86,11 @@ services:
       # Demo data: profile roles drive sponsor permissions, and the idempotent
       # seeder runs after migrate/collectstatic in the web container. This
       # project is a demo, so production seeding stays on by default.
+      # All demo users share password: hackflow2026
       - key: SPONSORS_USE_PROFILE_ROLE
         value: "True"
       - key: SEED_DEMO_DATA
         value: "True"
-      - key: DEMO_ADMIN_PASSWORD
-        sync: false
-      - key: DEMO_PASSWORD
-        sync: false
-      - key: GROQ_API_KEY
-        sync: false
       - key: PASSWORD_RESET_TIMEOUT
         value: "259200"
       - key: LOGIN_MAX_ATTEMPTS
