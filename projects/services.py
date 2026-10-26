@@ -489,8 +489,17 @@ def validate_add_mentor_advice_permission(user, project):
         raise PermissionDenied("Only mentors can submit advice.")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# History helpers
+def score_project(project, user, score) -> None:
+    """Set an organizer score (1-10) with audit history."""
+    if not is_organizer(user):
+        raise PermissionDenied("Only organizers and admins can score projects.")
+    if project.status not in (Project.Status.ACCEPTED, Project.Status.FINALIST, Project.Status.WINNER, Project.Status.UNDER_REVIEW):
+        raise PermissionDenied("Project must be reviewed before scoring.")
+    now = timezone.now()
+    with transaction.atomic():
+        project.score = score
+        project.save(update_fields=["score", "updated_at"])
+        create_history_entry(project, HistoriqueProjet.Action.UNDER_REVIEW, user, commentaire=f"Score set to {score}/10", date=now)
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -625,6 +634,18 @@ def change_project_status(project, user, new_status: str) -> None:
     action = STATUS_TO_ACTION.get(new_status)
     if action is None:
         raise ValueError(f"Use submit_project() or review_project() for status '{new_status}'.")
+
+    # Allowed source statuses for each target (enforces lifecycle order).
+    ALLOWED_SOURCES = {
+        Project.Status.UNDER_REVIEW: {Project.Status.SUBMITTED, Project.Status.UNDER_REVIEW},
+        Project.Status.FINALIST: {Project.Status.ACCEPTED, Project.Status.UNDER_REVIEW},
+        Project.Status.WINNER: {Project.Status.FINALIST, Project.Status.ACCEPTED},
+    }
+    if new_status in ALLOWED_SOURCES and project.status not in ALLOWED_SOURCES[new_status]:
+        raise PermissionDenied(
+            f"Cannot move a project from '{project.get_status_display()}' to "
+            f"'{dict(Project.Status.choices).get(new_status, new_status)}'."
+        )
 
     now = timezone.now()
     with transaction.atomic():

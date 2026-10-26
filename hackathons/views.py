@@ -638,20 +638,12 @@ def participant_badge(request, slug):
             hackathon=hackathon, participant=request.user
         ).first()
 
-    # If the user is not personally registered (e.g. organizer, admin, visitor), show the hackathon's attendee pass
     if not registration:
-        registration = HackathonRegistration.objects.filter(hackathon=hackathon).first()
-
-    if not registration:
-        registration = HackathonRegistration(
-            hackathon=hackathon,
-            participant=request.user,
-            ticket_code=f"HF-PASS-{hackathon.id}9C4E",
-            status=HackathonRegistration.Status.CONFIRMED,
-            university="ESPRIT",
-            study_level=HackathonRegistration.StudyLevel.ING3,
-            experience_level=HackathonRegistration.ExperienceLevel.ADVANCED,
+        messages.error(
+            request,
+            "No registration found for this hackathon. Register first to get your badge.",
         )
+        return redirect("hackathons:detail", slug=slug)
 
     qr_code_b64 = generate_badge_qr(request, registration)
 

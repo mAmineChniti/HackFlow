@@ -508,11 +508,13 @@ def project_score(request, slug):
         if form.is_valid():
             score_val = int(form.cleaned_data["score"])
             if 1 <= score_val <= 10:
-                project.score = score_val
-                project.save(update_fields=["score", "updated_at"])
-                messages.success(
-                    request, f"Score {score_val}/10 awarded to project '{project.title}'."
-                )
+                try:
+                    services.score_project(project, request.user, score_val)
+                    messages.success(
+                        request, f"Score {score_val}/10 awarded to project '{project.title}'."
+                    )
+                except PermissionDenied as exc:
+                    messages.error(request, str(exc))
             else:
                 messages.error(request, "The score must be between 1 and 10.")
         else:
