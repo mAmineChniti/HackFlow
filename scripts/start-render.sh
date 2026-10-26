@@ -17,6 +17,46 @@ cd /app
 : "${GUNICORN_THREADS:=4}"
 : "${GUNICORN_TIMEOUT:=60}"
 
+# ---------------------------------------------------------------------------
+# Database setup: run before Gunicorn so tables exist when the first request
+# arrives. RESET_DB=1 drops all tables first (use on the initial deploy after
+# migration history changes, then remove the env var).
+# ---------------------------------------------------------------------------
+if [ "${RESET_DB:-0}" = "1" ]; then
+    echo "==> RESET_DB=1: dropping all tables for a clean schema..."
+    python - <<'PY'
+import os
+import django
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "HackFlow.settings")
+django.setup()
+
+from django.db import connection
+
+with connection.cursor() as cursor:
+    tables = connection.introspection.table_names()
+    for table in tables:
+        cursor.execute(f'DROP TABLE IF EXISTS "{table}" CASCADE')
+    cursor.execute('DROP TABLE IF EXISTS "django_migrations" CASCADE')
+
+print("All tables dropped")
+PY
+fi
+
+echo "==> Running migrations..."
+python manage.py migrate --noinput
+
+# Seed demo data when requested (idempotent).
+case "${SEED_DEMO_DATA:-1}" in
+    1|true|True|TRUE|yes|Yes|YES|on|On|ON)
+        echo "==> Seeding demo data..."
+        python manage.py seed_demo
+        ;;
+esac
+
+echo "==> Database ready."
+# ---------------------------------------------------------------------------
+
 CELERY_ENABLED=0
 CELERY_PID=""
 GUNICORN_PID=""
