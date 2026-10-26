@@ -28,7 +28,7 @@ from django.utils.text import slugify
 from PIL import Image, ImageDraw, ImageFont
 
 from accounts.models import Profile
-from challenges.models import Challenge, ChallengeSubmission
+from challenges.models import Challenge, ChallengeQuestion, ChallengeSubmission, ChallengeAnswer
 from hackathons.models import (
     Hackathon,
     HackathonFAQ,
@@ -1598,6 +1598,32 @@ class Command(BaseCommand):
                 ),
                 "status": Challenge.Status.ACTIVE,
                 "hackathon": active,
+                "questions": [
+                    {
+                        "question_text": "What HTTP header is commonly used to bypass IP-based rate limiting?",
+                        "answer_type": ChallengeQuestion.AnswerType.TEXT,
+                        "correct_answer": "X-Forwarded-For",
+                        "points": 150,
+                        "order": 0,
+                        "hint": "Think about headers that proxies add to requests.",
+                    },
+                    {
+                        "question_text": "What is the proper fix to prevent this bypass?",
+                        "answer_type": ChallengeQuestion.AnswerType.TEXT,
+                        "correct_answer": "trust only the direct peer IP",
+                        "points": 200,
+                        "order": 1,
+                        "hint": "Consider which IP is actually trustworthy.",
+                    },
+                    {
+                        "question_text": "What flag value indicates a successful bypass in the demo environment?",
+                        "answer_type": ChallengeQuestion.AnswerType.FLAG,
+                        "correct_answer": "flag{rate_limit_bypassed}",
+                        "points": 150,
+                        "order": 2,
+                        "hint": "Format: flag{...}",
+                    },
+                ],
             },
             {
                 "title": "Build a RAG Pipeline",
@@ -1610,6 +1636,40 @@ class Command(BaseCommand):
                 ),
                 "status": Challenge.Status.ACTIVE,
                 "hackathon": active,
+                "questions": [
+                    {
+                        "question_text": "What is the primary purpose of the retriever component in RAG?",
+                        "answer_type": ChallengeQuestion.AnswerType.TEXT,
+                        "correct_answer": "retrieve relevant documents",
+                        "points": 200,
+                        "order": 0,
+                        "hint": "It searches through a knowledge base.",
+                    },
+                    {
+                        "question_text": "How many documents should typically be retrieved per query?",
+                        "answer_type": ChallengeQuestion.AnswerType.NUMBER,
+                        "correct_answer": "5",
+                        "points": 150,
+                        "order": 1,
+                        "hint": "Common default values are between 3 and 10.",
+                    },
+                    {
+                        "question_text": "What is the key metric for evaluating retrieval quality?",
+                        "answer_type": ChallengeQuestion.AnswerType.TEXT,
+                        "correct_answer": "recall",
+                        "points": 200,
+                        "order": 2,
+                        "hint": "Measures how many relevant docs were found.",
+                    },
+                    {
+                        "question_text": "Enter the flag for completing the RAG challenge.",
+                        "answer_type": ChallengeQuestion.AnswerType.FLAG,
+                        "correct_answer": "flag{rag_complete}",
+                        "points": 200,
+                        "order": 3,
+                        "hint": "Format: flag{...}",
+                    },
+                ],
             },
             {
                 "title": "Zero-Copy Parser",
@@ -1622,6 +1682,32 @@ class Command(BaseCommand):
                 ),
                 "status": Challenge.Status.ACTIVE,
                 "hackathon": None,
+                "questions": [
+                    {
+                        "question_text": "What Rust/C++ feature enables zero-copy parsing?",
+                        "answer_type": ChallengeQuestion.AnswerType.TEXT,
+                        "correct_answer": "slices",
+                        "points": 300,
+                        "order": 0,
+                        "hint": "Views into existing memory without ownership.",
+                    },
+                    {
+                        "question_text": "What is the main benefit of zero-copy for performance?",
+                        "answer_type": ChallengeQuestion.AnswerType.TEXT,
+                        "correct_answer": "reduced memory allocation",
+                        "points": 350,
+                        "order": 1,
+                        "hint": "Think about CPU cycles spent on memory operations.",
+                    },
+                    {
+                        "question_text": "Enter the systems flag.",
+                        "answer_type": ChallengeQuestion.AnswerType.FLAG,
+                        "correct_answer": "flag{zero_copy_master}",
+                        "points": 350,
+                        "order": 2,
+                        "hint": "Format: flag{...}",
+                    },
+                ],
             },
             {
                 "title": "Beginner Warm-up",
@@ -1631,11 +1717,30 @@ class Command(BaseCommand):
                 "description": "A simple warm-up challenge for new participants.",
                 "status": Challenge.Status.ACTIVE,
                 "hackathon": None,
+                "questions": [
+                    {
+                        "question_text": "What is 2 + 2?",
+                        "answer_type": ChallengeQuestion.AnswerType.NUMBER,
+                        "correct_answer": "4",
+                        "points": 50,
+                        "order": 0,
+                        "hint": "Basic arithmetic.",
+                    },
+                    {
+                        "question_text": "Enter the warm-up flag.",
+                        "answer_type": ChallengeQuestion.AnswerType.FLAG,
+                        "correct_answer": "flag{hello_world}",
+                        "points": 50,
+                        "order": 1,
+                        "hint": "Format: flag{...}",
+                    },
+                ],
             },
         ]
         challenges = {}
         for spec in specs:
             hackathon = spec.pop("hackathon")
+            questions_spec = spec.pop("questions", [])
             challenge, _ = Challenge.objects.update_or_create(
                 title=spec["title"],
                 defaults={
@@ -1650,19 +1755,41 @@ class Command(BaseCommand):
             )
             challenges[slugify(spec["title"])] = challenge
 
-        # Seed a sample submission
+            for q_spec in questions_spec:
+                ChallengeQuestion.objects.update_or_create(
+                    challenge=challenge,
+                    order=q_spec["order"],
+                    defaults={
+                        "question_text": q_spec["question_text"],
+                        "answer_type": q_spec["answer_type"],
+                        "correct_answer": q_spec["correct_answer"],
+                        "points": q_spec["points"],
+                        "hint": q_spec.get("hint", ""),
+                    },
+                )
+
+        # Seed a sample submission with answers
         student = users["student"]
         first = list(challenges.values())[0]
-        ChallengeSubmission.objects.update_or_create(
+        submission, _ = ChallengeSubmission.objects.update_or_create(
             challenge=first,
             participant=student,
             defaults={
-                "solution": "I bypassed the rate limit by rotating the X-Forwarded-For header. Fix: trust only the direct peer IP.",
                 "status": ChallengeSubmission.Status.PASSED,
                 "score": 100,
                 "attempt_count": 1,
             },
         )
+        for question in first.questions.all().order_by("order"):
+            ChallengeAnswer.objects.update_or_create(
+                submission=submission,
+                question=question,
+                defaults={
+                    "answer_text": question.correct_answer,
+                    "is_correct": True,
+                    "points_earned": question.points,
+                },
+            )
         return challenges
 
     # ------------------------------------------------------------------
@@ -1729,6 +1856,15 @@ class Command(BaseCommand):
         )
         self.stdout.write(
             f"  invitations:    {Invitation.objects.filter(team__name__in=teams.values()).count()}"
+        )
+        self.stdout.write(
+            f"  challenges:     {Challenge.objects.count()}"
+        )
+        self.stdout.write(
+            f"  questions:      {ChallengeQuestion.objects.count()}"
+        )
+        self.stdout.write(
+            f"  submissions:    {ChallengeSubmission.objects.count()}"
         )
         self.stdout.write(
             f"Passwords are not printed. All demo users share password: {DEMO_PASSWORD}"
