@@ -11,4 +11,7 @@ urlpatterns = [
     path("<slug:slug>/delete/", views.ChallengeDeleteView.as_view(), name="delete"),
     path("<slug:slug>/submit/", views.challenge_submit, name="submit"),
     path("<slug:slug>/hint/", views.challenge_hint_view, name="hint"),
+    path("<slug:slug>/questions/add/", views.question_create, name="question_create"),
+    path("<slug:slug>/questions/<int:question_id>/edit/", views.question_edit, name="question_edit"),
+    path("<slug:slug>/questions/<int:question_id>/delete/", views.question_delete, name="question_delete"),
 ]

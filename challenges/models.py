@@ -68,6 +68,39 @@ class Challenge(models.Model):
         return self.title
 
 
+class ChallengeQuestion(models.Model):
+    class AnswerType(models.TextChoices):
+        TEXT = "text", "Text"
+        NUMBER = "number", "Number"
+        FLAG = "flag", "Flag"
+
+    challenge = models.ForeignKey(
+        Challenge,
+        on_delete=models.CASCADE,
+        related_name="questions",
+        verbose_name="Challenge",
+    )
+    question_text = models.TextField(verbose_name="Question")
+    answer_type = models.CharField(
+        max_length=20,
+        choices=AnswerType.choices,
+        default=AnswerType.TEXT,
+        verbose_name="Answer type",
+    )
+    correct_answer = models.CharField(max_length=500, verbose_name="Correct answer")
+    points = models.PositiveIntegerField(default=10, verbose_name="Points")
+    order = models.PositiveIntegerField(default=0, verbose_name="Order")
+    hint = models.TextField(blank=True, verbose_name="Hint")
+
+    class Meta:
+        ordering = ("order", "id")
+        verbose_name = "Challenge question"
+        verbose_name_plural = "Challenge questions"
+
+    def __str__(self):
+        return f"{self.challenge.title} - Q{self.order + 1}"
+
+
 class ChallengeSubmission(models.Model):
     class Status(models.TextChoices):
         SUBMITTED = "submitted", "Submitted"
@@ -86,7 +119,6 @@ class ChallengeSubmission(models.Model):
         related_name="challenge_submissions",
         verbose_name="Participant",
     )
-    solution = models.TextField(verbose_name="Solution")
     submitted_at = models.DateTimeField(auto_now_add=True, verbose_name="Submitted at")
     attempt_count = models.PositiveIntegerField(default=1, verbose_name="Attempts")
     status = models.CharField(
@@ -107,3 +139,29 @@ class ChallengeSubmission(models.Model):
 
     def __str__(self):
         return f"{self.participant} → {self.challenge} ({self.get_status_display()})"
+
+
+class ChallengeAnswer(models.Model):
+    submission = models.ForeignKey(
+        ChallengeSubmission,
+        on_delete=models.CASCADE,
+        related_name="answers",
+        verbose_name="Submission",
+    )
+    question = models.ForeignKey(
+        ChallengeQuestion,
+        on_delete=models.CASCADE,
+        related_name="answers",
+        verbose_name="Question",
+    )
+    answer_text = models.CharField(max_length=500, verbose_name="Answer")
+    is_correct = models.BooleanField(default=False, verbose_name="Is correct")
+    points_earned = models.PositiveIntegerField(default=0, verbose_name="Points earned")
+
+    class Meta:
+        unique_together = [("submission", "question")]
+        verbose_name = "Challenge answer"
+        verbose_name_plural = "Challenge answers"
+
+    def __str__(self):
+        return f"{self.submission} - Q{self.question.order + 1}: {self.answer_text}"

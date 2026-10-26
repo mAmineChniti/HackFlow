@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import PermissionDenied
-from django.db.models import Count, Q
+from django.db.models import Count, Max, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
@@ -18,8 +18,8 @@ from core.groq import call_groq, is_configured
 from projects.services import is_admin, is_organizer
 
 from . import services
-from .forms import ChallengeForm, ChallengeSubmissionForm
-from .models import Challenge, ChallengeSubmission
+from .forms import ChallengeForm, ChallengeQuestionForm, ChallengeSubmissionForm
+from .models import Challenge, ChallengeQuestion, ChallengeSubmission, ChallengeAnswer
 
 logger = logging.getLogger(__name__)
 
@@ -81,9 +81,10 @@ class ChallengeDetailView(DetailView):
         if user.is_authenticated:
             submission = ChallengeSubmission.objects.filter(
                 challenge=challenge, participant=user
-            ).first()
+            ).prefetch_related("answers__question").first()
         context["submission"] = submission
-        context["submission_form"] = ChallengeSubmissionForm(instance=submission)
+        context["questions"] = challenge.questions.all().order_by("order", "id")
+        context["submission_form"] = ChallengeSubmissionForm(challenge=challenge)
         context["solve_count"] = challenge.submissions.filter(
             status=ChallengeSubmission.Status.PASSED
         ).count()
@@ -178,32 +179,65 @@ def challenge_submit(request, slug):
     ).first()
 
     if request.method == "POST":
-        form = ChallengeSubmissionForm(request.POST, instance=existing)
+        form = ChallengeSubmissionForm(request.POST, challenge=challenge)
         if form.is_valid():
-            submission = form.save(commit=False)
-            submission.challenge = challenge
-            submission.participant = request.user
-            if existing:
-                submission.attempt_count = existing.attempt_count + 1
-                submission.submitted_at = timezone.now()
-            else:
+            submission = existing
+            if not submission:
+                submission = ChallengeSubmission(challenge=challenge, participant=request.user)
                 submission.attempt_count = 1
-            solution_text = (submission.solution or "").strip()
-            passed = len(solution_text) >= 40
+            else:
+                submission.attempt_count += 1
+                submission.submitted_at = timezone.now()
+
+            total_points = 0
+            max_points = sum(q.points for q in challenge.questions.all())
+            all_correct = True
+
+            for question in challenge.questions.all().order_by("order", "id"):
+                field_name = f"question_{question.id}"
+                user_answer = form.cleaned_data.get(field_name, "").strip()
+                correct_answer = question.correct_answer.strip()
+
+                is_correct = False
+                if question.answer_type == ChallengeQuestion.AnswerType.NUMBER:
+                    try:
+                        is_correct = float(user_answer) == float(correct_answer)
+                    except (ValueError, TypeError):
+                        is_correct = False
+                else:
+                    is_correct = user_answer.lower() == correct_answer.lower()
+
+                points_earned = question.points if is_correct else 0
+                total_points += points_earned
+
+                if not is_correct:
+                    all_correct = False
+
+                ChallengeAnswer.objects.update_or_create(
+                    submission=submission,
+                    question=question,
+                    defaults={
+                        "answer_text": user_answer,
+                        "is_correct": is_correct,
+                        "points_earned": points_earned,
+                    },
+                )
+
             submission.status = (
-                ChallengeSubmission.Status.PASSED if passed else ChallengeSubmission.Status.FAILED
+                ChallengeSubmission.Status.PASSED if all_correct else ChallengeSubmission.Status.FAILED
             )
-            submission.score = 100 if passed else 0
+            submission.score = int((total_points / max_points * 100)) if max_points > 0 else 0
             submission.save()
-            if passed:
-                messages.success(request, "Solution submitted and marked as passed.")
+
+            if all_correct:
+                messages.success(request, "All answers correct! Challenge passed.")
             else:
                 messages.warning(
-                    request, "Solution submitted but needs more detail (min 40 chars)."
+                    request, f"Submission saved. Score: {submission.score}/100. Try again for full points."
                 )
             return redirect("challenges:detail", slug=slug)
     else:
-        form = ChallengeSubmissionForm(instance=existing)
+        form = ChallengeSubmissionForm(challenge=challenge)
 
     return render(
         request,
@@ -255,3 +289,75 @@ def challenge_hint_view(request, slug):
         sub.save(update_fields=["last_hint"])
 
     return JsonResponse({"success": True, "hint": hint, "ai_configured": is_configured()})
+
+
+@login_required
+def question_create(request, slug):
+    challenge = get_object_or_404(Challenge, slug=slug)
+    if not services.can_edit_challenge(request.user, challenge):
+        messages.error(request, "You do not have permission to add questions to this challenge.")
+        return redirect("challenges:detail", slug=slug)
+
+    if request.method == "POST":
+        form = ChallengeQuestionForm(request.POST)
+        if form.is_valid():
+            question = form.save(commit=False)
+            question.challenge = challenge
+            if question.order is None:
+                max_order = challenge.questions.aggregate(Max("order"))["order__max"] or 0
+                question.order = max_order + 1
+            question.save()
+            messages.success(request, "Question added successfully.")
+            return redirect("challenges:detail", slug=slug)
+    else:
+        form = ChallengeQuestionForm()
+
+    return render(
+        request,
+        "challenges/question_form.html",
+        {"challenge": challenge, "form": form, "page_title": "Add Question"},
+    )
+
+
+@login_required
+def question_edit(request, slug, question_id):
+    challenge = get_object_or_404(Challenge, slug=slug)
+    question = get_object_or_404(ChallengeQuestion, pk=question_id, challenge=challenge)
+    if not services.can_edit_challenge(request.user, challenge):
+        messages.error(request, "You do not have permission to edit this question.")
+        return redirect("challenges:detail", slug=slug)
+
+    if request.method == "POST":
+        form = ChallengeQuestionForm(request.POST, instance=question)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Question updated successfully.")
+            return redirect("challenges:detail", slug=slug)
+    else:
+        form = ChallengeQuestionForm(instance=question)
+
+    return render(
+        request,
+        "challenges/question_form.html",
+        {"challenge": challenge, "question": question, "form": form, "page_title": "Edit Question"},
+    )
+
+
+@login_required
+def question_delete(request, slug, question_id):
+    challenge = get_object_or_404(Challenge, slug=slug)
+    question = get_object_or_404(ChallengeQuestion, pk=question_id, challenge=challenge)
+    if not services.can_edit_challenge(request.user, challenge):
+        messages.error(request, "You do not have permission to delete this question.")
+        return redirect("challenges:detail", slug=slug)
+
+    if request.method == "POST":
+        question.delete()
+        messages.success(request, "Question deleted successfully.")
+        return redirect("challenges:detail", slug=slug)
+
+    return render(
+        request,
+        "challenges/question_confirm_delete.html",
+        {"challenge": challenge, "question": question},
+    )
