@@ -57,21 +57,20 @@
         <form hx-post="{% url 'sponsors:sponsorship_change_status' item.pk %}"
               hx-target="#sponsorship-row-{{ item.pk }}"
               hx-swap="outerHTML"
+              hx-trigger="change"
               class="inline-flex items-center">
             {% csrf_token %}
-            <c-select
+            <c-native_select
                 name="status"
-                hx-post="{% url 'sponsors:sponsorship_change_status' item.pk %}"
-                hx-target="#sponsorship-row-{{ item.pk }}"
-                hx-swap="outerHTML"
-                class="w-auto"
+                aria-label="Sponsorship status"
+                class="h-8 w-auto py-0 text-xs"
             >
                 {% for code, label in status_choices %}
                 <option value="{{ code }}" {% if item.status == code %}selected{% endif %}>
                     {{ label }}
                 </option>
                 {% endfor %}
-            </c-select>
+            </c-native_select>
         </form>
         {% else %}
         <c-badge

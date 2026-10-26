@@ -3,7 +3,14 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from .models import Sponsor, Sponsorship, StatusChoices, TierChoices, ContributionTypeChoices, SECTOR_CHOICES
+from .models import (
+    Sponsor,
+    Sponsorship,
+    StatusChoices,
+    TierChoices,
+    ContributionTypeChoices,
+    SECTOR_CHOICES,
+)
 
 
 INPUT_CLASSES = (
@@ -46,32 +53,44 @@ class SponsorForm(forms.ModelForm):
             "contact_email",
         ]
         widgets = {
-            "name": forms.TextInput(attrs={
-                "class": INPUT_CLASSES,
-                "placeholder": "ex: Google Cloud, Orange, Vermeg...",
-            }),
-            "logo": forms.ClearableFileInput(attrs={
-                "class": FILE_CLASSES,
-                "accept": "image/*",
-            }),
-            "website": forms.URLInput(attrs={
-                "class": INPUT_CLASSES,
-                "placeholder": "https://www.entreprise.com",
-            }),
+            "name": forms.TextInput(
+                attrs={
+                    "class": INPUT_CLASSES,
+                    "placeholder": "e.g. Google Cloud, Orange, Vermeg...",
+                }
+            ),
+            "logo": forms.ClearableFileInput(
+                attrs={
+                    "class": FILE_CLASSES,
+                    "accept": "image/*",
+                }
+            ),
+            "website": forms.URLInput(
+                attrs={
+                    "class": INPUT_CLASSES,
+                    "placeholder": "https://www.company.com",
+                }
+            ),
             "sector": forms.Select(attrs={"class": SELECT_CLASSES}),
-            "description": forms.Textarea(attrs={
-                "class": TEXTAREA_CLASSES,
-                "rows": 3,
-                "placeholder": "Briefly describe the company and its commitment to technology or students...",
-            }),
-            "contact_name": forms.TextInput(attrs={
-                "class": INPUT_CLASSES,
-                "placeholder": "ex: Sarah Ben Ali (HR / DevRel Manager)",
-            }),
-            "contact_email": forms.EmailInput(attrs={
-                "class": INPUT_CLASSES,
-                "placeholder": "partenariat@entreprise.com",
-            }),
+            "description": forms.Textarea(
+                attrs={
+                    "class": TEXTAREA_CLASSES,
+                    "rows": 3,
+                    "placeholder": "Briefly describe the company and its commitment to technology or students...",
+                }
+            ),
+            "contact_name": forms.TextInput(
+                attrs={
+                    "class": INPUT_CLASSES,
+                    "placeholder": "e.g. Sarah Ben Ali (HR / DevRel Manager)",
+                }
+            ),
+            "contact_email": forms.EmailInput(
+                attrs={
+                    "class": INPUT_CLASSES,
+                    "placeholder": "partnership@company.com",
+                }
+            ),
         }
 
 
@@ -95,26 +114,33 @@ class SponsorshipForm(forms.ModelForm):
             "sponsor": forms.Select(attrs={"class": SELECT_CLASSES}),
             "hackathon": forms.Select(attrs={"class": SELECT_CLASSES}),
             "tier": forms.Select(attrs={"class": SELECT_CLASSES}),
-            "amount": forms.NumberInput(attrs={
-                "class": INPUT_CLASSES,
-                "placeholder": "ex: 3500.000",
-                "step": "50",
-                "min": "0",
-            }),
+            "amount": forms.NumberInput(
+                attrs={
+                    "class": INPUT_CLASSES,
+                    "placeholder": "e.g. 3500.000",
+                    "step": "50",
+                    "min": "0",
+                }
+            ),
             "contribution_type": forms.Select(attrs={"class": SELECT_CLASSES}),
-            "notes": forms.Textarea(attrs={
-                "class": TEXTAREA_CLASSES,
-                "rows": 3,
-                "placeholder": "Negotiation details, previous contacts, and agreed benefits...",
-            }),
+            "notes": forms.Textarea(
+                attrs={
+                    "class": TEXTAREA_CLASSES,
+                    "rows": 3,
+                    "placeholder": "Negotiation details, previous contacts, and agreed benefits...",
+                }
+            ),
         }
 
 
 class QuickStatusChangeForm(forms.Form):
     """Quick status change form for HTMX or drag-and-drop."""
+
     status = forms.ChoiceField(
         choices=StatusChoices.choices,
-        widget=forms.Select(attrs={"class": "rounded-md border border-border bg-background px-2.5 py-1 text-xs"}),
+        widget=forms.Select(
+            attrs={"class": "rounded-md border border-border bg-background px-2.5 py-1 text-xs"}
+        ),
     )
 
 
@@ -146,18 +172,22 @@ class SponsorContactForm(forms.Form):
     )
     subject = forms.CharField(
         max_length=255,
-        widget=forms.TextInput(attrs={
-            "class": INPUT_CLASSES,
-            "placeholder": "Your message subject...",
-        }),
-        label=_("Objet"),
+        widget=forms.TextInput(
+            attrs={
+                "class": INPUT_CLASSES,
+                "placeholder": "Your message subject...",
+            }
+        ),
+        label=_("Subject"),
     )
     message = forms.CharField(
-        widget=forms.Textarea(attrs={
-            "class": TEXTAREA_CLASSES,
-            "rows": 8,
-            "placeholder": "Message to send to the sponsor contact...",
-        }),
+        widget=forms.Textarea(
+            attrs={
+                "class": TEXTAREA_CLASSES,
+                "rows": 8,
+                "placeholder": "Message to send to the sponsor contact...",
+            }
+        ),
         label=_("Message"),
     )
     ai_generated = forms.BooleanField(

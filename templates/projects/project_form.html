@@ -64,26 +64,26 @@
                         <c-form.label for="{{ form.category.id_for_label }}">Category <span class="text-destructive">*</span></c-form.label>
                         <c-button type="button" id="btn-ai-category" onclick="detectCategoryAI()" variant="outline" size="sm" class="bg-purple-500/10 border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20" aria-label="Suggest category with AI">
                             <c-lucideicon.sparkles class="size-3" />
-                            <span class="sr-only">Suggest with AI</span>Suggest with AI
+                            Suggest with AI
                         </c-button>
                     </div>
-                    <c-select name="{{ form.category.html_name }}" id="{{ form.category.id_for_label }}" class="w-full">
+                    <c-native_select name="{{ form.category.html_name }}" id="{{ form.category.id_for_label }}" required>
                         {% for value, label in form.category.field.choices %}
                         <option value="{{ value }}" {% if form.category.value == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
-                    </c-select>
-                    <div id="ai-cat-feedback" class="hidden mt-1.5 rounded-md border border-purple-500/30 bg-purple-500/10 p-2 text-[11px] text-purple-700 dark:text-purple-300"></div>
+                    </c-native_select>
+                    <div id="ai-cat-feedback" class="hidden mt-1.5 rounded-md border border-purple-500/30 bg-purple-500/10 p-2 text-[11px] text-purple-700 dark:text-purple-300" aria-live="polite"></div>
                     {% if form.category.errors %}
                     <c-form.error>{{ form.category.errors.0 }}</c-form.error>
                     {% endif %}
                 </c-form.field>
                 <c-form.field>
                     <c-form.label for="{{ form.status.id_for_label }}">Status <span class="text-destructive">*</span></c-form.label>
-                    <c-select name="{{ form.status.html_name }}" id="{{ form.status.id_for_label }}" class="w-full">
+                    <c-native_select name="{{ form.status.html_name }}" id="{{ form.status.id_for_label }}" required>
                         {% for value, label in form.status.field.choices %}
                         <option value="{{ value }}" {% if form.status.value == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
-                    </c-select>
+                    </c-native_select>
                     {% if form.status.errors %}
                     <c-form.error>{{ form.status.errors.0 }}</c-form.error>
                     {% endif %}
@@ -95,15 +95,15 @@
                     <c-form.label for="{{ form.category.id_for_label }}">Category <span class="text-destructive">*</span></c-form.label>
                     <c-button type="button" id="btn-ai-category" onclick="detectCategoryAI()" variant="outline" size="sm" class="bg-purple-500/10 border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20" aria-label="Suggest category with AI">
                         <c-lucideicon.sparkles class="size-3" />
-                        <span class="sr-only">Suggérer avec l'IA</span>Suggest with AI
+                        Suggest with AI
                     </c-button>
                 </div>
-                <c-select name="{{ form.category.html_name }}" id="{{ form.category.id_for_label }}" class="w-full">
+                <c-native_select name="{{ form.category.html_name }}" id="{{ form.category.id_for_label }}" required>
                     {% for value, label in form.category.field.choices %}
                     <option value="{{ value }}" {% if form.category.value == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
-                </c-select>
-                <div id="ai-cat-feedback" class="hidden mt-1.5 rounded-md border border-purple-500/30 bg-purple-500/10 p-2 text-[11px] text-purple-700 dark:text-purple-300"></div>
+                </c-native_select>
+                <div id="ai-cat-feedback" class="hidden mt-1.5 rounded-md border border-purple-500/30 bg-purple-500/10 p-2 text-[11px] text-purple-700 dark:text-purple-300" aria-live="polite"></div>
                 {% if form.category.errors %}
                 <c-form.error>{{ form.category.errors.0 }}</c-form.error>
                 {% endif %}
@@ -187,17 +187,15 @@ function detectCategoryAI() {
     const description = document.getElementById("{{ form.description.id_for_label }}")?.value || "";
     const tagline = document.getElementById("{{ form.tagline.id_for_label }}")?.value || "";
     const btn = document.getElementById("btn-ai-category");
-    const icon = document.getElementById("ai-cat-icon");
     const feedback = document.getElementById("ai-cat-feedback");
     const catSelect = document.getElementById("{{ form.category.id_for_label }}");
 
     if (!title && !description) {
-        alert("Please enter at least the project title or tagline first!");
+        alert("Please enter at least the project title, tagline, or description first!");
         return;
     }
 
     btn.disabled = true;
-    icon.textContent = "⏳";
     btn.classList.add("opacity-60");
     feedback.classList.remove("hidden");
     feedback.innerHTML = `<span class="inline-flex items-center gap-1.5"><svg class="animate-spin h-3.5 w-3.5 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> AI analysis in progress with Groq...</span>`;
@@ -220,7 +218,6 @@ function detectCategoryAI() {
         })
         .then(data => {
             btn.disabled = false;
-            icon.textContent = "✨";
             btn.classList.remove("opacity-60");
 
             if (data.category && catSelect) {
@@ -251,9 +248,9 @@ function detectCategoryAI() {
         })
         .catch(err => {
             btn.disabled = false;
-            icon.textContent = "✨";
             btn.classList.remove("opacity-60");
-            feedback.textContent = "Error during AI request.";
+            feedback.classList.remove("hidden");
+            feedback.textContent = "Unable to suggest a category right now. Please try again.";
         });
 }
 </script>

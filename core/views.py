@@ -12,11 +12,11 @@ below as clearly marked placeholder content until those features are built.
 """
 
 from django.contrib.auth import get_user_model
-from django.db.models import Sum
+from django.db.models import Count, Q, Sum
 from django.shortcuts import render
 from django.utils import timezone
 
-from hackathons.models import Hackathon
+from hackathons.models import Hackathon, HackathonRegistration
 from projects.models import Project
 
 try:  # Sponsors is an optional module for deployments that don't run events.
@@ -120,9 +120,15 @@ def _build_event(event, index, today):
         status = _event_status(start, end, today)
 
     duration = _event_duration(start, end)
-    registered = event.registered_count
+    registered = getattr(event, "confirmed_registrations", None)
+    if registered is None:
+        registered = event.registered_count
     capacity = event.max_participants
     progress = min(int((registered / capacity) * 100), 100) if capacity else 0
+
+    registration_open = event.is_registration_open
+    registration_upcoming = event.is_registration_upcoming
+    registration_deadline = event.registration_deadline
 
     return {
         "name": event.title,
@@ -136,10 +142,21 @@ def _build_event(event, index, today):
         "dates": _format_date_range(start, end),
         "duration": f"{duration}-day event" if duration else "",
         "mode": event.get_mode_display(),
+        "location": event.location,
         "prize": event.prize_pool or "Prize TBA",
         "registered": registered,
         "capacity": capacity,
         "progress": progress,
+        "registration_open": registration_open,
+        "registration_upcoming": registration_upcoming,
+        "registration_deadline": registration_deadline,
+        "registration_label": (
+            "Registration open"
+            if registration_open
+            else "Registration opens soon"
+            if registration_upcoming
+            else "Registration closed"
+        ),
         "url": event.get_absolute_url(),
         "banner_image": event.banner_image,
         "start_date": event.start_date,
@@ -193,11 +210,12 @@ def _platform_stats():
     published_events = Hackathon.objects.filter(is_published=True).exclude(
         status=Hackathon.Status.CANCELLED
     )
+    now = timezone.now()
     return {
-        "projects": Project.objects.count(),
+        "projects": Project.objects.exclude(status=Project.Status.DRAFT).count(),
         "builders": User.objects.count(),
         "events": published_events.count(),
-        "live_events": published_events.filter(end_date__gte=timezone.now()).count(),
+        "live_events": published_events.filter(start_date__lte=now, end_date__gte=now).count(),
         "confirmed_sponsorships": confirmed_count,
         "funding": confirmed_funding,
     }
@@ -330,18 +348,22 @@ def home(request):
     today = timezone.localdate()
 
     now = timezone.now()
-    published_events = Hackathon.objects.filter(is_published=True).exclude(
-        status=Hackathon.Status.CANCELLED
+    published_events = (
+        Hackathon.objects.filter(is_published=True)
+        .exclude(status=Hackathon.Status.CANCELLED)
+        .select_related("organizer")
+        .annotate(
+            confirmed_registrations=Count(
+                "registrations",
+                filter=Q(registrations__status=HackathonRegistration.Status.CONFIRMED),
+            )
+        )
     )
-    events = list(
-        published_events.filter(end_date__gte=now).order_by("start_date")[:6]
-    )
+    events = list(published_events.filter(end_date__gte=now).order_by("start_date")[:6])
     remaining_slots = 6 - len(events)
     if remaining_slots:
         events.extend(
-            published_events.filter(end_date__lt=now).order_by("-end_date")[
-                :remaining_slots
-            ]
+            published_events.filter(end_date__lt=now).order_by("-end_date")[:remaining_slots]
         )
     event_cards = [_build_event(event, index, today) for index, event in enumerate(events)]
 

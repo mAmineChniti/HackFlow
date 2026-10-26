@@ -21,7 +21,11 @@ class ProjectPermissionsTestCase(TestCase):
         # 1. Comptes avec rôles globaux
         # Note: Using simple password "pwd" for test accounts only (ephemeral test data)
         self.admin_user = User.objects.create_user(
-            username="admin_test", email="admin@test.com", password="pwd", is_superuser=True, is_staff=True
+            username="admin_test",
+            email="admin@test.com",
+            password="pwd",
+            is_superuser=True,
+            is_staff=True,
         )
         self.admin_user.profile.role = Profile.Role.ADMIN
         self.admin_user.profile.save()
@@ -285,9 +289,10 @@ class ProjectPermissionsTestCase(TestCase):
         """Vérifie le code HTTP 403 si un étudiant tente de valider/refuser."""
         c = Client()
         c.force_login(self.student_lead)
-        resp = c.post(f"/projects/admin-dashboard/{self.project_submitted.slug}/review/", {
-            "decision": "accept"
-        })
+        resp = c.post(
+            f"/projects/admin-dashboard/{self.project_submitted.slug}/review/",
+            {"decision": "accept"},
+        )
         self.assertEqual(resp.status_code, 403)
 
     # --------------------------------------------------------------------------
@@ -351,13 +356,16 @@ class ProjectPermissionsTestCase(TestCase):
             Project.Status.SUBMITTED,
         ]
         for st in forbidden_statuses:
-            resp = c.post("/projects/create/", {
-                "title": f"Projet Test {st}",
-                "tagline": "Pitch test",
-                "description": "Description complète du projet pour tester",
-                "category": Project.Category.WEB,
-                "status": st,
-            })
+            resp = c.post(
+                "/projects/create/",
+                {
+                    "title": f"Projet Test {st}",
+                    "tagline": "Pitch test",
+                    "description": "Description complète du projet pour tester",
+                    "category": Project.Category.WEB,
+                    "status": st,
+                },
+            )
             self.assertEqual(resp.status_code, 403)
 
     def test_http_403_when_student_sends_forbidden_status_on_update(self):
@@ -366,23 +374,29 @@ class ProjectPermissionsTestCase(TestCase):
         c.force_login(self.student_lead)
 
         # Tentative d'envoyer 'accepted'
-        resp = c.post(f"/projects/{self.project_draft.slug}/edit/", {
-            "title": "Titre Modifié",
-            "tagline": "Pitch modifié",
-            "description": "Description modifiée",
-            "category": Project.Category.WEB,
-            "status": Project.Status.ACCEPTED,
-        })
+        resp = c.post(
+            f"/projects/{self.project_draft.slug}/edit/",
+            {
+                "title": "Titre Modifié",
+                "tagline": "Pitch modifié",
+                "description": "Description modifiée",
+                "category": Project.Category.WEB,
+                "status": Project.Status.ACCEPTED,
+            },
+        )
         self.assertEqual(resp.status_code, 403)
 
         # Tentative d'envoyer 'under_review'
-        resp_review = c.post(f"/projects/{self.project_draft.slug}/edit/", {
-            "title": "Titre Modifié",
-            "tagline": "Pitch modifié",
-            "description": "Description modifiée",
-            "category": Project.Category.WEB,
-            "status": Project.Status.UNDER_REVIEW,
-        })
+        resp_review = c.post(
+            f"/projects/{self.project_draft.slug}/edit/",
+            {
+                "title": "Titre Modifié",
+                "tagline": "Pitch modifié",
+                "description": "Description modifiée",
+                "category": Project.Category.WEB,
+                "status": Project.Status.UNDER_REVIEW,
+            },
+        )
         self.assertEqual(resp_review.status_code, 403)
 
     def test_project_created_as_draft_automatically(self):
@@ -390,12 +404,15 @@ class ProjectPermissionsTestCase(TestCase):
         c = Client()
         c.force_login(self.student_lead)
 
-        resp = c.post("/projects/create/", {
-            "title": "Nouveau Projet Automatique",
-            "tagline": "Slogan du projet",
-            "description": "Description du nouveau projet créé",
-            "category": Project.Category.WEB,
-        })
+        resp = c.post(
+            "/projects/create/",
+            {
+                "title": "Nouveau Projet Automatique",
+                "tagline": "Slogan du projet",
+                "description": "Description du nouveau projet créé",
+                "category": Project.Category.WEB,
+            },
+        )
         self.assertEqual(resp.status_code, 302)
         created_project = Project.objects.get(title="Nouveau Projet Automatique")
         self.assertEqual(created_project.status, Project.Status.DRAFT)
@@ -435,7 +452,7 @@ class ProjectPermissionsTestCase(TestCase):
 
         # Vérifier la présence de la barre de progression dans le HTML
         self.assertContains(resp, 'role="progressbar"')
-        self.assertContains(resp, "Répartition des projets par catégorie")
+        self.assertContains(resp, "Project distribution by category")
 
     def test_review_buttons_only_for_submitted_and_under_review_projects(self):
         """
@@ -485,15 +502,18 @@ class ProjectPermissionsTestCase(TestCase):
         # 2. Test HTTP sur la vue de review
         c = Client()
         c.force_login(self.organizer_user)
-        resp = c.post(f"/projects/admin-dashboard/{self.project_draft.slug}/review/", {
-            "decision": "accept"
-        })
+        resp = c.post(
+            f"/projects/admin-dashboard/{self.project_draft.slug}/review/", {"decision": "accept"}
+        )
         self.assertEqual(resp.status_code, 403)
 
-        resp_reject = c.post(f"/projects/admin-dashboard/{self.project_draft.slug}/review/", {
-            "decision": "reject",
-            "rejection_reason": "Non prêt",
-        })
+        resp_reject = c.post(
+            f"/projects/admin-dashboard/{self.project_draft.slug}/review/",
+            {
+                "decision": "reject",
+                "rejection_reason": "Non prêt",
+            },
+        )
         self.assertEqual(resp_reject.status_code, 403)
 
     def test_server_side_can_review_submitted_and_under_review(self):
@@ -512,9 +532,10 @@ class ProjectPermissionsTestCase(TestCase):
         # Accepter un projet soumis fonctionne pour l'organisateur
         c = Client()
         c.force_login(self.organizer_user)
-        resp = c.post(f"/projects/admin-dashboard/{self.project_submitted.slug}/review/", {
-            "decision": "accept"
-        })
+        resp = c.post(
+            f"/projects/admin-dashboard/{self.project_submitted.slug}/review/",
+            {"decision": "accept"},
+        )
         self.assertEqual(resp.status_code, 302)
         self.project_submitted.refresh_from_db()
         self.assertEqual(self.project_submitted.status, Project.Status.ACCEPTED)
@@ -531,12 +552,15 @@ class ProjectPermissionsTestCase(TestCase):
         # Modification via la vue HTTP
         c = Client()
         c.force_login(self.student_lead)
-        resp = c.post(f"/projects/{self.project_rejected.slug}/edit/", {
-            "title": "Projet Refusé Corrigé",
-            "tagline": "Pitch corrigé et enrichi",
-            "description": "Nouvelle description répondant aux remarques",
-            "category": Project.Category.WEB,
-        })
+        resp = c.post(
+            f"/projects/{self.project_rejected.slug}/edit/",
+            {
+                "title": "Projet Refusé Corrigé",
+                "tagline": "Pitch corrigé et enrichi",
+                "description": "Nouvelle description répondant aux remarques",
+                "category": Project.Category.WEB,
+            },
+        )
         self.assertEqual(resp.status_code, 302)
 
         self.project_rejected.refresh_from_db()
@@ -566,12 +590,15 @@ class ProjectPermissionsTestCase(TestCase):
             self.assertEqual(resp_get.status_code, 403)
 
             # 3. Accès POST en modification renvoie HTTP 403
-            resp_post = c.post(f"/projects/{p.slug}/edit/", {
-                "title": "Tentative Piratage",
-                "tagline": "Pitch",
-                "description": "Desc",
-                "category": Project.Category.WEB,
-            })
+            resp_post = c.post(
+                f"/projects/{p.slug}/edit/",
+                {
+                    "title": "Tentative Piratage",
+                    "tagline": "Pitch",
+                    "description": "Desc",
+                    "category": Project.Category.WEB,
+                },
+            )
             self.assertEqual(resp_post.status_code, 403)
 
             # 4. Accès POST en soumission renvoie HTTP 403
@@ -587,12 +614,12 @@ class ProjectPermissionsTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
 
         # 1. Bannière du motif de refus
-        self.assertContains(resp, "Projet Refusé")
+        self.assertContains(resp, "Project Rejected")
         self.assertContains(resp, "Cahier des charges incomplet")
 
         # 2. Boutons Modifier et Soumettre à nouveau
-        self.assertContains(resp, "Modifier")
-        self.assertContains(resp, "Soumettre à nouveau")
+        self.assertContains(resp, "Edit")
+        self.assertContains(resp, "Resubmit Project")
 
     def test_resubmit_rejected_project_flow_and_history(self):
         """
@@ -626,10 +653,10 @@ class ProjectPermissionsTestCase(TestCase):
         # 4. Consultation de la page : la bannière de refus n'est plus active pour un projet soumis
         detail_resp = c.get(f"/projects/{self.project_rejected.slug}/")
         self.assertEqual(detail_resp.status_code, 200)
-        self.assertNotContains(detail_resp, "Action requise : modifiez votre projet et soumettez-le à nouveau")
+        self.assertNotContains(detail_resp, "Project Rejected")
         # Mais l'historique complet reste affiché
-        self.assertContains(detail_resp, "Historique des décisions et soumissions")
-        self.assertContains(detail_resp, "Projet soumis à nouveau par")
+        self.assertContains(detail_resp, "Decision &amp; Submission History")
+        self.assertContains(detail_resp, "Project resubmitted by")
 
     def test_complete_decision_history_cycle(self):
         """Vérifie le cycle complet : refus initial avec motif, resoumission, puis acceptation finale."""
@@ -691,21 +718,21 @@ class ProjectPermissionsTestCase(TestCase):
         c.force_login(self.student_lead)
         resp_lead = c.get(f"/projects/{self.project_draft.slug}/")
         self.assertEqual(resp_lead.status_code, 200)
-        self.assertContains(resp_lead, "Évaluer avec l'IA")
+        self.assertContains(resp_lead, "Evaluate with AI")
         self.assertContains(resp_lead, 'id="btn-run-ai"')
 
         # Organizer : bouton visible
         c.force_login(self.organizer_user)
         resp_org = c.get(f"/projects/{self.project_draft.slug}/")
         self.assertEqual(resp_org.status_code, 200)
-        self.assertContains(resp_org, "Évaluer avec l'IA")
+        self.assertContains(resp_org, "Evaluate with AI")
         self.assertContains(resp_org, 'id="btn-run-ai"')
 
         # Judge : sur un projet validé, le bouton doit être masqué
         c.force_login(self.judge_user)
         resp_judge = c.get(f"/projects/{self.project_accepted.slug}/")
         self.assertEqual(resp_judge.status_code, 200)
-        self.assertNotContains(resp_judge, "Évaluer avec l'IA")
+        self.assertNotContains(resp_judge, "Evaluate with AI")
         self.assertNotContains(resp_judge, 'id="btn-run-ai"')
 
         # Mentor : sur un projet qu'il accompagne, le bouton doit être masqué
@@ -717,7 +744,7 @@ class ProjectPermissionsTestCase(TestCase):
         c.force_login(self.mentor_user)
         resp_mentor = c.get(f"/projects/{self.project_draft.slug}/")
         self.assertEqual(resp_mentor.status_code, 200)
-        self.assertNotContains(resp_mentor, "Évaluer avec l'IA")
+        self.assertNotContains(resp_mentor, "Evaluate with AI")
         self.assertNotContains(resp_mentor, 'id="btn-run-ai"')
 
         # 4. Vérification côté serveur : code HTTP 403 sur l'endpoint /ai-analyze/
@@ -772,13 +799,16 @@ class ProjectPermissionsTestCase(TestCase):
         self.assertEqual(resp_edit.status_code, 403)
 
         # Tentative de validation par le mentor -> 403 Forbidden
-        resp_validate = c.post(f"/projects/admin-dashboard/{self.project_submitted.slug}/review/", {"decision": "accept"})
+        resp_validate = c.post(
+            f"/projects/admin-dashboard/{self.project_submitted.slug}/review/",
+            {"decision": "accept"},
+        )
         self.assertEqual(resp_validate.status_code, 403)
 
         # Tentative de refus par le mentor -> 403 Forbidden
         resp_refuse = c.post(
             f"/projects/admin-dashboard/{self.project_submitted.slug}/review/",
-            {"decision": "reject", "rejection_reason": "Refus mentor"}
+            {"decision": "reject", "rejection_reason": "Refus mentor"},
         )
         self.assertEqual(resp_refuse.status_code, 403)
 
@@ -809,15 +839,14 @@ class ProjectPermissionsTestCase(TestCase):
         c.force_login(self.student_lead)
         resp_student_post = c.post(
             f"/projects/{self.project_draft.slug}/mentor-advice/",
-            {"texte": "Conseil par un étudiant"}
+            {"texte": "Conseil par un étudiant"},
         )
         self.assertEqual(resp_student_post.status_code, 403)
 
         # Judge tente d'envoyer un conseil -> 403 Forbidden
         c.force_login(self.judge_user)
         resp_judge_post = c.post(
-            f"/projects/{self.project_draft.slug}/mentor-advice/",
-            {"texte": "Conseil par un juge"}
+            f"/projects/{self.project_draft.slug}/mentor-advice/", {"texte": "Conseil par un juge"}
         )
         self.assertEqual(resp_judge_post.status_code, 403)
 
@@ -825,7 +854,7 @@ class ProjectPermissionsTestCase(TestCase):
         c.force_login(self.mentor_user)
         resp_mentor_post = c.post(
             f"/projects/{self.project_draft.slug}/mentor-advice/",
-            {"texte": "Pensez à structurer votre API REST et à ajouter des tests."}
+            {"texte": "Pensez à structurer votre API REST et à ajouter des tests."},
         )
         self.assertEqual(resp_mentor_post.status_code, 302)
 
@@ -836,7 +865,7 @@ class ProjectPermissionsTestCase(TestCase):
         self.assertEqual(conseil.mentor, self.mentor_user)
         self.assertIn("structurer votre API REST", conseil.texte)
         self.assertIsNotNone(conseil.date)
-        self.assertIn("Conseil de", str(conseil))
+        self.assertIn("Advice from", str(conseil))
 
         # --- 4. Visibilité et affichage dans le template project_detail ---
         # Le mentor accompagne le projet test
@@ -850,18 +879,18 @@ class ProjectPermissionsTestCase(TestCase):
         c.force_login(self.mentor_user)
         resp_mentor_detail = c.get(f"/projects/{self.project_draft.slug}/")
         self.assertEqual(resp_mentor_detail.status_code, 200)
-        self.assertContains(resp_mentor_detail, "Conseils du mentor")
+        self.assertContains(resp_mentor_detail, "Mentor Advice")
         self.assertContains(resp_mentor_detail, 'id="btn-submit-mentor-advice"')
-        self.assertContains(resp_mentor_detail, "Envoyer le conseil")
+        self.assertContains(resp_mentor_detail, "Send Advice")
         self.assertContains(resp_mentor_detail, "Pensez à structurer votre API REST")
 
         # Étudiant membre : voit la section en lecture seule (pas de bouton d'envoi de conseil)
         c.force_login(self.student_lead)
         resp_lead_detail = c.get(f"/projects/{self.project_draft.slug}/")
         self.assertEqual(resp_lead_detail.status_code, 200)
-        self.assertContains(resp_lead_detail, "Conseils du mentor")
+        self.assertContains(resp_lead_detail, "Mentor Advice")
         self.assertNotContains(resp_lead_detail, 'id="btn-submit-mentor-advice"')
-        self.assertNotContains(resp_lead_detail, "Envoyer le conseil")
+        self.assertNotContains(resp_lead_detail, "Send Advice")
         # Mais voit le conseil avec le nom du mentor et le texte
         self.assertContains(resp_lead_detail, self.mentor_user.username)
         self.assertContains(resp_lead_detail, "Pensez à structurer votre API REST")
@@ -871,7 +900,7 @@ class ProjectPermissionsTestCase(TestCase):
         resp_judge_detail = c.get(f"/projects/{self.project_accepted.slug}/")
         self.assertEqual(resp_judge_detail.status_code, 200)
         self.assertNotContains(resp_judge_detail, 'id="mentor-advices-section"')
-        self.assertNotContains(resp_judge_detail, "Conseils du mentor")
+        self.assertNotContains(resp_judge_detail, "Mentor Advice")
 
     def test_team_management_locked_by_status(self):
         """
@@ -901,7 +930,7 @@ class ProjectPermissionsTestCase(TestCase):
             self.project_draft.save()
             self.assertFalse(
                 services.can_manage_members(self.student_lead, self.project_draft),
-                f"La gestion d'équipe devrait être interdite pour le statut {st}"
+                f"La gestion d'équipe devrait être interdite pour le statut {st}",
             )
             with self.assertRaises(PermissionDenied):
                 services.validate_manage_members_permission(self.student_lead, self.project_draft)
@@ -913,7 +942,7 @@ class ProjectPermissionsTestCase(TestCase):
         # Projet soumis (submitted) -> 403 sur member_add
         resp_add_submitted = c.post(
             f"/projects/{self.project_submitted.slug}/members/add/",
-            {"user": self.student_other.id, "role": ProjectMember.Role.DEVELOPPEUR}
+            {"user": self.student_other.id, "role": ProjectMember.Role.DEVELOPPEUR},
         )
         self.assertEqual(resp_add_submitted.status_code, 403)
 
@@ -921,7 +950,7 @@ class ProjectPermissionsTestCase(TestCase):
         m_submitted = ProjectMember.objects.create(
             project=self.project_submitted,
             user=self.student_dev,
-            role=ProjectMember.Role.DEVELOPPEUR
+            role=ProjectMember.Role.DEVELOPPEUR,
         )
         resp_remove_submitted = c.post(
             f"/projects/{self.project_submitted.slug}/members/{m_submitted.id}/remove/"
@@ -931,14 +960,14 @@ class ProjectPermissionsTestCase(TestCase):
         # Projet validé (accepted) -> 403 sur member_add et member_remove
         resp_add_accepted = c.post(
             f"/projects/{self.project_accepted.slug}/members/add/",
-            {"user": self.student_other.id, "role": ProjectMember.Role.DEVELOPPEUR}
+            {"user": self.student_other.id, "role": ProjectMember.Role.DEVELOPPEUR},
         )
         self.assertEqual(resp_add_accepted.status_code, 403)
 
         m_accepted = ProjectMember.objects.create(
             project=self.project_accepted,
             user=self.student_dev,
-            role=ProjectMember.Role.DEVELOPPEUR
+            role=ProjectMember.Role.DEVELOPPEUR,
         )
         resp_remove_accepted = c.post(
             f"/projects/{self.project_accepted.slug}/members/{m_accepted.id}/remove/"
@@ -953,10 +982,14 @@ class ProjectPermissionsTestCase(TestCase):
         # Ajout sur projet brouillon -> Succès (302)
         resp_add_draft = c.post(
             f"/projects/{self.project_draft.slug}/members/add/",
-            {"user": self.student_other.id, "role": ProjectMember.Role.DEVELOPPEUR}
+            {"user": self.student_other.id, "role": ProjectMember.Role.DEVELOPPEUR},
         )
         self.assertEqual(resp_add_draft.status_code, 302)
-        self.assertTrue(ProjectMember.objects.filter(project=self.project_draft, user=self.student_other).exists())
+        self.assertTrue(
+            ProjectMember.objects.filter(
+                project=self.project_draft, user=self.student_other
+            ).exists()
+        )
 
         # Retrait sur projet brouillon -> Succès (302)
         m_draft = ProjectMember.objects.get(project=self.project_draft, user=self.student_other)
@@ -964,18 +997,28 @@ class ProjectPermissionsTestCase(TestCase):
             f"/projects/{self.project_draft.slug}/members/{m_draft.id}/remove/"
         )
         self.assertEqual(resp_remove_draft.status_code, 302)
-        self.assertFalse(ProjectMember.objects.filter(project=self.project_draft, user=self.student_other).exists())
+        self.assertFalse(
+            ProjectMember.objects.filter(
+                project=self.project_draft, user=self.student_other
+            ).exists()
+        )
 
         # Ajout sur projet refusé -> Succès (302)
         resp_add_rejected = c.post(
             f"/projects/{self.project_rejected.slug}/members/add/",
-            {"user": self.student_other.id, "role": ProjectMember.Role.DEVELOPPEUR}
+            {"user": self.student_other.id, "role": ProjectMember.Role.DEVELOPPEUR},
         )
         self.assertEqual(resp_add_rejected.status_code, 302)
-        self.assertTrue(ProjectMember.objects.filter(project=self.project_rejected, user=self.student_other).exists())
+        self.assertTrue(
+            ProjectMember.objects.filter(
+                project=self.project_rejected, user=self.student_other
+            ).exists()
+        )
 
         # Retrait sur projet refusé -> Succès (302)
-        m_rejected = ProjectMember.objects.get(project=self.project_rejected, user=self.student_other)
+        m_rejected = ProjectMember.objects.get(
+            project=self.project_rejected, user=self.student_other
+        )
         resp_remove_rejected = c.post(
             f"/projects/{self.project_rejected.slug}/members/{m_rejected.id}/remove/"
         )
@@ -985,30 +1028,30 @@ class ProjectPermissionsTestCase(TestCase):
         # Sur projet brouillon : boutons Retirer et formulaire Ajouter un étudiant présents
         resp_draft_ui = c.get(f"/projects/{self.project_draft.slug}/")
         self.assertEqual(resp_draft_ui.status_code, 200)
-        self.assertContains(resp_draft_ui, "Ajouter un étudiant")
-        self.assertContains(resp_draft_ui, "Retirer")
-        self.assertNotContains(resp_draft_ui, "🔒 Équipe verrouillée")
+        self.assertContains(resp_draft_ui, "Add Student")
+        self.assertContains(resp_draft_ui, "Remove")
+        self.assertNotContains(resp_draft_ui, "🔒 Team locked")
 
         # Sur projet refusé : boutons Retirer et formulaire Ajouter un étudiant présents (student_dev déjà membre dans setUp)
         resp_rejected_ui = c.get(f"/projects/{self.project_rejected.slug}/")
         self.assertEqual(resp_rejected_ui.status_code, 200)
-        self.assertContains(resp_rejected_ui, "Ajouter un étudiant")
-        self.assertContains(resp_rejected_ui, "Retirer")
-        self.assertNotContains(resp_rejected_ui, "🔒 Équipe verrouillée")
+        self.assertContains(resp_rejected_ui, "Add Student")
+        self.assertContains(resp_rejected_ui, "Remove")
+        self.assertNotContains(resp_rejected_ui, "🔒 Team locked")
 
         # Sur projet soumis : boutons Retirer et formulaire masqués, badge verrouillé présent
         resp_submitted_ui = c.get(f"/projects/{self.project_submitted.slug}/")
         self.assertEqual(resp_submitted_ui.status_code, 200)
-        self.assertNotContains(resp_submitted_ui, "Ajouter un étudiant")
-        self.assertNotContains(resp_submitted_ui, "Retirer")
-        self.assertContains(resp_submitted_ui, "🔒 Équipe verrouillée")
+        self.assertNotContains(resp_submitted_ui, "Add Student")
+        self.assertNotContains(resp_submitted_ui, "Remove")
+        self.assertContains(resp_submitted_ui, "🔒 Team locked")
 
         # Sur projet accepté : boutons Retirer et formulaire masqués, badge verrouillé présent
         resp_accepted_ui = c.get(f"/projects/{self.project_accepted.slug}/")
         self.assertEqual(resp_accepted_ui.status_code, 200)
-        self.assertNotContains(resp_accepted_ui, "Ajouter un étudiant")
-        self.assertNotContains(resp_accepted_ui, "Retirer")
-        self.assertContains(resp_accepted_ui, "🔒 Équipe verrouillée")
+        self.assertNotContains(resp_accepted_ui, "Add Student")
+        self.assertNotContains(resp_accepted_ui, "Remove")
+        self.assertContains(resp_accepted_ui, "🔒 Team locked")
 
     def test_delete_locked_by_status(self):
         """
@@ -1049,19 +1092,20 @@ class ProjectPermissionsTestCase(TestCase):
             self.project_draft.save()
             self.assertFalse(
                 services.can_delete_project(self.student_lead, self.project_draft),
-                f"La suppression devrait être interdite pour le statut {st}"
+                f"La suppression devrait être interdite pour le statut {st}",
             )
             self.assertFalse(
                 services.can_delete_project(self.admin_user, self.project_draft),
-                f"Même l'admin ne peut pas supprimer un projet au statut {st}"
+                f"Même l'admin ne peut pas supprimer un projet au statut {st}",
             )
 
         # ── 2. validate_delete_permission lève PermissionDenied ───────────────
         for st in locked_statuses:
             self.project_draft.status = st
             self.project_draft.save()
-            with self.assertRaises(PermissionDenied,
-                                   msg=f"PermissionDenied attendu pour statut {st}"):
+            with self.assertRaises(
+                PermissionDenied, msg=f"PermissionDenied attendu pour statut {st}"
+            ):
                 services.validate_delete_permission(self.student_lead, self.project_draft)
 
         # Remettre en brouillon
@@ -1072,7 +1116,9 @@ class ProjectPermissionsTestCase(TestCase):
         try:
             services.validate_delete_permission(self.student_lead, self.project_draft)
         except PermissionDenied:
-            self.fail("validate_delete_permission ne devrait pas lever PermissionDenied pour un brouillon")
+            self.fail(
+                "validate_delete_permission ne devrait pas lever PermissionDenied pour un brouillon"
+            )
 
         # ── 3. HTTP 403 côté serveur pour les statuts verrouillés ─────────────
         c = Client()
@@ -1083,12 +1129,14 @@ class ProjectPermissionsTestCase(TestCase):
             self.project_draft.save()
 
             resp_get = c.get(f"/projects/{self.project_draft.slug}/delete/")
-            self.assertEqual(resp_get.status_code, 403,
-                             f"GET /delete/ devrait renvoyer 403 pour statut {st}")
+            self.assertEqual(
+                resp_get.status_code, 403, f"GET /delete/ devrait renvoyer 403 pour statut {st}"
+            )
 
             resp_post = c.post(f"/projects/{self.project_draft.slug}/delete/")
-            self.assertEqual(resp_post.status_code, 403,
-                             f"POST /delete/ devrait renvoyer 403 pour statut {st}")
+            self.assertEqual(
+                resp_post.status_code, 403, f"POST /delete/ devrait renvoyer 403 pour statut {st}"
+            )
 
         # Vérifier que le projet soumis retourne aussi 403
         resp_submitted = c.post(f"/projects/{self.project_submitted.slug}/delete/")
@@ -1111,8 +1159,10 @@ class ProjectPermissionsTestCase(TestCase):
         rejected_pk = self.project_rejected.pk
         resp_delete_rejected = c.post(f"/projects/{rejected_slug}/delete/")
         self.assertEqual(resp_delete_rejected.status_code, 302)
-        self.assertFalse(Project.objects.filter(pk=rejected_pk).exists(),
-                         "Le projet refusé aurait dû être supprimé.")
+        self.assertFalse(
+            Project.objects.filter(pk=rejected_pk).exists(),
+            "Le projet refusé aurait dû être supprimé.",
+        )
 
         # ── 5. Template : bouton Supprimer masqué pour statuts verrouillés ─────
         # Remettre en brouillon -> bouton Supprimer visible
@@ -1131,20 +1181,27 @@ class ProjectPermissionsTestCase(TestCase):
 
         resp_draft_ui = c.get(f"/projects/{self.project_draft.slug}/")
         self.assertEqual(resp_draft_ui.status_code, 200)
-        self.assertContains(resp_draft_ui, "Supprimer",
-                            msg_prefix="Le bouton Supprimer doit être visible en brouillon")
+        self.assertContains(
+            resp_draft_ui, "Delete", msg_prefix="Le bouton Supprimer doit être visible en brouillon"
+        )
 
         # Projet soumis -> bouton Supprimer masqué
         resp_submitted_ui = c.get(f"/projects/{self.project_submitted.slug}/")
         self.assertEqual(resp_submitted_ui.status_code, 200)
-        self.assertNotContains(resp_submitted_ui, "Supprimer",
-                               msg_prefix="Le bouton Supprimer ne doit pas apparaître pour un projet soumis")
+        self.assertNotContains(
+            resp_submitted_ui,
+            "Delete",
+            msg_prefix="Le bouton Supprimer ne doit pas apparaître pour un projet soumis",
+        )
 
         # Projet accepté -> bouton Supprimer masqué
         resp_accepted_ui = c.get(f"/projects/{self.project_accepted.slug}/")
         self.assertEqual(resp_accepted_ui.status_code, 200)
-        self.assertNotContains(resp_accepted_ui, "Supprimer",
-                               msg_prefix="Le bouton Supprimer ne doit pas apparaître pour un projet accepté")
+        self.assertNotContains(
+            resp_accepted_ui,
+            "Delete",
+            msg_prefix="Le bouton Supprimer ne doit pas apparaître pour un projet accepté",
+        )
 
         # ── 6. Verrouillage de l'équipe ne supprime aucun membre existant ──────
         # Passer en soumis -> l'équipe est verrouillée
@@ -1152,23 +1209,29 @@ class ProjectPermissionsTestCase(TestCase):
         self.project_draft.save()
 
         members_before = list(
-            ProjectMember.objects.filter(project=self.project_draft).values_list("user_id", flat=True)
+            ProjectMember.objects.filter(project=self.project_draft).values_list(
+                "user_id", flat=True
+            )
         )
-        self.assertTrue(len(members_before) >= 1,
-                        "Il doit y avoir au moins un membre avant verrouillage")
+        self.assertTrue(
+            len(members_before) >= 1, "Il doit y avoir au moins un membre avant verrouillage"
+        )
 
         # Tentative d'ajout -> 403 mais l'équipe actuelle reste intacte
         c.post(
             f"/projects/{self.project_draft.slug}/members/add/",
-            {"user": self.student_other.id, "role": ProjectMember.Role.DEVELOPPEUR}
+            {"user": self.student_other.id, "role": ProjectMember.Role.DEVELOPPEUR},
         )
 
         members_after = list(
-            ProjectMember.objects.filter(project=self.project_draft).values_list("user_id", flat=True)
+            ProjectMember.objects.filter(project=self.project_draft).values_list(
+                "user_id", flat=True
+            )
         )
         self.assertEqual(
-            sorted(members_before), sorted(members_after),
-            "Le verrouillage ne doit supprimer aucun membre existant"
+            sorted(members_before),
+            sorted(members_after),
+            "Le verrouillage ne doit supprimer aucun membre existant",
         )
 
     def test_non_member_organizer_and_admin_forbidden_403_and_buttons_hidden(self):
@@ -1205,7 +1268,9 @@ class ProjectPermissionsTestCase(TestCase):
         # ── 2. Server-side HTTP 403 on all action endpoints for Organizer ─────
         c.force_login(self.organizer_user)
         slug = self.project_draft.slug
-        dev_membership = ProjectMember.objects.get(project=self.project_draft, user=self.student_dev)
+        dev_membership = ProjectMember.objects.get(
+            project=self.project_draft, user=self.student_dev
+        )
 
         # Edit -> 403
         resp_edit_get = c.get(f"/projects/{slug}/edit/")
@@ -1224,10 +1289,13 @@ class ProjectPermissionsTestCase(TestCase):
         self.assertEqual(resp_del_post.status_code, 403)
 
         # Team Management (Add & Remove) -> 403
-        resp_add_member = c.post(f"/projects/{slug}/members/add/", {
-            "user": self.student_other.id,
-            "role": ProjectMember.Role.DEVELOPPEUR,
-        })
+        resp_add_member = c.post(
+            f"/projects/{slug}/members/add/",
+            {
+                "user": self.student_other.id,
+                "role": ProjectMember.Role.DEVELOPPEUR,
+            },
+        )
         self.assertEqual(resp_add_member.status_code, 403)
 
         resp_remove_member = c.post(f"/projects/{slug}/members/{dev_membership.id}/remove/")
@@ -1236,15 +1304,25 @@ class ProjectPermissionsTestCase(TestCase):
         # ── 3. Server-side HTTP 403 for non-member Admin ──────────────────────
         c.force_login(self.admin_user)
         self.assertEqual(c.get(f"/projects/{slug}/edit/").status_code, 403)
-        self.assertEqual(c.post(f"/projects/{slug}/edit/", {"title": "Admin Edit"}).status_code, 403)
+        self.assertEqual(
+            c.post(f"/projects/{slug}/edit/", {"title": "Admin Edit"}).status_code, 403
+        )
         self.assertEqual(c.post(f"/projects/{slug}/submit/").status_code, 403)
         self.assertEqual(c.get(f"/projects/{slug}/delete/").status_code, 403)
         self.assertEqual(c.post(f"/projects/{slug}/delete/").status_code, 403)
-        self.assertEqual(c.post(f"/projects/{slug}/members/add/", {
-            "user": self.student_other.id,
-            "role": ProjectMember.Role.DEVELOPPEUR,
-        }).status_code, 403)
-        self.assertEqual(c.post(f"/projects/{slug}/members/{dev_membership.id}/remove/").status_code, 403)
+        self.assertEqual(
+            c.post(
+                f"/projects/{slug}/members/add/",
+                {
+                    "user": self.student_other.id,
+                    "role": ProjectMember.Role.DEVELOPPEUR,
+                },
+            ).status_code,
+            403,
+        )
+        self.assertEqual(
+            c.post(f"/projects/{slug}/members/{dev_membership.id}/remove/").status_code, 403
+        )
 
         # ── 4. UI check: Buttons hidden for non-member Organizer and Admin ────
         for non_member in (self.organizer_user, self.admin_user):
@@ -1254,19 +1332,13 @@ class ProjectPermissionsTestCase(TestCase):
 
             # Team management buttons must NOT appear
             self.assertNotContains(resp_detail, "Add Student")
-            self.assertNotContains(resp_detail, "Ajouter un étudiant")
             self.assertNotContains(resp_detail, "Remove")
-            self.assertNotContains(resp_detail, "Retirer")
 
             # Project actions must NOT appear
             self.assertNotContains(resp_detail, "Edit")
-            self.assertNotContains(resp_detail, "Modifier")
             self.assertNotContains(resp_detail, "Submit Project")
-            self.assertNotContains(resp_detail, "Soumettre")
-            self.assertNotContains(resp_detail, "Resubmit")
-            self.assertNotContains(resp_detail, "Soumettre à nouveau")
+            self.assertNotContains(resp_detail, "Resubmit Project")
             self.assertNotContains(resp_detail, "Delete")
-            self.assertNotContains(resp_detail, "Supprimer")
 
         # ── 5. When Organizer IS a team member, buttons appear properly ───────
         org_project = Project.objects.create(
@@ -1302,6 +1374,7 @@ class ProjectPermissionsTestCase(TestCase):
 # HistoriqueProjet tests
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class HistoriqueProjetTestCase(TestCase):
     """
     Tests for the HistoriqueProjet audit-log model, services, and admin.
@@ -1324,8 +1397,11 @@ class HistoriqueProjetTestCase(TestCase):
 
         # Admin (Django superuser, for admin panel tests)
         self.admin = User.objects.create_user(
-            username="hist_admin", email="hist_a@test.com", password="pwd",
-            is_superuser=True, is_staff=True
+            username="hist_admin",
+            email="hist_a@test.com",
+            password="pwd",
+            is_superuser=True,
+            is_staff=True,
         )
         self.admin.profile.role = Profile.Role.ADMIN
         self.admin.profile.save()
@@ -1352,6 +1428,7 @@ class HistoriqueProjetTestCase(TestCase):
 
     def test_submit_creates_history_entry(self):
         from projects.models import HistoriqueProjet
+
         before = HistoriqueProjet.objects.filter(project=self.project).count()
         services.submit_project(self.project, self.student)
         after = HistoriqueProjet.objects.filter(project=self.project).count()
@@ -1364,6 +1441,7 @@ class HistoriqueProjetTestCase(TestCase):
 
     def test_resubmit_creates_resubmission_entry(self):
         from projects.models import HistoriqueProjet
+
         # First submission
         services.submit_project(self.project, self.student)
         # Organizer rejects it
@@ -1383,6 +1461,7 @@ class HistoriqueProjetTestCase(TestCase):
 
     def test_accept_creates_accepted_entry(self):
         from projects.models import HistoriqueProjet
+
         services.submit_project(self.project, self.student)
         services.review_project(self.project, self.organizer, "accept")
         self.project.refresh_from_db()
@@ -1399,6 +1478,7 @@ class HistoriqueProjetTestCase(TestCase):
 
     def test_reject_creates_rejected_entry_with_reason(self):
         from projects.models import HistoriqueProjet
+
         services.submit_project(self.project, self.student)
         reason = "Project scope is too large."
         services.review_project(self.project, self.organizer, "reject", reason)
@@ -1416,6 +1496,7 @@ class HistoriqueProjetTestCase(TestCase):
 
     def test_reject_without_reason_raises_value_error(self):
         from projects.models import HistoriqueProjet
+
         services.submit_project(self.project, self.student)
         before = HistoriqueProjet.objects.filter(project=self.project).count()
 
@@ -1431,6 +1512,7 @@ class HistoriqueProjetTestCase(TestCase):
 
     def test_history_is_chronological(self):
         from projects.models import HistoriqueProjet
+
         services.submit_project(self.project, self.student)
         services.review_project(self.project, self.organizer, "reject", "Too early.")
         self.project.refresh_from_db()
@@ -1444,6 +1526,7 @@ class HistoriqueProjetTestCase(TestCase):
 
     def test_historiqueprojet_admin_is_read_only(self):
         from projects.models import HistoriqueProjet
+
         services.submit_project(self.project, self.student)
         entry = HistoriqueProjet.objects.filter(project=self.project).first()
 
@@ -1465,6 +1548,7 @@ class HistoriqueProjetTestCase(TestCase):
 
     def test_history_inline_in_project_admin(self):
         from projects.models import HistoriqueProjet
+
         services.submit_project(self.project, self.student)
 
         self.client.force_login(self.admin)
@@ -1475,7 +1559,9 @@ class HistoriqueProjetTestCase(TestCase):
 
     # ── 9. Submit then reject creates two lines with distinct dates in chronological order ──
 
-    def test_submit_then_reject_creates_two_entries_with_different_dates_in_chronological_order(self):
+    def test_submit_then_reject_creates_two_entries_with_different_dates_in_chronological_order(
+        self,
+    ):
         """
         Soumettre puis refuser un projet crée deux lignes dans HistoriqueProjet
         avec deux dates différentes, dans l'ordre chronologique.
@@ -1518,4 +1604,3 @@ class HistoriqueProjetTestCase(TestCase):
         self.assertEqual(rejection_entry.date, self.project.reviewed_at)
         self.assertEqual(submission_entry.date, self.project.date_soumission)
         self.assertEqual(rejection_entry.date, self.project.date_decision)
-

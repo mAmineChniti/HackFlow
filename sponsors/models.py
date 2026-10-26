@@ -268,9 +268,9 @@ class StatusHistory(models.Model):
 
     def __str__(self):
         return (
-            f"{self.sponsorship} : "
+            f"{self.sponsorship}: "
             f"{self.get_old_status_display()} → {self.get_new_status_display()} "
-            f"({self.changed_at:%d/%m/%Y %H:%M})"
+            f"({self.changed_at:%b %d, %Y %H:%M})"
         )
 
 
@@ -330,5 +330,5 @@ class SponsorEmailLog(models.Model):
     def __str__(self):
         status_str = "Sent" if self.success else "Failed"
         return (
-            f"[{status_str}] {self.sponsor.name} : {self.subject} ({self.sent_at:%d/%m/%Y %H:%M})"
+            f"[{status_str}] {self.sponsor.name} : {self.subject} ({self.sent_at:%b %d, %Y %H:%M})"
         )

@@ -128,7 +128,7 @@ def export_sponsorships_to_excel(queryset: QuerySet[Sponsorship]) -> io.BytesIO:
             float(sp.amount),
             sp.get_contribution_type_display(),
             sp.get_status_display(),
-            sp.updated_at.strftime("%d/%m/%Y %H:%M") if sp.updated_at else "",
+            sp.updated_at.strftime("%b %d, %Y %H:%M") if sp.updated_at else "",
         ]
 
         # Formatage et affectation des cellules

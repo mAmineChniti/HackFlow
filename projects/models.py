@@ -15,75 +15,75 @@ class Project(models.Model):
     """
 
     class Status(models.TextChoices):
-        DRAFT = "draft", "Brouillon"
-        SUBMITTED = "submitted", "Soumis"
-        UNDER_REVIEW = "under_review", "En cours d'évaluation"
-        ACCEPTED = "accepted", "Accepté"
-        REJECTED = "rejected", "Refusé"
-        FINALIST = "finalist", "Finaliste"
-        WINNER = "winner", "Lauréat / Gagnant"
+        DRAFT = "draft", "Draft"
+        SUBMITTED = "submitted", "Submitted"
+        UNDER_REVIEW = "under_review", "Under Review"
+        ACCEPTED = "accepted", "Accepted"
+        REJECTED = "rejected", "Rejected"
+        FINALIST = "finalist", "Finalist"
+        WINNER = "winner", "Winner"
 
     class Category(models.TextChoices):
-        WEB = "web", "Développement Web"
-        MOBILE = "mobile", "Application Mobile"
-        AI = "ai", "Intelligence Artificielle & Data"
-        IOT = "iot", "IoT & Systèmes Embarqués"
-        CYBER = "cyber", "Cybersécurité"
-        GREEN = "green", "GreenTech & Climat"
-        OTHER = "other", "Autre Catégorie"
+        WEB = "web", "Web Development"
+        MOBILE = "mobile", "Mobile Application"
+        AI = "ai", "Artificial Intelligence & Data"
+        IOT = "iot", "IoT & Embedded Systems"
+        CYBER = "cyber", "Cybersecurity"
+        GREEN = "green", "GreenTech & Climate"
+        OTHER = "other", "Other"
 
     title = models.CharField(
         max_length=200,
-        verbose_name="Titre du projet",
-        help_text="Nom accrocheur de votre projet ou produit",
+        verbose_name="Project title",
+        help_text="A catchy name for your project or product.",
     )
     slug = models.SlugField(
         max_length=220,
         unique=True,
         blank=True,
         verbose_name="Slug (URL)",
-        help_text="Généré automatiquement à partir du titre si laissé vide",
+        help_text="Generated automatically from the title when left blank.",
     )
     tagline = models.CharField(
         max_length=250,
-        verbose_name="Slogan / Pitch court",
-        help_text="Une phrase pour résumer le problème et votre solution",
+        verbose_name="Tagline / Short pitch",
+        help_text="One sentence summarizing the problem and your solution.",
     )
     description = models.TextField(
-        verbose_name="Description détaillée",
-        help_text="Explication complète de votre solution, fonctionnalités et architecture",
+        verbose_name="Detailed description",
+        help_text="A complete explanation of your solution, features, and architecture.",
     )
     category = models.CharField(
         max_length=30,
         choices=Category.choices,
         default=Category.WEB,
-        verbose_name="Catégorie / Track",
+        verbose_name="Category / Track",
     )
     hackathon = models.CharField(
         max_length=150,
         blank=True,
         default="HackFlow 2026",
         verbose_name="Hackathon",
-        help_text="Nom ou édition du hackathon associé au projet",
+        help_text="Name or edition of the hackathon associated with this project.",
     )
     status = models.CharField(
         max_length=25,
         choices=Status.choices,
         default=Status.DRAFT,
-        verbose_name="Statut du projet",
+        verbose_name="Project status",
     )
     deadline = models.DateTimeField(
         null=True,
         blank=True,
-        verbose_name="Date limite de soumission",
-        help_text="Deadline après laquelle le projet ne peut plus être modifié ou soumis",
+        verbose_name="Submission deadline",
+        help_text="Deadline after which the project can no longer be edited or submitted.",
     )
 
     # Suivi d'évaluation / Décisions Admin
     rejection_reason = models.TextField(
         blank=True,
-        verbose_name="Motif de refus",
-        help_text="Explication fournie à l'équipe en cas de refus du projet",
+        verbose_name="Rejection reason",
+        help_text="Explanation shown to the team when a project is rejected.",
     )
     reviewed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -91,18 +91,18 @@ class Project(models.Model):
         null=True,
         blank=True,
         related_name="reviewed_projects",
-        verbose_name="Évalué par (Admin)",
+        verbose_name="Reviewed by (Admin)",
     )
     reviewed_at = models.DateTimeField(
         null=True,
         blank=True,
-        verbose_name="Date de décision",
+        verbose_name="Decision date",
     )
     submitted_at = models.DateTimeField(
         null=True,
         blank=True,
-        verbose_name="Date de soumission",
-        help_text="Date à laquelle le projet a été soumis ou resoumis",
+        verbose_name="Submission date",
+        help_text="Date on which the project was submitted or resubmitted.",
     )
 
     @property
@@ -124,31 +124,31 @@ class Project(models.Model):
     review_history = models.JSONField(
         default=list,
         blank=True,
-        verbose_name="Historique des décisions",
-        help_text="Historique chronologique des évaluations et soumissions",
+        verbose_name="Decision history",
+        help_text="Chronological history of reviews and submissions.",
     )
     score = models.PositiveSmallIntegerField(
         null=True,
         blank=True,
-        verbose_name="Score / Note (1-10)",
-        help_text="Note attribuée par l'organisateur (1 = faible, 10 = excellent)",
+        verbose_name="Score (1-10)",
+        help_text="Score awarded by the organizer (1 = low, 10 = excellent).",
     )
 
     # Liens externes du projet
     repository_url = HTTPSURLField(
         blank=True,
-        verbose_name="Dépôt de code (GitHub/GitLab)",
-        help_text="URL publique du repository",
+        verbose_name="Code repository (GitHub/GitLab)",
+        help_text="Public repository URL.",
     )
     demo_url = HTTPSURLField(
         blank=True,
-        verbose_name="Lien de la démo",
-        help_text="URL du prototype ou site déployé",
+        verbose_name="Demo link",
+        help_text="URL of the deployed prototype or website.",
     )
     video_url = HTTPSURLField(
         blank=True,
-        verbose_name="Vidéo de présentation",
-        help_text="Lien YouTube, Vimeo ou Loom du pitch",
+        verbose_name="Pitch video",
+        help_text="YouTube, Vimeo, or Loom link to the pitch.",
     )
 
     # Responsable et membres de l'équipe
@@ -156,23 +156,23 @@ class Project(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="owned_projects",
-        verbose_name="Chef de projet (Créateur)",
+        verbose_name="Project lead (Creator)",
     )
     members = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         through="ProjectMember",
         related_name="joined_projects",
-        verbose_name="Membres de l'équipe",
+        verbose_name="Team members",
         blank=True,
     )
 
     # Horodatages
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="Dernière modification")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Created at")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Last updated")
 
     class Meta:
-        verbose_name = "Projet"
-        verbose_name_plural = "Projets"
+        verbose_name = "Project"
+        verbose_name_plural = "Projects"
         ordering = ("-created_at",)
 
     def __str__(self):
@@ -193,7 +193,7 @@ class Project(models.Model):
         if update_fields is not None and "slug" not in update_fields and not auto_slug:
             return super().save(*args, **kwargs)
 
-        base_slug = slugify(self.title) or "projet"
+        base_slug = slugify(self.title) or "project"
         for attempt in range(self.MAX_SLUG_ATTEMPTS):
             if auto_slug:
                 if attempt == 0:
@@ -257,13 +257,13 @@ class Project(models.Model):
             {
                 "type": "decision",
                 "decision": "accept",
-                "decision_display": "Accepté",
+                "decision_display": "Accepted",
                 "reason": "",
                 "reviewed_by": user.get_username() if user else "",
                 "reviewed_at": self.reviewed_at.isoformat(),
-                "reviewed_at_display": self.reviewed_at.strftime("%d/%m/%Y à %H:%M"),
+                "reviewed_at_display": self.reviewed_at.strftime("%b %d, %Y at %H:%M"),
                 "date": self.reviewed_at.isoformat(),
-                "date_display": self.reviewed_at.strftime("%d/%m/%Y à %H:%M"),
+                "date_display": self.reviewed_at.strftime("%b %d, %Y at %H:%M"),
             }
         )
         self.save(
@@ -282,13 +282,13 @@ class Project(models.Model):
             {
                 "type": "decision",
                 "decision": "reject",
-                "decision_display": "Refusé",
+                "decision_display": "Rejected",
                 "reason": reason,
                 "reviewed_by": user.get_username() if user else "",
                 "reviewed_at": self.reviewed_at.isoformat(),
-                "reviewed_at_display": self.reviewed_at.strftime("%d/%m/%Y à %H:%M"),
+                "reviewed_at_display": self.reviewed_at.strftime("%b %d, %Y at %H:%M"),
                 "date": self.reviewed_at.isoformat(),
-                "date_display": self.reviewed_at.strftime("%d/%m/%Y à %H:%M"),
+                "date_display": self.reviewed_at.strftime("%b %d, %Y at %H:%M"),
             }
         )
         self.save(
@@ -310,8 +310,8 @@ class ProjectMember(models.Model):
     """
 
     class Role(models.TextChoices):
-        CHEF_DE_PROJET = "chef_de_projet", "Chef de projet"
-        DEVELOPPEUR = "developpeur", "Développeur"
+        CHEF_DE_PROJET = "chef_de_projet", "Project lead"
+        DEVELOPPEUR = "developpeur", "Developer"
         DESIGNER = "designer", "Designer"
 
     # Backward compatibility alias
@@ -321,33 +321,33 @@ class ProjectMember(models.Model):
         Project,
         on_delete=models.CASCADE,
         related_name="team_memberships",
-        verbose_name="Projet",
+        verbose_name="Project",
     )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="project_roles",
-        verbose_name="Étudiant / Membre",
+        verbose_name="Student / Member",
     )
     role = models.CharField(
         max_length=25,
         choices=Role.choices,
         default=Role.DEVELOPPEUR,
-        verbose_name="Rôle dans l'équipe",
+        verbose_name="Team role",
     )
     is_accepted = models.BooleanField(
         default=True,
-        verbose_name="Adhésion acceptée",
-        help_text="Permet de valider ou rejeter une demande d'adhésion à l'équipe",
+        verbose_name="Membership accepted",
+        help_text="Approve or reject a request to join the team.",
     )
     joined_at = models.DateTimeField(
         auto_now_add=True,
-        verbose_name="Date d'intégration",
+        verbose_name="Joined at",
     )
 
     class Meta:
-        verbose_name = "Membre du projet"
-        verbose_name_plural = "Membres du projet"
+        verbose_name = "Project member"
+        verbose_name_plural = "Project members"
         ordering = ("joined_at",)
         constraints = [
             models.UniqueConstraint(
@@ -369,7 +369,7 @@ class ConseilMentor(models.Model):
         Project,
         on_delete=models.CASCADE,
         related_name="conseils_mentor",
-        verbose_name="Projet",
+        verbose_name="Project",
     )
     mentor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -378,20 +378,20 @@ class ConseilMentor(models.Model):
         verbose_name="Mentor",
     )
     texte = models.TextField(
-        verbose_name="Conseil du mentor",
+        verbose_name="Mentor advice",
     )
     date = models.DateTimeField(
         auto_now_add=True,
-        verbose_name="Date du conseil",
+        verbose_name="Advice date",
     )
 
     class Meta:
-        verbose_name = "Conseil du mentor"
-        verbose_name_plural = "Conseils du mentor"
+        verbose_name = "Mentor advice"
+        verbose_name_plural = "Mentor advice"
         ordering = ("-date",)
 
     def __str__(self):
-        return f"Conseil de {self.mentor} pour {self.project.title} ({self.date.strftime('%d/%m/%Y %H:%M')})"
+        return f"Advice from {self.mentor} for {self.project.title} ({self.date.strftime('%b %d, %Y %H:%M')})"
 
 
 class HistoriqueProjet(models.Model):

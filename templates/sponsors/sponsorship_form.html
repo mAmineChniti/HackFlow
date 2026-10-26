@@ -29,11 +29,11 @@
                 <c-form.fieldset class="grid gap-4 sm:grid-cols-2">
                     <c-form.field>
                         <c-form.label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Sponsor company <span class="text-destructive">*</span></c-form.label>
-                        <c-select name="{{ form.sponsor.html_name }}" id="{{ form.sponsor.id_for_label }}" class="w-full">
+                        <c-native_select name="{{ form.sponsor.html_name }}" id="{{ form.sponsor.id_for_label }}" class="w-full">
                             {% for value, label in form.sponsor.field.choices %}
                             <option value="{{ value }}" {% if form.sponsor.value == value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
-                        </c-select>
+                        </c-native_select>
                         {% if form.sponsor.errors %}
                         <c-form.error>{{ form.sponsor.errors.0 }}</c-form.error>
                         {% endif %}
@@ -41,11 +41,11 @@
 
                     <c-form.field>
                         <c-form.label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Hackathon event <span class="text-destructive">*</span></c-form.label>
-                        <c-select name="{{ form.hackathon.html_name }}" id="{{ form.hackathon.id_for_label }}" class="w-full">
+                        <c-native_select name="{{ form.hackathon.html_name }}" id="{{ form.hackathon.id_for_label }}" class="w-full">
                             {% for value, label in form.hackathon.field.choices %}
                             <option value="{{ value }}" {% if form.hackathon.value == value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
-                        </c-select>
+                        </c-native_select>
                         {% if form.hackathon.errors %}
                         <c-form.error>{{ form.hackathon.errors.0 }}</c-form.error>
                         {% endif %}
@@ -56,11 +56,11 @@
                 <c-form.fieldset class="grid gap-4 sm:grid-cols-2">
                     <c-form.field>
                         <c-form.label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Sponsorship tier <span class="text-destructive">*</span></c-form.label>
-                        <c-select name="{{ form.tier.html_name }}" id="{{ form.tier.id_for_label }}" class="w-full">
+                        <c-native_select name="{{ form.tier.html_name }}" id="{{ form.tier.id_for_label }}" class="w-full">
                             {% for value, label in form.tier.field.choices %}
                             <option value="{{ value }}" {% if form.tier.value == value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
-                        </c-select>
+                        </c-native_select>
                         {% if form.tier.errors %}
                         <c-form.error>{{ form.tier.errors.0 }}</c-form.error>
                         {% endif %}
@@ -68,11 +68,11 @@
 
                     <c-form.field>
                         <c-form.label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Contribution type <span class="text-destructive">*</span></c-form.label>
-                        <c-select name="{{ form.contribution_type.html_name }}" id="{{ form.contribution_type.id_for_label }}" class="w-full">
+                        <c-native_select name="{{ form.contribution_type.html_name }}" id="{{ form.contribution_type.id_for_label }}" class="w-full">
                             {% for value, label in form.contribution_type.field.choices %}
                             <option value="{{ value }}" {% if form.contribution_type.value == value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
-                        </c-select>
+                        </c-native_select>
                         {% if form.contribution_type.errors %}
                         <c-form.error>{{ form.contribution_type.errors.0 }}</c-form.error>
                         {% endif %}

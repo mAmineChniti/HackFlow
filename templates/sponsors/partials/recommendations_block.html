@@ -3,15 +3,13 @@
     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-border/70 pb-4">
         <div class="flex items-center gap-3">
             <div class="flex size-9 items-center justify-center rounded-lg bg-primary/15 text-primary border border-primary/30">
-                <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+                <c-lucideicon.zap class="size-5" />
             </div>
             <div>
                 <h3 class="text-base font-semibold text-foreground flex items-center gap-2">
                     AI-recommended sponsors
                     <span class="rounded bg-primary/10 border border-primary/20 px-2 py-0.5 text-[10px] font-mono text-primary font-medium">
-                        TF-IDF & Cosinus
+                        TF-IDF & cosine
                     </span>
                 </h3>
                 <p class="text-xs text-muted-foreground">
@@ -94,14 +92,13 @@
 
                 <!-- Create sponsorship action -->
                 <div class="mt-4 pt-3 border-t border-border/50 flex items-center justify-between">
-                    <a href="{% url 'sponsors:sponsor_detail' rec.sponsor.pk %}" class="text-xs text-muted-foreground hover:text-foreground">
-                        Fiche sponsor →
-                    </a>
+                    <c-button_link href="{% url 'sponsors:sponsor_detail' rec.sponsor.pk %}" variant="ghost" size="sm" class="text-xs text-muted-foreground">
+                        View sponsor
+                    </c-button_link>
                     {% if target_hackathon %}
-                    <a href="{% url 'sponsors:sponsorship_create' %}?sponsor_id={{ rec.sponsor.pk }}&hackathon_id={{ target_hackathon.pk }}"
-                       class="rounded-lg bg-primary/10 border border-primary/30 px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground transition-colors">
-                        + Solliciter
-                    </a>
+                    <c-button_link href="{% url 'sponsors:sponsorship_create' %}?sponsor_id={{ rec.sponsor.pk }}&hackathon_id={{ target_hackathon.pk }}" size="sm">
+                        Request sponsorship
+                    </c-button_link>
                     {% endif %}
                 </div>
             </div>

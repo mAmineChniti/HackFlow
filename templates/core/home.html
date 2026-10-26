@@ -38,7 +38,7 @@
 
                 <div class="mt-8 flex flex-col gap-3 sm:flex-row">
                     {% if user.is_authenticated %}
-                    <c-button_link href="#hackathons" size="lg">
+                    <c-button_link href="{% if featured_event.registration_open %}{{ featured_event.url }}{% else %}{% url 'hackathons:list' %}{% endif %}" size="lg">
                         Start hacking free
                         <c-lucideicon.arrow-right />
                     </c-button_link>
@@ -48,8 +48,8 @@
                         <c-lucideicon.arrow-right />
                     </c-button_link>
                     {% endif %}
-                    <c-button_link href="#challenges" size="lg" variant="outline">
-                        Explore challenges
+                    <c-button_link href="{% url 'hackathons:list' %}" size="lg" variant="outline">
+                        Browse all hackathons
                     </c-button_link>
                 </div>
 
@@ -100,11 +100,11 @@
                         <span class="terminal-dot bg-emerald-400/80"></span>
                         <div class="ml-3 hidden flex-1 items-center gap-2 rounded-md border border-border/60 bg-background/60 px-2.5 py-1 font-mono text-[11px] text-muted-foreground sm:flex">
                             <c-lucideicon.lock class="size-3" />
-                            hackflow.dev/events{% if featured_event %}/{{ featured_event.name|slugify }}{% endif %}
+                            hackflow.dev{% if featured_event %}{{ featured_event.url }}{% else %}/hackathons/{% endif %}
                         </div>
                         <c-badge class="ml-auto gap-1.5 font-mono text-[10px] uppercase tracking-wider">
                             <span class="size-1.5 animate-pulse rounded-full bg-primary-foreground"></span>
-                            Live
+                            {% if featured_event.registration_open %}Registration open{% elif featured_event %}Featured{% else %}Preview{% endif %}
                         </c-badge>
                     </div>
 
@@ -353,10 +353,10 @@
     <div class="container-page">
         <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
             <div class="max-w-2xl">
-                <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-primary">// Open events</p>
-                <h2 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Upcoming hackathons</h2>
+                <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-primary">// Hackathon catalogue</p>
+                <h2 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Hackathons on HackFlow</h2>
                 <p class="mt-4 text-muted-foreground">
-                    Pick a weekend. Find a team. Ship something you're proud of.
+                    Join an upcoming event or revisit recent builds from the community.
                 </p>
             </div>
             <c-button_link href="{% url 'hackathons:list' %}" variant="outline" size="sm" class="w-fit">
@@ -379,7 +379,7 @@
                             <span class="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{{ event.category }}</span>
                             <c-badge variant="{{ event.badge_variant|default:'outline' }}" class="shrink-0 backdrop-blur-sm">{{ event.status }}</c-badge>
                         </div>
-                        <p class="font-mono text-[11px] text-muted-foreground">// {{ event.duration|default:"HackFlow challenge" }}</p>
+                        <p class="font-mono text-[11px] text-muted-foreground">// {{ event.duration|default:"Hackathon" }}</p>
                     </div>
                 </div>
 
@@ -388,6 +388,20 @@
                         <a href="{{ event.url }}" class="transition-colors hover:text-primary">{{ event.title }}</a>
                     </c-card.title>
                     <c-card.description>{{ event.tagline|default:"Details to be announced" }}</c-card.description>
+                    {% if event.registration_open %}
+                    <p class="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-emerald-500">
+                        <span class="size-1.5 rounded-full bg-emerald-500"></span>
+                        Registration open · closes {{ event.registration_deadline|date:"M d" }}
+                    </p>
+                    {% elif event.registration_upcoming %}
+                    <p class="mt-2 font-mono text-[11px] text-muted-foreground">
+                        Registration opens soon
+                    </p>
+                    {% else %}
+                    <p class="mt-2 font-mono text-[11px] text-muted-foreground">
+                        Registration closed
+                    </p>
+                    {% endif %}
                 </c-card.header>
 
                 <c-card.content class="flex-1 space-y-4 pt-0">
@@ -398,7 +412,7 @@
                         </div>
                         <div class="flex items-center gap-2 text-muted-foreground">
                             <c-lucideicon.map-pin class="size-3.5 shrink-0" />
-                            {{ event.mode }}
+                            {{ event.location|default:event.mode }}
                         </div>
                         <div class="flex items-center gap-2 text-muted-foreground">
                             <c-lucideicon.trophy class="size-3.5 shrink-0" />
@@ -421,7 +435,7 @@
 
                 <c-card.footer class="pt-0">
                     <c-button_link href="{{ event.url }}" variant="outline" size="sm" class="w-full">
-                        {% if event.is_cancelled %}Event cancelled{% elif event.is_finished %}View recap{% else %}View details{% endif %}
+                        {% if event.is_cancelled %}Event cancelled{% elif event.registration_open %}View event &amp; register{% elif event.is_finished %}View event{% else %}View details{% endif %}
                         <c-lucideicon.arrow-right />
                     </c-button_link>
                 </c-card.footer>
@@ -590,7 +604,7 @@
                         <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">// Event control room</p>
                         <c-badge variant="outline" class="gap-1.5 font-mono text-[10px] uppercase tracking-wider">
                             <span class="size-1.5 rounded-full bg-primary"></span>
-                            On track
+                            {% if featured_event %}{{ featured_event.status }}{% else %}Awaiting event{% endif %}
                         </c-badge>
                     </div>
 
@@ -617,7 +631,7 @@
                         </div>
                         <div class="rounded-lg border border-border/60 bg-background/40 p-3">
                             <p class="font-mono text-lg font-medium">{{ stats.live_events|intcomma }}</p>
-                            <p class="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">Events</p>
+                            <p class="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">Live events</p>
                         </div>
                     </div>
 
@@ -638,10 +652,10 @@
                             <span class="mt-1 flex size-2 shrink-0 rounded-full bg-muted-foreground/40"></span>
                             <div class="flex-1">
                                 <div class="flex items-center justify-between gap-3">
-                                    <p class="text-xs font-medium text-muted-foreground">Submission window</p>
-                                    <span class="font-mono text-[10px] text-muted-foreground">{{ featured_event.start_date|date:"M j"|default:"TBA" }}</span>
+                                    <p class="text-xs font-medium text-muted-foreground">Registration deadline</p>
+                                    <span class="font-mono text-[10px] text-muted-foreground">{{ featured_event.registration_deadline|date:"M j"|default:"TBA" }}</span>
                                 </div>
-                                <p class="mt-0.5 text-[11px] text-muted-foreground">{{ featured_event.duration|default:"Build window to be announced" }}</p>
+                                <p class="mt-0.5 text-[11px] text-muted-foreground">{{ featured_event.registration_label|default:"Registration details to be announced" }}</p>
                             </div>
                         </div>
                         <div class="flex items-start gap-3">
@@ -754,19 +768,18 @@
             <div class="relative mx-auto max-w-2xl">
                 <c-badge variant="outline" class="gap-2 border-primary/30 bg-primary/10 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
                     <span class="size-1.5 animate-pulse rounded-full bg-primary"></span>
-                    {% if featured_event %}{{ featured_event.status }} · {{ featured_event.dates }}{% else %}Registration open{% endif %}
+                    {% if featured_event %}{{ featured_event.status }} · {{ featured_event.dates }}{% else %}Events coming soon{% endif %}
                 </c-badge>
 
                 <h2 class="mt-6 text-3xl font-semibold tracking-tight text-balance sm:text-5xl">
                     Your next build starts here.
                 </h2>
                 <p class="mx-auto mt-4 max-w-xl text-muted-foreground">
-                    Join a hackathon this weekend or start with a challenge tonight.
-                    Either way, you'll ship something real.
+                    Join an upcoming hackathon, meet your team, and ship something real.
                 </p>
 
                 <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-                    <c-button_link href="#hackathons" size="lg">
+                    <c-button_link href="{% url 'hackathons:list' %}" size="lg">
                         Explore hackathons
                         <c-lucideicon.arrow-right />
                     </c-button_link>

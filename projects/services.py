@@ -82,6 +82,7 @@ def is_project_lead(user, project) -> bool:
 # RÈGLES DE PERMISSIONS PAR ACTION
 # ==============================================================================
 
+
 def can_create_project(user) -> bool:
     """
     Student peut créer un projet. Admin peut aussi.
@@ -492,6 +493,7 @@ def validate_add_mentor_advice_permission(user, project):
 # History helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def create_history_entry(
     project, action: str, actor, commentaire: str = "", date=None
 ) -> HistoriqueProjet:
@@ -515,6 +517,7 @@ def create_history_entry(
 # High-level project actions (status change + history in one transaction)
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def submit_project(project, user) -> None:
     """
     Transitions a project from DRAFT or REJECTED to SUBMITTED.
@@ -526,8 +529,12 @@ def submit_project(project, user) -> None:
     """
     validate_submit_permission(user, project)
 
-    is_resubmission = (project.status == Project.Status.REJECTED)
-    action = HistoriqueProjet.Action.RESUBMITTED if is_resubmission else HistoriqueProjet.Action.SUBMITTED
+    is_resubmission = project.status == Project.Status.REJECTED
+    action = (
+        HistoriqueProjet.Action.RESUBMITTED
+        if is_resubmission
+        else HistoriqueProjet.Action.SUBMITTED
+    )
     now = timezone.now()
 
     with transaction.atomic():
@@ -538,25 +545,29 @@ def submit_project(project, user) -> None:
             project.review_history = []
 
         if is_resubmission:
-            project.review_history.append({
-                "type": "resubmission",
-                "action": "Project resubmitted",
-                "user": user.get_username(),
-                "date": now.isoformat(),
-                "date_display": now.strftime("%d/%m/%Y at %H:%M"),
-                "reviewed_at": now.isoformat(),
-                "reviewed_at_display": now.strftime("%d/%m/%Y at %H:%M"),
-            })
+            project.review_history.append(
+                {
+                    "type": "resubmission",
+                    "action": "Project resubmitted",
+                    "user": user.get_username(),
+                    "date": now.isoformat(),
+                    "date_display": now.strftime("%b %d, %Y at %H:%M"),
+                    "reviewed_at": now.isoformat(),
+                    "reviewed_at_display": now.strftime("%b %d, %Y at %H:%M"),
+                }
+            )
         else:
-            project.review_history.append({
-                "type": "submission",
-                "action": "First project submission",
-                "user": user.get_username(),
-                "date": now.isoformat(),
-                "date_display": now.strftime("%d/%m/%Y at %H:%M"),
-                "reviewed_at": now.isoformat(),
-                "reviewed_at_display": now.strftime("%d/%m/%Y at %H:%M"),
-            })
+            project.review_history.append(
+                {
+                    "type": "submission",
+                    "action": "First project submission",
+                    "user": user.get_username(),
+                    "date": now.isoformat(),
+                    "date_display": now.strftime("%b %d, %Y at %H:%M"),
+                    "reviewed_at": now.isoformat(),
+                    "reviewed_at_display": now.strftime("%b %d, %Y at %H:%M"),
+                }
+            )
 
         project.save(update_fields=["status", "submitted_at", "review_history", "updated_at"])
         create_history_entry(project, action, user, date=now)
@@ -608,8 +619,8 @@ def change_project_status(project, user, new_status: str) -> None:
 
     STATUS_TO_ACTION = {
         Project.Status.UNDER_REVIEW: HistoriqueProjet.Action.UNDER_REVIEW,
-        Project.Status.FINALIST:     HistoriqueProjet.Action.FINALIST,
-        Project.Status.WINNER:       HistoriqueProjet.Action.WINNER,
+        Project.Status.FINALIST: HistoriqueProjet.Action.FINALIST,
+        Project.Status.WINNER: HistoriqueProjet.Action.WINNER,
     }
     action = STATUS_TO_ACTION.get(new_status)
     if action is None:

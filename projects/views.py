@@ -201,12 +201,12 @@ def project_create(request):
                 is_accepted=True,
             )
 
-            messages.success(request, f"Le projet « {project.title} » a été créé avec succès !")
+            messages.success(request, f"Project “{project.title}” was created successfully.")
             return redirect(project.get_absolute_url())
     else:
         form = ProjectForm(user=request.user)
 
-    return render(request, "projects/project_form.html", {"form": form, "action": "Créer"})
+    return render(request, "projects/project_form.html", {"form": form, "action": "Create"})
 
 
 @login_required
@@ -229,7 +229,7 @@ def project_update(request, slug):
                 updated_project.status = project.status
             updated_project.save()
             form.save_m2m()
-            messages.success(request, "Le projet a été mis à jour.")
+            messages.success(request, "Project updated.")
             return redirect(project.get_absolute_url())
     else:
         form = ProjectForm(instance=project, user=request.user)
@@ -237,7 +237,7 @@ def project_update(request, slug):
     return render(
         request,
         "projects/project_form.html",
-        {"form": form, "project": project, "action": "Modifier"},
+        {"form": form, "project": project, "action": "Edit"},
     )
 
 
@@ -276,7 +276,7 @@ def project_delete(request, slug):
     if request.method == "POST":
         title = project.title
         project.delete()
-        messages.success(request, f"Le projet « {title} » a été supprimé.")
+        messages.success(request, f"Project “{title}” was deleted.")
         return redirect("projects:project_list")
 
     return render(request, "projects/project_confirm_delete.html", {"project": project})
@@ -295,13 +295,13 @@ def member_add(request, slug):
             member.project = project
             if ProjectMember.objects.filter(project=project, user=member.user).exists():
                 messages.warning(
-                    request, f"{member.user.get_username()} est déjà membre de l'équipe."
+                    request, f"{member.user.get_username()} is already a member of this team."
                 )
             else:
                 member.save()
-                messages.success(request, f"{member.user.get_username()} a rejoint l'équipe !")
+                messages.success(request, f"{member.user.get_username()} joined the team.")
         else:
-            messages.error(request, "Données invalides pour l'ajout du membre.")
+            messages.error(request, "Invalid data. The team member could not be added.")
 
     return redirect(project.get_absolute_url())
 
@@ -317,7 +317,7 @@ def member_remove(request, slug, member_id):
     if request.method == "POST":
         user_name = membership.user.get_username()
         membership.delete()
-        messages.success(request, f"{user_name} a été retiré de l'équipe.")
+        messages.success(request, f"{user_name} was removed from the team.")
 
     return redirect(project.get_absolute_url())
 
@@ -544,11 +544,11 @@ def export_projects_csv(request):
                 p.score if p.score else "",
                 _csv_safe(p.created_by.get_username() if p.created_by else ""),
                 _csv_safe(p.reviewed_by.get_username() if p.reviewed_by else ""),
-                p.reviewed_at.strftime("%d/%m/%Y %H:%M") if p.reviewed_at else "",
+                p.reviewed_at.strftime("%b %d, %Y %H:%M") if p.reviewed_at else "",
                 _csv_safe(p.rejection_reason or ""),
                 _csv_safe(p.repository_url or ""),
                 _csv_safe(p.demo_url or ""),
-                p.created_at.strftime("%d/%m/%Y %H:%M"),
+                p.created_at.strftime("%b %d, %Y %H:%M"),
             ]
         )
 
@@ -713,7 +713,9 @@ def export_projects_pdf(request):
                 Paragraph(f"{p.score}/10" if p.score else "—", bold_cell),
                 Paragraph(p.created_by.get_username() if p.created_by else "—", cell_style),
                 Paragraph(p.reviewed_by.get_username() if p.reviewed_by else "—", cell_style),
-                Paragraph(p.reviewed_at.strftime("%d/%m/%Y") if p.reviewed_at else "—", cell_style),
+                Paragraph(
+                    p.reviewed_at.strftime("%b %d, %Y") if p.reviewed_at else "—", cell_style
+                ),
             ]
         )
 

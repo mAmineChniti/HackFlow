@@ -18,13 +18,13 @@ logger = logging.getLogger(__name__)
 DEFAULT_MODEL = DEFAULT_AI_MODEL
 
 CATEGORY_CHOICES = {
-    "web": "Développement Web",
-    "mobile": "Application Mobile",
-    "ai": "Intelligence Artificielle & Data",
-    "iot": "IoT & Systèmes Embarqués",
-    "cyber": "Cybersécurité",
-    "green": "GreenTech & Climat",
-    "other": "Autre Catégorie",
+    "web": "Web Development",
+    "mobile": "Mobile Application",
+    "ai": "Artificial Intelligence & Data",
+    "iot": "IoT & Embedded Systems",
+    "cyber": "Cybersecurity",
+    "green": "GreenTech & Climate",
+    "other": "Other",
 }
 
 
@@ -59,32 +59,32 @@ def _fallback_analyse(title: str, tagline: str, description: str, category: str)
 
     if desc_len > 300:
         score += 1
-        strengths.append("Description détaillée et structurée.")
+        strengths.append("The description is detailed and well structured.")
     else:
-        weaknesses.append("La description est concise, gagne à être étoffée.")
+        weaknesses.append("The description is concise and could be expanded.")
 
     if any(
         k in words
         for k in ["api", "django", "react", "ia", "base de données", "architecture", "docker"]
     ):
         score += 1
-        strengths.append("Technologies et stack technique bien explicitées.")
+        strengths.append("The technology stack is clearly explained.")
 
     if any(k in words for k in ["problème", "besoin", "utilisateurs", "impact", "solution"]):
         score += 1
-        strengths.append("Bonne identification du problème et de la proposition de valeur.")
+        strengths.append("The problem and value proposition are clearly identified.")
     else:
-        weaknesses.append("Préciser l'impact direct et la cible d'utilisateurs visée.")
+        weaknesses.append("Clarify the direct impact and target user group.")
 
     if not weaknesses:
-        weaknesses.append("Prévoir une démonstration vidéo ou un prototype interactif.")
+        weaknesses.append("Consider adding a video demo or an interactive prototype.")
 
     score = min(10, max(5, score))
 
     comment = (
-        f"Projet prometteur dans la catégorie {category}. "
-        f"L'idée générale est claire et répond à une problématique identifiable. "
-        f"Pour maximiser la note finale du jury, insistez sur la faisabilité technique et la démonstration en direct."
+        f"A promising project in the {category} category. "
+        f"The overall idea is clear and addresses an identifiable problem. "
+        f"To maximize the final jury score, emphasize technical feasibility and a live demonstration."
     )
 
     return {
@@ -92,7 +92,7 @@ def _fallback_analyse(title: str, tagline: str, description: str, category: str)
         "comment": comment,
         "strengths": strengths,
         "weaknesses": weaknesses,
-        "source": "moteur IA heuristique (configurez GROQ_API_KEY dans .env pour le modèle distant)",
+        "source": "Heuristic AI engine (set GROQ_API_KEY in .env to use the remote model)",
         "source_key": "heuristic",
     }
 
@@ -107,23 +107,23 @@ def analyse_project(title: str, tagline: str, description: str, category: str) -
       - weaknesses  : list[str] (pistes d'amélioration)
       - source      : 'Groq' ou 'IA Locale'
     """
-    prompt = f"""Tu es un jury expert d'un hackathon tech d'élite.
-Évalue objectivement ce projet étudiant soumis pour le hackathon.
+    prompt = f"""You are an expert jury member for an elite tech hackathon.
+Objectively evaluate this student project submitted for the hackathon.
 
-**Fiche Projet :**
-|- Titre : {title}
-|- Slogan : {tagline}
-|- Catégorie : {category}
-|- Description : {description[:1600]}
+**Project details:**
+- Title: {title}
+- Tagline: {tagline}
+- Category: {category}
+- Description: {description[:1600]}
 
-**Critères :** Innovation, faisabilité technique, impact/utilité, clarté.
+**Criteria:** Innovation, technical feasibility, impact/usefulness, clarity.
 
-Réponds UNIQUEMENT sous forme de JSON strict et valide :
+Respond ONLY with strict, valid JSON:
 {{
-  "score": <entier de 1 à 10>,
-  "comment": "<commentaire d'évaluation constructif en français, 2-3 phrases>",
-  "strengths": ["<point fort 1>", "<point fort 2>"],
-  "weaknesses": ["<axe d'amélioration 1>", "<axe d'amélioration 2>"]
+  "score": <integer from 1 to 10>,
+  "comment": "<constructive evaluation comment in English, 2-3 sentences>",
+  "strengths": ["<strength 1>", "<strength 2>"],
+  "weaknesses": ["<improvement area 1>", "<improvement area 2>"]
 }}
 """
 
@@ -139,7 +139,7 @@ Réponds UNIQUEMENT sous forme de JSON strict et valide :
         data = json.loads(raw_text)
         return {
             "score": max(1, min(10, int(data.get("score", 7)))),
-            "comment": data.get("comment", "Évaluation générée avec succès."),
+            "comment": data.get("comment", "Evaluation generated successfully."),
             "strengths": data.get("strengths", [])[:3],
             "weaknesses": data.get("weaknesses", [])[:3],
             "source": f"Groq ({get_model()})",
@@ -148,7 +148,7 @@ Réponds UNIQUEMENT sous forme de JSON strict et valide :
     except Exception as e:
         # Log the detail server-side only: returning str(e) to the browser can
         # expose endpoint URLs, project ids and credential-related messages.
-        logger.warning("Erreur parsing Groq response analyse_project: %s", e)
+        logger.warning("Error parsing Groq response in analyse_project: %s", e)
         fallback = _fallback_analyse(title, tagline, description, category)
         fallback["failed"] = True
         return fallback
@@ -237,13 +237,13 @@ def _fallback_detect_category(title: str, description: str) -> dict:
             max_matches = matches
             best_cat = cat
 
-    confidence = "haute" if max_matches >= 3 else ("moyenne" if max_matches >= 1 else "faible")
+    confidence = "high" if max_matches >= 3 else ("medium" if max_matches >= 1 else "low")
     return {
         "category": best_cat,
-        "category_label": CATEGORY_CHOICES.get(best_cat, "Autre Catégorie"),
+        "category_label": CATEGORY_CHOICES.get(best_cat, "Other"),
         "confidence": confidence,
-        "reason": f"Mots-clés pertinents détectés pour la catégorie {CATEGORY_CHOICES.get(best_cat, 'Autre')}.",
-        "source": "Analyse sémantique locale",
+        "reason": f"Relevant keywords detected for the {CATEGORY_CHOICES.get(best_cat, 'Other')} category.",
+        "source": "Local semantic analysis",
         "source_key": "heuristic",
     }
 
@@ -254,21 +254,21 @@ def detect_category(title: str, description: str) -> dict:
     """
     categories_list = "\n".join([f'- "{k}": {v}' for k, v in CATEGORY_CHOICES.items()])
 
-    prompt = f"""Tu es un assistant IA pour un hackathon tech.
-Analyse ce projet et détermine la catégorie la plus adaptée parmi la liste fournie.
+    prompt = f"""You are an AI assistant for a tech hackathon.
+Analyze this project and determine the most suitable category from the list provided.
 
-**Projet :**
-|- Titre : {title}
-|- Description : {description[:800]}
+**Project:**
+- Title: {title}
+- Description: {description[:800]}
 
-**Catégories acceptées :**
+**Accepted categories:**
 {categories_list}
 
-Réponds UNIQUEMENT sous forme de JSON strict :
+Respond ONLY with strict JSON:
 {{
-  "category": "<clé exacte parmi : web, mobile, ai, iot, cyber, green, other>",
-  "confidence": "<haute | moyenne | faible>",
-  "reason": "<explication courte en 1 phrase>"
+  "category": "<exact key among: web, mobile, ai, iot, cyber, green, other>",
+  "confidence": "<high | medium | low>",
+  "reason": "<short one-sentence explanation>"
 }}
 """
 
@@ -288,14 +288,14 @@ Réponds UNIQUEMENT sous forme de JSON strict :
         return {
             "category": cat_key,
             "category_label": CATEGORY_CHOICES[cat_key],
-            "confidence": data.get("confidence", "moyenne"),
-            "reason": data.get("reason", "Catégorie déterminée par analyse sémantique Groq."),
+            "confidence": data.get("confidence", "medium"),
+            "reason": data.get("reason", "Category determined by Groq semantic analysis."),
             "source": f"Groq ({get_model()})",
             "source_key": "remote",
         }
     except Exception as e:
         # Server-side log only; the browser never sees the exception text.
-        logger.warning("Erreur parsing Groq response detect_category: %s", e)
+        logger.warning("Error parsing Groq response in detect_category: %s", e)
         fallback = _fallback_detect_category(title, description)
         fallback["failed"] = True
         return fallback

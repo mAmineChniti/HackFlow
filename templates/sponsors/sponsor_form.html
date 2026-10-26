@@ -46,11 +46,11 @@
                 <c-form.fieldset class="grid gap-4 sm:grid-cols-2">
                     <c-form.field>
                         <c-form.label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Industry <span class="text-destructive">*</span></c-form.label>
-                        <c-select name="{{ form.sector.html_name }}" id="{{ form.sector.id_for_label }}" class="w-full">
+                        <c-native_select name="{{ form.sector.html_name }}" id="{{ form.sector.id_for_label }}" class="w-full">
                             {% for value, label in form.sector.field.choices %}
                             <option value="{{ value }}" {% if form.sector.value == value %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
-                        </c-select>
+                        </c-native_select>
                         {% if form.sector.errors %}
                         <c-form.error>{{ form.sector.errors.0 }}</c-form.error>
                         {% endif %}

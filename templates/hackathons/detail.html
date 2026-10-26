@@ -15,10 +15,10 @@
 
         {% if is_organizer %}
         <div class="flex items-center gap-2">
-            <a href="{% url 'hackathons:export_participants' hackathon.slug %}" class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-400 hover:bg-emerald-500/20 transition-colors shadow-xs">
+            <c-button_link href="{% url 'hackathons:export_participants' hackathon.slug %}" variant="outline" size="sm" class="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20">
                 <c-lucideicon.download class="size-3.5" />
                 Export CSV
-            </a>
+            </c-button_link>
             <c-button_link href="{% url 'hackathons:update' hackathon.slug %}" variant="outline" size="sm">
                 <c-lucideicon.pencil class="size-3.5" />
                 Edit Event
@@ -221,9 +221,9 @@
                                     {% endif %}
 
                                     <!-- Digital Badge Button -->
-                                    <a href="{% url 'hackathons:participant_badge' hackathon.slug %}" class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-primary/50 bg-primary/20 px-4 py-2.5 text-xs font-mono font-bold text-primary hover:bg-primary/30 transition-all shadow-md">
+                                    <c-button_link href="{% url 'hackathons:participant_badge' hackathon.slug %}" variant="outline" class="w-full border-primary/50 bg-primary/20 font-mono text-xs font-bold text-primary hover:bg-primary/30">
                                         🎫 View Official Badge &amp; QR Pass
-                                    </a>
+                                    </c-button_link>
 
                                     {% if can_unregister %}
                                     <form method="post" action="{% url 'hackathons:unregister' hackathon.slug %}">
@@ -394,9 +394,9 @@
                 {% if is_organizer or user.is_staff %}
                 <span>🎫 Check-in Desk &amp; Badges ({{ checked_in_count }}/{{ confirmed_registrations_count }})</span>
                 {% elif is_registered %}
-                <span>🎫 Mon Badge &amp; QR Pass</span>
+                <span>🎫 My Badge &amp; QR Pass</span>
                 {% else %}
-                <span>🎫 Badge Participant &amp; QR</span>
+                <span>🎫 Participant Badge &amp; QR</span>
                 {% endif %}
             </button>
         </div>
@@ -425,10 +425,9 @@
                                 <div>
                                     <h3 class="text-sm font-semibold text-foreground">Starter Kits &amp; Resources</h3>
                                     <p class="mt-0.5 text-xs text-muted-foreground mb-3">Official repos, API credentials and datasets for participants.</p>
-                                    <a href="{{ hackathon.resources_link }}" target="_blank" rel="noopener noreferrer"
-                                       class="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-medium text-primary hover:bg-primary/20 transition-colors">
+                                    <c-button_link href="{{ hackathon.resources_link }}" target="_blank" rel="noopener noreferrer" variant="outline" size="sm" class="border-primary/30 bg-primary/10 text-primary hover:bg-primary/20">
                                         &#x2197; Access Resources
-                                    </a>
+                                    </c-button_link>
                                 </div>
                             </div>
                         </div>
@@ -664,22 +663,18 @@
                         </p>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button
+                        <c-button
                             type="button"
                             id="btn-regenerate-ideas"
                             data-endpoint="{% url 'hackathons:ai_ideas' hackathon.slug %}"
                             onclick="regenerateAIIdeas(this)"
-                            class="inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-3.5 py-1.5 font-mono text-xs font-medium text-primary hover:bg-primary/20 transition-all shrink-0 cursor-pointer disabled:opacity-50"
+                            variant="outline"
+                            size="sm"
+                            class="border-primary/40 bg-primary/10 font-mono text-primary hover:bg-primary/20"
                         >
-                            <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-                                <path d="M5 3v4"/>
-                                <path d="M19 17v4"/>
-                                <path d="M3 5h4"/>
-                                <path d="M17 19h4"/>
-                            </svg>
-                            <span id="btn-ideas-label">✨ Regenerate Ideas</span>
-                        </button>
+                            <c-lucideicon.sparkles class="size-3.5" />
+                            <span id="btn-ideas-label">Regenerate Ideas</span>
+                        </c-button>
                     </div>
                 </div>
 
@@ -716,7 +711,7 @@
                     </div>
                     {% empty %}
                     <div class="col-span-3 text-center py-8 text-muted-foreground text-xs font-mono">
-                        Aucune idée de projet générée pour le moment. Cliquez sur "Regenerate Ideas".
+                        No project ideas generated yet. Click “Regenerate Ideas”.
                     </div>
                     {% endfor %}
                 </div>
@@ -745,13 +740,15 @@
                         </p>
                     </div>
                     <div class="flex items-center gap-2">
-                        <a
+                        <c-button_link
                             href="{% url 'hackathons:export_participants' hackathon.slug %}"
-                            class="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-background/60 px-3 py-1.5 font-mono text-xs text-muted-foreground hover:text-foreground transition-all shrink-0"
+                            variant="outline"
+                            size="sm"
+                            class="bg-background/60 font-mono text-muted-foreground"
                         >
                             <c-lucideicon.download class="size-3" />
                             Export Attendee CSV
-                        </a>
+                        </c-button_link>
                     </div>
                 </div>
 
@@ -783,20 +780,20 @@
                 <!-- Registered Attendees Table -->
                 <div class="overflow-hidden rounded-xl border border-border/60 bg-background/40">
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs">
-                            <thead class="border-b border-border/60 bg-muted/40 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                                <tr>
-                                    <th class="px-4 py-3">Attendee</th>
-                                    <th class="px-4 py-3">University</th>
-                                    <th class="px-4 py-3">Ticket Identifier</th>
-                                    <th class="px-4 py-3">Check-in Status</th>
-                                    <th class="px-4 py-3 text-right">Door Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-border/40 font-mono">
+                        <c-table class="w-full text-left text-xs">
+                            <c-table.header class="border-b border-border/60 bg-muted/40 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                                <c-table.row>
+                                    <c-table.head class="px-4 py-3">Attendee</c-table.head>
+                                    <c-table.head class="px-4 py-3">University</c-table.head>
+                                    <c-table.head class="px-4 py-3">Ticket Identifier</c-table.head>
+                                    <c-table.head class="px-4 py-3">Check-in Status</c-table.head>
+                                    <c-table.head class="px-4 py-3 text-right">Door Actions</c-table.head>
+                                </c-table.row>
+                            </c-table.header>
+                            <c-table.body class="divide-y divide-border/40 font-mono">
                                 {% for reg in organizer_registrations %}
-                                <tr class="hover:bg-muted/20 transition-colors">
-                                    <td class="px-4 py-3 font-sans">
+                                <c-table.row class="hover:bg-muted/20 transition-colors">
+                                    <c-table.cell class="px-4 py-3 font-sans">
                                         <div class="flex items-center gap-2.5">
                                             <div class="flex size-7 items-center justify-center rounded-lg bg-primary/20 text-xs font-bold text-primary font-mono shrink-0">
                                                 {{ reg.participant.first_name|first|default:reg.participant.username|first|upper }}
@@ -806,14 +803,14 @@
                                                 <p class="text-[11px] font-mono text-muted-foreground">{{ reg.participant.email }}</p>
                                             </div>
                                         </div>
-                                    </td>
-                                    <td class="px-4 py-3 font-sans text-muted-foreground">
-                                        {{ reg.university|default:"Non spécifiée" }} · {{ reg.get_study_level_display }}
-                                    </td>
-                                    <td class="px-4 py-3 font-mono font-bold text-primary">
+                                    </c-table.cell>
+                                    <c-table.cell class="px-4 py-3 font-sans text-muted-foreground">
+                                        {{ reg.university|default:"Not specified" }} · {{ reg.get_study_level_display }}
+                                    </c-table.cell>
+                                    <c-table.cell class="px-4 py-3 font-mono font-bold text-primary">
                                         {{ reg.ticket_code }}
-                                    </td>
-                                    <td class="px-4 py-3">
+                                    </c-table.cell>
+                                    <c-table.cell class="px-4 py-3">
                                         {% if reg.checked_in %}
                                         <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400">
                                             ✓ Present ({{ reg.checked_in_at|date:"H:i" }})
@@ -823,35 +820,39 @@
                                             ⏳ Pending
                                         </span>
                                         {% endif %}
-                                    </td>
-                                    <td class="px-4 py-3 text-right">
+                                    </c-table.cell>
+                                    <c-table.cell class="px-4 py-3 text-right">
                                         <div class="flex items-center justify-end gap-2">
-                                            <a
+                                            <c-button_link
                                                 href="{% url 'hackathons:toggle_checkin' hackathon.slug reg.ticket_code %}"
-                                                class="rounded-md border {% if reg.checked_in %}border-destructive/30 text-destructive hover:bg-destructive/10{% else %}border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/15{% endif %} px-2.5 py-1 text-[11px] font-sans font-medium transition-colors"
+                                                variant="outline"
+                                                size="xs"
+                                                class="{% if reg.checked_in %}border-destructive/30 text-destructive hover:bg-destructive/10{% else %}border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/15{% endif %} font-sans"
                                             >
-                                                {% if reg.checked_in %}Annuler entrée{% else %}✓ Valider entrée{% endif %}
-                                            </a>
-                                            <a
+                                                {% if reg.checked_in %}Undo check-in{% else %}✓ Check in{% endif %}
+                                            </c-button_link>
+                                            <c-button_link
                                                 href="{% url 'hackathons:participant_badge' hackathon.slug %}?ticket={{ reg.ticket_code }}"
                                                 target="_blank"
-                                                class="rounded-md border border-border/80 px-2 py-1 text-[11px] font-sans text-muted-foreground hover:text-foreground transition-colors"
-                                                title="Voir le badge de cet étudiant"
+                                                variant="outline"
+                                                size="xs"
+                                                class="font-sans text-muted-foreground"
+                                                title="View this participant's badge"
                                             >
-                                                🔍 Voir Badge
-                                            </a>
+                                                🔍 View Badge
+                                            </c-button_link>
                                         </div>
-                                    </td>
-                                </tr>
+                                    </c-table.cell>
+                                </c-table.row>
                                 {% empty %}
-                                <tr>
-                                    <td colspan="5" class="py-8 text-center text-muted-foreground text-xs font-sans">
-                                        Aucun participant inscrit pour le moment.
-                                    </td>
-                                </tr>
+                                <c-table.row>
+                                    <c-table.cell colspan="5" class="py-8 text-center text-muted-foreground text-xs font-sans">
+                                        No participants registered yet.
+                                    </c-table.cell>
+                                </c-table.row>
                                 {% endfor %}
-                            </tbody>
-                        </table>
+                            </c-table.body>
+                        </c-table>
                     </div>
                 </div>
             </div>
@@ -863,22 +864,22 @@
                     <div class="space-y-1">
                         <div class="flex items-center gap-2">
                             <span class="text-xl">🎫</span>
-                            <h2 class="text-xl font-semibold text-foreground">Mon Badge Participant Officiel</h2>
+                            <h2 class="text-xl font-semibold text-foreground">My Official Participant Badge</h2>
                         </div>
                         <p class="text-xs text-muted-foreground">
-                            Présentez ce QR Code à l'accueil pour valider votre entrée à <strong class="text-foreground">{{ hackathon.title }}</strong>.
+                            Present this QR code at the welcome desk to validate your entry to <strong class="text-foreground">{{ hackathon.title }}</strong>.
                         </p>
                     </div>
                     <div class="flex items-center gap-2">
-                        <a
+                        <c-button_link
                             href="{% url 'hackathons:participant_badge' hackathon.slug %}"
-                            class="inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-3.5 py-1.5 font-mono text-xs font-medium text-primary hover:bg-primary/20 transition-all shrink-0 cursor-pointer"
+                            variant="outline"
+                            size="sm"
+                            class="border-primary/40 bg-primary/10 font-mono text-primary hover:bg-primary/20"
                         >
-                            <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>
-                            </svg>
-                            <span>Plein Écran / Imprimer PDF</span>
-                        </a>
+                            <c-lucideicon.printer class="size-3.5" />
+                            <span>Full Screen / Print PDF</span>
+                        </c-button_link>
                     </div>
                 </div>
 
@@ -919,15 +920,15 @@
                         <!-- Scannable QR Code -->
                         <div class="rounded-2xl border border-border/60 bg-card/60 p-4 space-y-2">
                             <div class="mx-auto size-44 rounded-xl bg-white p-2.5 flex items-center justify-center shadow-inner">
-                                <img src="{{ badge_qr_b64 }}" alt="Mon QR Code de Badge" class="size-full object-contain" />
+                                <img src="{{ badge_qr_b64 }}" alt="My badge QR code" class="size-full object-contain" />
                             </div>
                             <p class="font-mono text-xs font-bold tracking-widest text-primary">{{ badge_registration.ticket_code }}</p>
                             {% if badge_registration.checked_in %}
                             <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-3 py-1 font-mono text-xs font-bold text-emerald-400">
-                                ✓ ENTRÉE VALIDÉE EN SALLE
+                                ✓ ENTRY VALIDATED AT VENUE
                             </span>
                             {% else %}
-                            <p class="text-[10px] font-mono text-muted-foreground">Présentez ce QR Code à l'accueil pour entrer</p>
+                            <p class="text-[10px] font-mono text-muted-foreground">Present this QR code at the welcome desk to enter</p>
                             {% endif %}
                         </div>
                     </div>
@@ -940,14 +941,14 @@
                 <div class="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary text-2xl">
                     🎫
                 </div>
-                <h3 class="text-lg font-bold text-foreground">Obtenez votre Pass Officiel</h3>
+                <h3 class="text-lg font-bold text-foreground">Get Your Official Pass</h3>
                 <p class="text-xs text-muted-foreground leading-relaxed">
-                    Vous n'êtes pas encore inscrit à <strong>{{ hackathon.title }}</strong>. Inscrivez-vous pour recevoir votre badge d'accès officiel avec QR code vérifiable.
+                    You are not registered for <strong>{{ hackathon.title }}</strong> yet. Register to receive your official access badge with a verifiable QR code.
                 </p>
                 <div class="pt-2">
-                    <a href="{% url 'hackathons:register' hackathon.slug %}" class="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-mono text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all">
-                        S'inscrire au Hackathon
-                    </a>
+                    <c-button_link href="{% url 'hackathons:register' hackathon.slug %}" class="font-mono text-xs font-bold">
+                        Register for the Hackathon
+                    </c-button_link>
                 </div>
             </div>
             {% endif %}
@@ -961,7 +962,7 @@
             if (!grid || !button || !endpoint) return;
 
             button.disabled = true;
-            if (label) label.innerText = 'Génération en cours...';
+            if (label) label.innerText = 'Generating ideas...';
             grid.style.opacity = '0.4';
 
             try {
@@ -1000,7 +1001,7 @@
             } finally {
                 grid.style.opacity = '1';
                 button.disabled = false;
-                if (label) label.innerText = '✨ Regenerate Ideas';
+                if (label) label.innerText = 'Regenerate Ideas';
             }
         }
         function escapeXml(unsafe) {

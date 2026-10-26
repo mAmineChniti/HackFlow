@@ -1,3 +1,8 @@
-<div class="space-y-2 {% if class %}{{ class }}{% endif %}" {{ attrs }}>
+<c-vars legend=""></c-vars>
+
+<fieldset class="space-y-2 {% if class %}{{ class }}{% endif %}" {{ attrs }}>
+    {% if legend %}
+    <legend class="text-sm font-semibold text-foreground">{{ legend }}</legend>
+    {% endif %}
     {{ slot }}
-</div>
+</fieldset>

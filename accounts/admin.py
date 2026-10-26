@@ -34,23 +34,23 @@ class ProfileAdmin(admin.ModelAdmin):
         "mark_unverified",
     )
 
-    @admin.action(description="Changer le rôle en: Student / Participant")
+    @admin.action(description="Change role to: Student / Participant")
     def set_role_student(self, request, queryset):
         queryset.update(role=Profile.Role.STUDENT)
 
-    @admin.action(description="Changer le rôle en: Organizer")
+    @admin.action(description="Change role to: Organizer")
     def set_role_organizer(self, request, queryset):
         queryset.update(role=Profile.Role.ORGANIZER)
 
-    @admin.action(description="Changer le rôle en: Judge / Jury")
+    @admin.action(description="Change role to: Judge / Jury")
     def set_role_judge(self, request, queryset):
         queryset.update(role=Profile.Role.JUDGE)
 
-    @admin.action(description="Changer le rôle en: Mentor")
+    @admin.action(description="Change role to: Mentor")
     def set_role_mentor(self, request, queryset):
         queryset.update(role=Profile.Role.MENTOR)
 
-    @admin.action(description="Changer le rôle en: Administrator")
+    @admin.action(description="Change role to: Administrator")
     def set_role_admin(self, request, queryset):
         for profile in queryset:
             profile.role = Profile.Role.ADMIN
@@ -68,4 +68,3 @@ class ProfileAdmin(admin.ModelAdmin):
     def mark_unverified(self, request, queryset):
         for profile in queryset:
             profile.reset_email_verification()
-
