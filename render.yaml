@@ -6,7 +6,6 @@ databases:
     user: hackflow
     plan: free
     region: oregon
-    postgresMajorVersion: "17"
     # Free Render Postgres databases expire 30 days after creation. Upgrade
     # the plan for anything long-lived.
 
