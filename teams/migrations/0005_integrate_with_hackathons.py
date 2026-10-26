@@ -5,19 +5,23 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hackathons', '0001_initial'),
-        ('teams', '0004_alter_skillprofile_skills_alter_team_leader_and_more'),
+        ("hackathons", "0001_initial"),
+        ("teams", "0004_alter_skillprofile_skills_alter_team_leader_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='team',
-            name='hackathon',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='teams', to='hackathons.hackathon', verbose_name='Hackathon'),
+            model_name="team",
+            name="hackathon",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="teams",
+                to="hackathons.hackathon",
+                verbose_name="Hackathon",
+            ),
         ),
         migrations.DeleteModel(
-            name='Hackathon',
+            name="Hackathon",
         ),
     ]

@@ -4,15 +4,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hackathons', '0001_initial'),
+        ("hackathons", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='hackathonregistration',
-            name='status',
-            field=models.CharField(choices=[('confirmed', 'Confirmed'), ('waitlist', 'Waitlist'), ('cancelled', 'Cancelled')], db_index=True, default='confirmed', max_length=20, verbose_name='Status'),
+            model_name="hackathonregistration",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("confirmed", "Confirmed"),
+                    ("waitlist", "Waitlist"),
+                    ("cancelled", "Cancelled"),
+                ],
+                db_index=True,
+                default="confirmed",
+                max_length=20,
+                verbose_name="Status",
+            ),
         ),
     ]

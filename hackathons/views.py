@@ -118,7 +118,7 @@ class HackathonDetailView(DetailView):
         qs = Hackathon.objects.select_related("organizer").prefetch_related(
             "judges", "mentors", "schedule_items", "faqs", "registrations"
         )
-        
+
         if user.is_authenticated and (user.is_superuser or user.is_staff):
             return qs
         if user.is_authenticated:

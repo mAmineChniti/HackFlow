@@ -4,15 +4,28 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('projects', '0001_initial'),
+        ("projects", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='project',
-            name='status',
-            field=models.CharField(choices=[('draft', 'Draft'), ('submitted', 'Submitted'), ('under_review', 'Under Review'), ('accepted', 'Accepted'), ('rejected', 'Rejected'), ('finalist', 'Finalist'), ('winner', 'Winner')], db_index=True, default='draft', max_length=25, verbose_name='Project status'),
+            model_name="project",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("draft", "Draft"),
+                    ("submitted", "Submitted"),
+                    ("under_review", "Under Review"),
+                    ("accepted", "Accepted"),
+                    ("rejected", "Rejected"),
+                    ("finalist", "Finalist"),
+                    ("winner", "Winner"),
+                ],
+                db_index=True,
+                default="draft",
+                max_length=25,
+                verbose_name="Project status",
+            ),
         ),
     ]

@@ -11,7 +11,10 @@ class Team(models.Model):
     )
     description = models.TextField("Description", blank=True)
     hackathon = models.ForeignKey(
-        "hackathons.Hackathon", on_delete=models.CASCADE, related_name="teams", verbose_name="Hackathon"
+        "hackathons.Hackathon",
+        on_delete=models.CASCADE,
+        related_name="teams",
+        verbose_name="Hackathon",
     )
     leader = models.ForeignKey(
         settings.AUTH_USER_MODEL,

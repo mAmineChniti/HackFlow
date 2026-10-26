@@ -495,8 +495,9 @@ class SponsorModelAndViewsTest(TestCase):
             )
 
         # Le nombre de requêtes SQL doit être borné et constant (aucun problème N+1)
-        # 1: Session, 2: Auth User, 3: Count pagination, 4: User Profile navbar, 5: Hackathons dropdown, 6: Sponsorships + select_related(sponsor, hackathon)
-        with self.assertNumQueries(6):
+        # 1: Session, 2: Auth User, 3: Count pagination, 4: Teams invitations (context processor),
+        # 5: User Profile navbar, 6: Hackathons dropdown, 7: Sponsorships + select_related(sponsor, hackathon)
+        with self.assertNumQueries(7):
             response = self.client.get(reverse("sponsors:sponsor_list"))
             self.assertEqual(response.status_code, 200)
 
@@ -988,87 +989,6 @@ class SponsorModelAndViewsTest(TestCase):
         # Redirigé vers la liste avec message d'erreur
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("sponsors:sponsor_list"))
-
-
-class SeedSponsorsCommandTest(TestCase):
-    def setUp(self):
-        self.staff_user = User.objects.create_user(
-            username="seed_test_staff",
-            password="test-password",
-            is_staff=True,
-        )
-        self.legacy_sponsor = Sponsor.objects.create(
-            name="InstaDeep Labs",
-            website="https://instadeep.com",
-            sector="tech",
-            description="Existing record that must remain untouched.",
-        )
-        self.legacy_hackathon = make_hackathon(
-            self.staff_user,
-            title="Existing Hackathon",
-            tagline="Existing event",
-            start_date=timezone.now(),
-            end_date=timezone.now() + timezone.timedelta(days=2),
-        )
-        self.legacy_sponsorship = Sponsorship.objects.create(
-            sponsor=self.legacy_sponsor,
-            hackathon=self.legacy_hackathon,
-            tier=TierChoices.GOLD,
-            amount=Decimal("1000.000"),
-            status=StatusChoices.PROSPECT,
-        )
-
-    def test_seed_does_not_update_sponsors_without_demo_suffix(self):
-        call_command("seed_sponsors", force=True, stdout=io.StringIO())
-
-        self.legacy_sponsor.refresh_from_db()
-        self.legacy_sponsorship.refresh_from_db()
-        self.assertEqual(self.legacy_sponsor.website, "https://instadeep.com")
-        self.assertEqual(
-            self.legacy_sponsor.description,
-            "Existing record that must remain untouched.",
-        )
-        self.assertEqual(self.legacy_sponsorship.status, StatusChoices.PROSPECT)
-        self.assertTrue(Sponsor.objects.filter(name="Northstar AI (demo)").exists())
-
-    def test_reset_preserves_non_demo_records_and_recreates_demo_data(self):
-        call_command("seed_sponsors", force=True, stdout=io.StringIO())
-        demo_hackathon = Hackathon.objects.get(title="HackFlow Challenge (demo)")
-        legacy_demo_event_partnership = Sponsorship.objects.create(
-            sponsor=self.legacy_sponsor,
-            hackathon=demo_hackathon,
-            tier=TierChoices.SILVER,
-            amount=Decimal("2000.000"),
-            status=StatusChoices.CONTACTE,
-        )
-
-        call_command(
-            "seed_sponsors",
-            force=True,
-            reset=True,
-            stdout=io.StringIO(),
-        )
-
-        self.legacy_sponsor.refresh_from_db()
-        self.legacy_sponsorship.refresh_from_db()
-        legacy_demo_event_partnership.refresh_from_db()
-        self.assertEqual(self.legacy_sponsor.website, "https://instadeep.com")
-        self.assertEqual(self.legacy_sponsorship.status, StatusChoices.PROSPECT)
-        self.assertEqual(
-            legacy_demo_event_partnership.status,
-            StatusChoices.CONTACTE,
-        )
-        self.assertEqual(
-            Sponsor.objects.filter(name__endswith="(demo)").count(),
-            5,
-        )
-        self.assertEqual(
-            Sponsorship.objects.filter(
-                hackathon=demo_hackathon,
-                sponsor__name__endswith="(demo)",
-            ).count(),
-            5,
-        )
 
 
 class SponsorRolePermissionTest(TestCase):

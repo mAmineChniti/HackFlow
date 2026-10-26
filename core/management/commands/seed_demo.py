@@ -1414,12 +1414,48 @@ class Command(BaseCommand):
         """Seed teams with skill profiles and invitations."""
         # Create skill profiles for students
         skill_profiles_data = [
-            ("student", "backend", "Python, Django, PostgreSQL, Docker", "Backend developer with DevOps experience.", False),
-            ("sarah", "frontend", "React, TypeScript, Tailwind CSS, Figma", "Frontend developer passionate about UX.", False),
-            ("alex", "designer", "Figma, UI/UX, design systems, accessibility", "Designer focused on accessible interfaces.", True),
-            ("maya", "data", "Python, pandas, scikit-learn, data visualization", "Data scientist interested in ML.", True),
-            ("nour", "backend", "Django, FastAPI, PostgreSQL, Redis", "Backend developer exploring async patterns.", True),
-            ("yassine", "frontend", "Vue.js, Nuxt, TypeScript, testing", "Frontend developer with testing expertise.", True),
+            (
+                "student",
+                "backend",
+                "Python, Django, PostgreSQL, Docker",
+                "Backend developer with DevOps experience.",
+                False,
+            ),
+            (
+                "sarah",
+                "frontend",
+                "React, TypeScript, Tailwind CSS, Figma",
+                "Frontend developer passionate about UX.",
+                False,
+            ),
+            (
+                "alex",
+                "designer",
+                "Figma, UI/UX, design systems, accessibility",
+                "Designer focused on accessible interfaces.",
+                True,
+            ),
+            (
+                "maya",
+                "data",
+                "Python, pandas, scikit-learn, data visualization",
+                "Data scientist interested in ML.",
+                True,
+            ),
+            (
+                "nour",
+                "backend",
+                "Django, FastAPI, PostgreSQL, Redis",
+                "Backend developer exploring async patterns.",
+                True,
+            ),
+            (
+                "yassine",
+                "frontend",
+                "Vue.js, Nuxt, TypeScript, testing",
+                "Frontend developer with testing expertise.",
+                True,
+            ),
         ]
 
         for username, main_role, skills, bio, looking in skill_profiles_data:
@@ -1436,7 +1472,7 @@ class Command(BaseCommand):
                 )
 
         teams = {}
-        
+
         # Team 1: Active hackathon team (full and productive)
         team1, _ = Team.objects.update_or_create(
             hackathon=hackathons["active"],
@@ -1450,7 +1486,10 @@ class Command(BaseCommand):
         TeamMember.objects.update_or_create(
             team=team1,
             user=users["student"],
-            defaults={"role": TeamMember.Role.LEADER, "skills": "Python, Django, team coordination"},
+            defaults={
+                "role": TeamMember.Role.LEADER,
+                "skills": "Python, Django, team coordination",
+            },
         )
         TeamMember.objects.update_or_create(
             team=team1,
@@ -1597,20 +1636,15 @@ class Command(BaseCommand):
             "  sponsor emails: "
             f"{SponsorEmailLog.objects.filter(sponsor__name__in=sponsor_names).count()}"
         )
+        self.stdout.write(f"  teams:          {len(teams)} teams created")
         self.stdout.write(
-            f"  teams:          {len(teams)} teams created"
+            f"  team members:   {TeamMember.objects.filter(team__name__in=teams.values()).count()}"
         )
         self.stdout.write(
-            "  team members:   "
-            f"{TeamMember.objects.filter(team__name__in=teams.values()).count()}"
+            f"  skill profiles: {SkillProfile.objects.filter(user__username__in=users).count()}"
         )
         self.stdout.write(
-            "  skill profiles: "
-            f"{SkillProfile.objects.filter(user__username__in=users).count()}"
-        )
-        self.stdout.write(
-            "  invitations:    "
-            f"{Invitation.objects.filter(team__name__in=teams.values()).count()}"
+            f"  invitations:    {Invitation.objects.filter(team__name__in=teams.values()).count()}"
         )
         self.stdout.write(
             f"Passwords are not printed. All demo users share password: {DEMO_PASSWORD}"
