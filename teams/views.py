@@ -10,9 +10,11 @@ from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
+from hackathons.models import Hackathon
+
 from . import ai, services
 from .forms import JoinTeamForm, SkillProfileForm, TeamForm
-from .models import Hackathon, Invitation, SkillProfile, Team
+from .models import Invitation, SkillProfile, Team
 
 
 class LeaderRequiredMixin(UserPassesTestMixin):

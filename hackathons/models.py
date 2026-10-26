@@ -347,6 +347,7 @@ class HackathonRegistration(models.Model):
         choices=Status.choices,
         default=Status.CONFIRMED,
         verbose_name="Status",
+        db_index=True,  # Frequently filtered for confirmed/waitlist counts
     )
 
     # Required form fields

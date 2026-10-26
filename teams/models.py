@@ -3,17 +3,6 @@ from django.core.validators import MaxValueValidator, MinLengthValidator, MinVal
 from django.db import models
 
 
-class Hackathon(models.Model):
-    """Modèle PROVISOIRE : sera remplacé par celui du module Gestion des hackathons."""
-
-    title = models.CharField("Titre", max_length=120)
-    start_date = models.DateField("Date de début")
-    end_date = models.DateField("Date de fin")
-
-    def __str__(self):
-        return self.title
-
-
 class Team(models.Model):
     name = models.CharField(
         "Nom",
@@ -22,7 +11,7 @@ class Team(models.Model):
     )
     description = models.TextField("Description", blank=True)
     hackathon = models.ForeignKey(
-        Hackathon, on_delete=models.CASCADE, related_name="teams", verbose_name="Hackathon"
+        "hackathons.Hackathon", on_delete=models.CASCADE, related_name="teams", verbose_name="Hackathon"
     )
     leader = models.ForeignKey(
         settings.AUTH_USER_MODEL,

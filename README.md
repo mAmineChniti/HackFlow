@@ -5,6 +5,15 @@
 Hackathon and challenge platform built with Django 5.2, PostgreSQL, Tailwind CSS,
 django-cotton, and shadcn-django components.
 
+## Features
+
+- **Hackathons**: Create and manage hackathon events with registrations, schedules, FAQs, and check-ins
+- **Projects**: Submit and review projects with team management, AI evaluation, and audit trails
+- **Sponsors**: Manage sponsor pipeline with status tracking, recommendations, and email automation
+- **Teams**: Form teams, manage skill profiles, send invitations, and match members with AI suggestions
+- **Accounts**: Role-based authentication (admin, organizer, judge, mentor, student) with email verification
+- **AI Integration**: Project evaluation, category detection, and team matching powered by Groq
+
 ## Quickstart (Docker + PostgreSQL)
 
 ```bash
@@ -46,46 +55,39 @@ demo; set `SEED_DEMO_DATA=False` for an empty database (see below).
 `seed_demo` creates a complete, idempotent demo site: one account per role, a
 small student cohort, five hackathons in different states, registrations with a
 waitlist and check-ins, projects in every status/category with teams, mentor
-advice and audit history, nine sponsors across every tier/status, and generated
-banner/logo images. Running it again refreshes the demo records without creating
-duplicates.
+advice and audit history, nine sponsors across every tier/status, teams with
+skill profiles and invitations, and generated banner/logo images. Running it
+again refreshes the demo records without creating duplicates.
 
-`cp .env.example .env` already contains the demo defaults:
+`cp .env.example .env` already contains the demo default:
 
 ```ini
 SEED_DEMO_DATA=True
-DEMO_ADMIN_PASSWORD=HackFlowAdmin2026!
-DEMO_PASSWORD=HackFlowDemo2026!
 ```
 
-These are public, demo-only values. Both passwords are at least 12 characters.
-Replace them with your own values before exposing a deployment that should not
-be openly accessible. The web container runs `python manage.py seed_demo` after
-migrate/collectstatic; the Celery worker does not seed. The entrypoint also
-treats an unset `SEED_DEMO_DATA` as `True`, so production demonstrations seed
-unless explicitly disabled. For a manual local run:
+The web container runs `python manage.py seed_demo` after migrate/collectstatic;
+the Celery worker does not seed. The entrypoint also treats an unset
+`SEED_DEMO_DATA` as `True`, so production demonstrations seed unless explicitly
+disabled. For a manual local run:
 
 ```bash
-python manage.py seed_demo                 # uses the two env vars above
-python manage.py seed_demo --reset-passwords
-python manage.py seed_sponsors             # sponsor-only demo/reset command
+python manage.py seed_demo                 # creates/refreshes all demo data
+python manage.py seed_demo --reset-passwords  # resets passwords for existing demo users
 ```
 
-Demo sign-ins:
+Demo sign-ins (all users share password: **`hackflow2026`**):
 
 | Username | Password | Role | Useful for |
 | --- | --- | --- | --- |
-| `admin` | `HackFlowAdmin2026!` | Administrator / superuser | Django admin, every dashboard, full review/export access |
-| `organizer` | `HackFlowDemo2026!` | Organizer (staff) | Hackathon dashboard, project reviews, sponsor pipeline |
-| `judge` | `HackFlowDemo2026!` | Judge / jury | Judging and project views |
-| `mentor` | `HackFlowDemo2026!` | Mentor | Mentor dashboard and advice |
-| `student` | `HackFlowDemo2026!` | Student | Team lead views, registrations and submissions |
-| `sarah`, `alex`, `maya`, `nour`, `yassine` | `HackFlowDemo2026!` | Students | Different teams, statuses, waitlist and check-in demos |
+| `admin` | `hackflow2026` | Administrator / superuser | Django admin, every dashboard, full review/export access |
+| `organizer` | `hackflow2026` | Organizer (staff) | Hackathon dashboard, project reviews, sponsor pipeline |
+| `judge` | `hackflow2026` | Judge / jury | Judging and project views |
+| `mentor` | `hackflow2026` | Mentor | Mentor dashboard and advice |
+| `student` | `hackflow2026` | Student | Team lead views, registrations and submissions |
+| `sarah`, `alex`, `maya`, `nour`, `yassine` | `hackflow2026` | Students | Different teams, statuses, waitlist and check-in demos |
 
-On Render, enter `DEMO_ADMIN_PASSWORD` and `DEMO_PASSWORD` as the two secret
-environment variables. Use the values above for a quick demo, or replace both
-and update the credentials you hand to the jury. The README passwords only apply
-when the environment uses those exact values.
+On Render, just set `SEED_DEMO_DATA=True`. The password is hardcoded in the
+seed command for simplicity.
 
 Generated files live under `media/` and are gitignored. On Render's ephemeral
 filesystem they are recreated by the startup seeder after a restart. Demo
