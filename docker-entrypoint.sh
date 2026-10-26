@@ -53,7 +53,49 @@ for attempt in range(1, 61):
         time.sleep(1)
 PY
 
-python manage.py migrate --noinput
-python manage.py collectstatic --noinput
+# Optional: reset database schema (use on first deploy after migration changes)
+if [ "${RESET_DB:-0}" = "1" ]; then
+    echo "Resetting database schema..."
+    # Drop all tables and re-run migrations from scratch to ensure a clean
+    # state after migration changes. flush only deletes data, not schema.
+    python - <<'PY'
+import os
+import sys
+import django
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "HackFlow.settings")
+django.setup()
+
+from django.db import connection
+
+# Drop all tables to ensure a clean slate, then let migrate recreate them.
+with connection.cursor() as cursor:
+    tables = connection.introspection.table_names()
+    for table in tables:
+        cursor.execute(f'DROP TABLE IF EXISTS "{table}" CASCADE')
+    cursor.execute('DROP TABLE IF EXISTS "django_migrations" CASCADE')
+
+print("All tables dropped")
+PY
+    python manage.py migrate --noinput
+else
+    # Migrations belong to the web process. Workers set
+    # RUN_MIGRATIONS=0 so several containers never race
+    # over the same schema during startup.
+    if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then
+        python manage.py migrate --noinput
+    fi
+fi
+
+# Demo data is on by default because this is a demo project. It runs only in
+# the web container (workers set RUN_MIGRATIONS=0) and is idempotent, so it is
+# safe on every restart. Set SEED_DEMO_DATA=False for an empty database.
+if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then
+    case "${SEED_DEMO_DATA:-1}" in
+        1|true|True|TRUE|yes|Yes|YES|on|On|ON)
+            python manage.py seed_demo
+            ;;
+    esac
+fi
 
 exec "$@"

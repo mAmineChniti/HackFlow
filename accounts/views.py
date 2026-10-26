@@ -116,13 +116,11 @@ class SignupView(FormView):
         return super().form_valid(form)
 
 
-class LogoutView(auth_views.LogoutView):
-    next_page = reverse_lazy("core:home")
-
+class LogoutView(View):
     def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
+        logout(request)
         messages.success(request, "You've been signed out. See you next build.")
-        return response
+        return redirect("core:home")
 
 
 def _password_reset_expiry_days():

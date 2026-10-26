@@ -46,17 +46,22 @@
                         Your public handle and the contact address tied to your account.
                     </c-card.description>
                 </div>
-                {% if profile.email_verified %}
-                <span class="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-primary">
-                    <span class="size-1.5 rounded-full bg-primary"></span>
-                    Verified
-                </span>
-                {% else %}
-                <span class="inline-flex items-center gap-1.5 rounded-full border border-amber-600/30 bg-amber-500/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-300">
-                    <span class="size-1.5 rounded-full bg-amber-500"></span>
-                    Unverified
-                </span>
-                {% endif %}
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider {{ profile.role_badge_colors }}">
+                        {{ profile.get_role_display }}
+                    </span>
+                    {% if profile.email_verified %}
+                    <span class="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-primary">
+                        <span class="size-1.5 rounded-full bg-primary"></span>
+                        Verified
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center gap-1.5 rounded-full border border-amber-600/30 bg-amber-500/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                        <span class="size-1.5 rounded-full bg-amber-500"></span>
+                        Unverified
+                    </span>
+                    {% endif %}
+                </div>
             </div>
         </c-card.header>
         <c-card.content>
@@ -78,6 +83,15 @@
 
                 {% include "accounts/_form_field.html" with field=form.username %}
                 {% include "accounts/_form_field.html" with field=form.email %}
+                <div class="space-y-2">
+                    <span class="text-sm font-medium leading-none">Role</span>
+                    <p class="flex h-9 items-center rounded-md border border-input bg-muted/40 px-3 text-sm text-muted-foreground">
+                        {{ profile.get_role_display }}
+                    </p>
+                    <p class="text-xs leading-relaxed text-muted-foreground">
+                        Roles are granted by the HackFlow team. Contact an organizer if your role is incorrect.
+                    </p>
+                </div>
 
                 <div class="flex items-center gap-2 text-xs text-muted-foreground">
                     {% if profile.email_verified %}

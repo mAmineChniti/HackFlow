@@ -1,12 +1,13 @@
+{% load sponsor_tags project_tags %}
+{% can_manage_sponsors user as user_can_manage_sponsors %}
+{% is_organizer user as user_is_organizer %}
+{% is_admin user as user_is_admin %}
 <header class="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 header-blur">
     <div class="container-page flex h-16 items-center justify-between gap-4">
         <div class="flex items-center gap-8">
-            <a href="{% url 'core:home' %}" class="group flex items-center gap-2.5">
+            <a href="{% url 'core:home' %}" class="group flex items-center gap-2.5" aria-label="HackFlow Home">
                 <span class="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-[0_0_24px_-6px_var(--primary)] transition-transform duration-200 group-hover:-rotate-3">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true">
-                        <path d="m5 7 5 5-5 5"/>
-                        <path d="M13 17h6"/>
-                    </svg>
+                    <c-lucideicon.terminal class="size-5" />
                 </span>
                 <span class="text-lg font-semibold tracking-tight">Hack<span class="text-primary">Flow</span></span>
                 <span class="hidden sm:inline-flex">
@@ -17,11 +18,13 @@
             </a>
 
             <nav class="hidden items-center gap-1 lg:flex" aria-label="Main navigation">
-                <a href="{% url 'core:home' %}#hackathons" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Hackathons</a>
+                <a href="{% url 'hackathons:list' %}" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Hackathons</a>
+                <a href="{% url 'projects:project_list' %}" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Projects</a>
                 <a href="{% url 'core:home' %}#challenges" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Challenges</a>
                 <a href="{% url 'core:home' %}#leaderboard" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Leaderboard</a>
                 <a href="{% url 'teams:list' %}" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Teams</a>
                 <a href="{% url 'core:home' %}#organizers" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">For organizers</a>
+                <a href="{% url 'core:home' %}#sponsors" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Sponsors</a>
             </nav>
         </div>
 
@@ -40,7 +43,7 @@
             {% if user.is_authenticated %}
             <c-dropdown_menu class="relative">
                 <c-dropdown_menu.trigger>
-                    <button type="button" class="inline-flex h-9 items-center gap-2 rounded-md px-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-ring">
+                    <button type="button" class="inline-flex h-9 items-center gap-2 rounded-md px-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-ring">
                         <span class="flex size-7 items-center justify-center rounded-full bg-primary/15 font-mono text-[10px] font-medium uppercase text-primary">
                             {{ user.username|slice:":2" }}
                         </span>
@@ -49,19 +52,41 @@
                         <span class="sr-only">{{ pending_invitations_count }} pending team invitation{{ pending_invitations_count|pluralize }}</span>
                         {% endif %}
                         <span class="hidden max-w-28 truncate lg:inline">{{ user.username }}</span>
+                        {% if user_is_admin %}
+                        <span class="hidden sm:inline-flex rounded-md border border-rose-500/40 bg-rose-500/15 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-rose-400 shadow-xs">
+                            Admin
+                        </span>
+                        {% elif user_is_organizer %}
+                        <span class="hidden sm:inline-flex rounded-md border border-primary/40 bg-primary/15 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wider text-primary">
+                            Org
+                        </span>
+                        {% elif user.profile.role %}
+                        <span class="hidden sm:inline-flex items-center rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[10px] font-medium text-primary">
+                            {{ user.profile.get_role_display }}
+                        </span>
+                        {% endif %}
                         <c-lucideicon.chevron-down class="size-3.5 text-muted-foreground" />
                     </button>
                 </c-dropdown_menu.trigger>
 
-                <c-dropdown_menu.content class="right-0 top-full mt-2 w-60">
-                    <c-dropdown_menu.label class="flex flex-col gap-0.5 py-2">
-                        <span class="truncate text-sm font-medium text-foreground">{{ user.username }}</span>
+                <c-dropdown_menu.content class="right-0 top-full mt-2 w-64">
+                    <c-dropdown_menu.label class="flex flex-col gap-1.5 py-2.5">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="truncate text-sm font-semibold text-foreground">{{ user.username }}</span>
+                            {% if user.profile.role %}
+                            <span class="inline-flex items-center rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider {{ user.profile.role_badge_colors }}">
+                                {{ user.profile.get_role_display }}
+                            </span>
+                            {% endif %}
+                        </div>
                         <span class="truncate text-xs font-normal text-muted-foreground">{{ user.email|default:"No email on file" }}</span>
-                        <span class="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider
-                            {% if user.profile.email_verified %}border-primary/25 bg-primary/10 text-primary{% else %}border-amber-600/30 bg-amber-500/10 text-amber-700 dark:text-amber-300{% endif %}">
-                            <span class="size-1.5 rounded-full {% if user.profile.email_verified %}bg-primary{% else %}bg-amber-500{% endif %}"></span>
-                            {% if user.profile.email_verified %}Email verified{% else %}Verify email{% endif %}
-                        </span>
+                        <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+                            <span class="inline-flex w-fit items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider
+                                {% if user.profile.email_verified %}border-primary/25 bg-primary/10 text-primary{% else %}border-amber-600/30 bg-amber-500/10 text-amber-700 dark:text-amber-300{% endif %}">
+                                <span class="size-1 rounded-full {% if user.profile.email_verified %}bg-primary{% else %}bg-amber-500{% endif %}"></span>
+                                {% if user.profile.email_verified %}Email verified{% else %}Verify email{% endif %}
+                            </span>
+                        </div>
                     </c-dropdown_menu.label>
                     <c-dropdown_menu.separator />
                     <c-dropdown_menu.item>
@@ -85,13 +110,32 @@
                     </c-dropdown_menu.item>
                     <c-dropdown_menu.separator />
                     <c-dropdown_menu.item>
+                        <a href="{% url 'projects:project_list' %}" class="flex w-full items-center gap-2 text-foreground">
+                            <c-lucideicon.folder-kanban class="size-4 text-muted-foreground" />
+                            Projects
+                        </a>
+                    </c-dropdown_menu.item>
+                    <c-dropdown_menu.item>
+                        <a href="{% url 'projects:project_create' %}" class="flex w-full items-center gap-2 text-foreground">
+                            <c-lucideicon.plus-circle class="size-4 text-muted-foreground" />
+                            New Project
+                        </a>
+                    </c-dropdown_menu.item>
+                    <c-dropdown_menu.item>
+
                         <a href="{% url 'accounts:profile' %}" class="flex w-full items-center gap-2 text-foreground">
                             <c-lucideicon.user class="size-4 text-muted-foreground" />
                             Account settings
                         </a>
                     </c-dropdown_menu.item>
                     <c-dropdown_menu.item>
-                        <a href="{% url 'core:home' %}#hackathons" class="flex w-full items-center gap-2 text-foreground">
+                        <a href="{% url 'hackathons:dashboard' %}" class="flex w-full items-center gap-2 text-foreground">
+                            <c-lucideicon.layout-dashboard class="size-4 text-muted-foreground" />
+                            My Hackathons
+                        </a>
+                    </c-dropdown_menu.item>
+                    <c-dropdown_menu.item>
+                        <a href="{% url 'hackathons:list' %}" class="flex w-full items-center gap-2 text-foreground">
                             <c-lucideicon.calendar class="size-4 text-muted-foreground" />
                             Browse events
                         </a>
@@ -102,11 +146,33 @@
                             Solve a challenge
                         </a>
                     </c-dropdown_menu.item>
-                    {% if user.is_staff %}
+                    {% if user_can_manage_sponsors %}
+                    <c-dropdown_menu.item>
+                        <a href="{% url 'sponsors:dashboard' %}" class="flex w-full items-center gap-2 text-foreground">
+                            <c-lucideicon.badge-dollar-sign class="size-4 text-primary" />
+                            Dashboard Sponsors
+                        </a>
+                    </c-dropdown_menu.item>
+                    {% endif %}
+                    {% if user_is_organizer or user_is_admin or user.is_staff or user.is_superuser %}
+                    <c-dropdown_menu.item>
+                        <a href="{% url 'projects:admin_dashboard' %}" class="flex w-full items-center gap-2 text-primary font-medium">
+                            <c-lucideicon.shield-check class="size-4 text-primary" />
+                            Projects Admin
+                        </a>
+                    </c-dropdown_menu.item>
+                    <c-dropdown_menu.item>
+                        <a href="{% url 'projects:ai_metrics' %}" class="flex w-full items-center gap-2 text-foreground">
+                            <c-lucideicon.chart-column class="size-4 text-muted-foreground" />
+                            AI Evaluation Metrics
+                        </a>
+                    </c-dropdown_menu.item>
+                    {% endif %}
+                    {% if user.is_staff or user.is_superuser %}
                     <c-dropdown_menu.item>
                         <a href="{% url 'admin:index' %}" class="flex w-full items-center gap-2 text-foreground">
                             <c-lucideicon.settings class="size-4 text-muted-foreground" />
-                            Admin
+                            Django Admin
                         </a>
                     </c-dropdown_menu.item>
                     {% endif %}

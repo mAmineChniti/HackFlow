@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Edit sponsorship{% else %}New sponsorship{% endif %} — HackFlow{% endblock %}
+
+{% block content %}
+<div class="container-page py-8 lg:py-12">
+    <div class="mx-auto max-w-2xl">
+        <!-- Breadcrumb -->
+        <nav class="flex items-center gap-2 text-xs text-muted-foreground font-mono" aria-label="Breadcrumb">
+            <c-button_link href="{% url 'sponsors:dashboard' %}" variant="ghost" size="sm" class="text-xs">Dashboard</c-button_link>
+            <span>/</span>
+            <span class="text-primary font-semibold">{% if object %}Edit sponsorship{% else %}New sponsorship{% endif %}</span>
+        </nav>
+
+        <c-card class="mt-4 p-6 sm:p-8 shadow-sm">
+            <c-card.header class="border-b border-border/70 pb-5">
+                <c-card.title class="text-2xl" as="h1">{% if object %}Edit sponsorship{% else %}Link a sponsor to a hackathon{% endif %}</c-card.title>
+                <c-card.description>Set the tier, financial contribution, and prospecting status.</c-card.description>
+            </c-card.header>
+
+            <form method="post" class="mt-6 space-y-5">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <c-alert variant="destructive" class="p-3 text-xs">{{ form.non_field_errors }}</c-alert>
+                {% endif %}
+
+                <!-- Sponsor & Hackathon Selection -->
+                <c-form.fieldset class="grid gap-4 sm:grid-cols-2">
+                    <c-form.field>
+                        <c-form.label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Sponsor company <span class="text-destructive">*</span></c-form.label>
+                        <c-native_select name="{{ form.sponsor.html_name }}" id="{{ form.sponsor.id_for_label }}" class="w-full">
+                            {% for value, label in form.sponsor.field.choices %}
+                            <option value="{{ value }}" {% if form.sponsor.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </c-native_select>
+                        {% if form.sponsor.errors %}
+                        <c-form.error>{{ form.sponsor.errors.0 }}</c-form.error>
+                        {% endif %}
+                    </c-form.field>
+
+                    <c-form.field>
+                        <c-form.label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Hackathon event <span class="text-destructive">*</span></c-form.label>
+                        <c-native_select name="{{ form.hackathon.html_name }}" id="{{ form.hackathon.id_for_label }}" class="w-full">
+                            {% for value, label in form.hackathon.field.choices %}
+                            <option value="{{ value }}" {% if form.hackathon.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </c-native_select>
+                        {% if form.hackathon.errors %}
+                        <c-form.error>{{ form.hackathon.errors.0 }}</c-form.error>
+                        {% endif %}
+                    </c-form.field>
+                </c-form.fieldset>
+
+                <!-- Tier & Contribution Type -->
+                <c-form.fieldset class="grid gap-4 sm:grid-cols-2">
+                    <c-form.field>
+                        <c-form.label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Sponsorship tier <span class="text-destructive">*</span></c-form.label>
+                        <c-native_select name="{{ form.tier.html_name }}" id="{{ form.tier.id_for_label }}" class="w-full">
+                            {% for value, label in form.tier.field.choices %}
+                            <option value="{{ value }}" {% if form.tier.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </c-native_select>
+                        {% if form.tier.errors %}
+                        <c-form.error>{{ form.tier.errors.0 }}</c-form.error>
+                        {% endif %}
+                    </c-form.field>
+
+                    <c-form.field>
+                        <c-form.label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Contribution type <span class="text-destructive">*</span></c-form.label>
+                        <c-native_select name="{{ form.contribution_type.html_name }}" id="{{ form.contribution_type.id_for_label }}" class="w-full">
+                            {% for value, label in form.contribution_type.field.choices %}
+                            <option value="{{ value }}" {% if form.contribution_type.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </c-native_select>
+                        {% if form.contribution_type.errors %}
+                        <c-form.error>{{ form.contribution_type.errors.0 }}</c-form.error>
+                        {% endif %}
+                    </c-form.field>
+                </c-form.fieldset>
+
+                <!-- Amount -->
+                <c-form.field>
+                    <c-form.label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Financial amount (DT) <span class="text-destructive">*</span></c-form.label>
+                    <c-input
+                        type="number"
+                        name="{{ form.amount.html_name }}"
+                        value="{{ form.amount.value|default:'' }}"
+                        id="{{ form.amount.id_for_label }}"
+                        placeholder="0"
+                        step="any"
+                    />
+                    {% if form.amount.errors %}
+                    <c-form.error>{{ form.amount.errors.0 }}</c-form.error>
+                    {% endif %}
+                    <c-form.description>Enter 0 for an in-kind or logistical contribution.</c-form.description>
+                </c-form.field>
+
+                <!-- Notes internes -->
+                <c-form.field>
+                    <c-form.label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Internal notes</c-form.label>
+                    <c-textarea
+                        name="{{ form.notes.html_name }}"
+                        id="{{ form.notes.id_for_label }}"
+                        placeholder="Internal notes for organizing staff..."
+                        rows="4"
+                    >{{ form.notes.value|default:'' }}</c-textarea>
+                    {% if form.notes.errors %}
+                    <c-form.error>{{ form.notes.errors.0 }}</c-form.error>
+                    {% endif %}
+                    <c-form.description>Visible only to the organizing staff.</c-form.description>
+                </c-form.field>
+
+                <!-- Submit buttons -->
+                <c-card.footer class="flex items-center justify-end gap-3 pt-4 border-t border-border/70">
+                    <c-button_link href="{% url 'sponsors:dashboard' %}" variant="outline" size="sm">
+                        Cancel
+                    </c-button_link>
+                    <c-button type="submit" size="sm">
+                        {% if object %}Save changes{% else %}Create sponsorship{% endif %}
+                    </c-button>
+                </c-card.footer>
+            </form>
+        </c-card>
+    </div>
+</div>
+{% endblock %}

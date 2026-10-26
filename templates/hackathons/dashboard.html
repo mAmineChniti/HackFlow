@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}{{ dashboard_title|default:"Dashboard" }} — HackFlow{% endblock %}
+
+{% block content %}
+<div class="container-page py-12 space-y-8">
+    <!-- Header -->
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/60 pb-6">
+        <div>
+            <div class="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-xs font-medium text-primary mb-2">
+                <span class="size-1.5 rounded-full bg-primary"></span>
+                {{ user.profile.get_role_display|default:"User" }} Workspace
+            </div>
+            <h1 class="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                {{ dashboard_title|default:"My Hackathons" }}
+            </h1>
+            <p class="text-sm text-muted-foreground mt-1">
+                {% if user.profile.is_organizer_user %}
+                Manage your events, configure deadlines, assign judges & mentors, and track builder registrations.
+                {% elif user.profile.is_student_user %}
+                Track all hackathons you are participating in. You can manage or withdraw your registration before the deadline.
+                {% elif user.profile.is_judge_user %}
+                Review all hackathon events you have been assigned to evaluate.
+                {% elif user.profile.is_mentor_user %}
+                View hackathons where you have been assigned as a mentor to guide teams.
+                {% else %}
+                Platform overview and hackathons tracking.
+                {% endif %}
+            </p>
+        </div>
+
+        {% if user.profile.is_organizer_user %}
+        <c-button_link href="{% url 'hackathons:create' %}" size="default">
+            <c-lucideicon.plus class="size-4" />
+            Create New Hackathon
+        </c-button_link>
+        {% else %}
+        <c-button_link href="{% url 'hackathons:list' %}" variant="outline" size="default">
+            <c-lucideicon.compass class="size-4" />
+            Browse Open Hackathons
+        </c-button_link>
+        {% endif %}
+    </div>
+
+    <!-- Table of hackathons -->
+    {% if hackathons %}
+    <div class="overflow-hidden rounded-xl border border-border/70 bg-card/60 shadow-md">
+        <c-table class="w-full text-left text-sm">
+            <c-table.caption class="sr-only">Hackathons</c-table.caption>
+            <c-table.header class="border-b border-border/60 bg-muted/40 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                <c-table.row>
+                    <c-table.head class="px-5 py-3.5">Event</c-table.head>
+                    <c-table.head class="px-5 py-3.5">Status</c-table.head>
+                    <c-table.head class="px-5 py-3.5">Mode</c-table.head>
+                    <c-table.head class="px-5 py-3.5">Event dates</c-table.head>
+                    {% if user.profile.is_organizer_user %}
+                    <c-table.head class="px-5 py-3.5">Registrations</c-table.head>
+                    {% else %}
+                    <c-table.head class="px-5 py-3.5">Registration deadline</c-table.head>
+                    {% endif %}
+                    <c-table.head class="px-5 py-3.5 text-right">Actions</c-table.head>
+                </c-table.row>
+            </c-table.header>
+            <c-table.body class="divide-y divide-border/60">
+                {% for h in hackathons %}
+                <c-table.row class="transition-colors hover:bg-accent/40">
+                    <c-table.cell class="px-5 py-4">
+                        <a href="{{ h.get_absolute_url }}" class="font-medium text-foreground hover:text-primary transition-colors">
+                            {{ h.title }}
+                        </a>
+                        <p class="text-xs text-muted-foreground line-clamp-1">{{ h.category }} · {{ h.tagline }}</p>
+                    </c-table.cell>
+                    <c-table.cell class="px-5 py-4">
+                        <c-badge variant="{% if h.status == 'registration_open' %}default{% elif h.status == 'ongoing' %}destructive{% elif h.status == 'finished' %}secondary{% else %}outline{% endif %}" class="text-[10px]">
+                            {{ h.get_status_display }}
+                        </c-badge>
+                    </c-table.cell>
+                    <c-table.cell class="px-5 py-4 text-xs text-muted-foreground">
+                        {{ h.get_mode_display }}
+                    </c-table.cell>
+                    <c-table.cell class="px-5 py-4 text-xs text-muted-foreground font-mono">
+                        {{ h.start_date|date:"M d" }} – {{ h.end_date|date:"M d, Y" }}
+                    </c-table.cell>
+                    {% if user.profile.is_organizer_user %}
+                    <c-table.cell class="px-5 py-4 text-xs">
+                        <span class="font-medium text-foreground">{{ h.total_registered|default:h.registered_count }}</span> / {{ h.max_participants }}
+                    </c-table.cell>
+                    <c-table.cell class="px-5 py-4 text-right">
+                        <div class="flex items-center justify-end gap-2">
+                            <c-button_link href="{% url 'hackathons:export_participants' h.slug %}" variant="outline" size="sm" class="border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20" aria-label="Export participants to CSV">
+                                <c-lucideicon.download class="size-3" />
+                                CSV
+                            </c-button_link>
+                            <c-button_link href="{% url 'hackathons:update' h.slug %}" variant="outline" size="sm">
+                                Edit
+                            </c-button_link>
+                            <c-button_link href="{% url 'hackathons:delete' h.slug %}" variant="ghost" size="icon" class="text-destructive hover:bg-destructive/10" aria-label="Delete {{ h.title }}">
+                                <c-lucideicon.trash-2 class="size-3.5" />
+                            </c-button_link>
+                        </div>
+                    </c-table.cell>
+                    {% else %}
+                    <c-table.cell class="px-5 py-4 text-xs text-muted-foreground font-mono">
+                        {{ h.registration_deadline|date:"M d, Y @ H:i" }}
+                    </c-table.cell>
+                    <c-table.cell class="px-5 py-4 text-right">
+                        <c-button_link href="{{ h.get_absolute_url }}" variant="outline" size="sm">
+                            View details
+                            <c-lucideicon.arrow-right class="size-3" />
+                        </c-button_link>
+                    </c-table.cell>
+                    {% endif %}
+                </c-table.row>
+                {% endfor %}
+            </c-table.body>
+        </c-table>
+    </div>
+    {% else %}
+    <div class="rounded-2xl border border-dashed border-border/80 bg-card/30 p-12 text-center">
+        <div class="mx-auto flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <c-lucideicon.calendar class="size-6" />
+        </div>
+        {% if user.profile.is_organizer_user %}
+        <h3 class="mt-4 text-base font-semibold">You haven't hosted any hackathons yet</h3>
+        <p class="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+            Launch your university or community hackathon on HackFlow in just a few minutes.
+        </p>
+        <div class="mt-6">
+            <c-button_link href="{% url 'hackathons:create' %}" size="default">
+                <c-lucideicon.plus class="size-4" />
+                Host a Hackathon
+            </c-button_link>
+        </div>
+        {% elif user.profile.is_student_user %}
+        <h3 class="mt-4 text-base font-semibold">You are not registered for any hackathons yet</h3>
+        <p class="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+            Explore open hackathons in our catalogue, pick a challenge, and sign up before the registration deadline!
+        </p>
+        <div class="mt-6">
+            <c-button_link href="{% url 'hackathons:list' %}" size="default">
+                <c-lucideicon.compass class="size-4" />
+                Browse Open Hackathons
+            </c-button_link>
+        </div>
+        {% else %}
+        <h3 class="mt-4 text-base font-semibold">No assigned hackathons</h3>
+        <p class="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+            You currently have no hackathons assigned to you. Organizers will assign you as events open.
+        </p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

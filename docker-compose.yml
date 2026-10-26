@@ -9,7 +9,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       # Host port 5433 avoids clashing with a local PostgreSQL on 5432.
-      - "${POSTGRES_HOST_PORT:-5433}:5432"
+      # Bind to loopback so the database is not exposed to the internet.
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5433}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -17,22 +18,83 @@ services:
       retries: 20
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    # Broker for the Celery worker (async AI calls) + shared Django cache.
+    # Not published to the host by default; only `web` and `worker` reach it.
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
   web:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - .:/app
+    # No command override: the image CMD runs Gunicorn (production WSGI).
+    # Code is baked into the image, so rebuild after code changes.
     ports:
-      - "${WEB_HOST_PORT:-8000}:8000"
+      # Bind to loopback; put Nginx/Caddy on the host for public traffic.
+      - "127.0.0.1:${WEB_HOST_PORT:-8000}:8000"
+    volumes:
+      # Persist user uploads (sponsor logos, hackathon banners) across restarts.
+      - media_data:/app/media
     env_file:
       - .env
     environment:
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
+      AI_ASYNC_ENABLED: "True"
+      # Demo users have accounts.Profile roles; use those for sponsor access.
+      SPONSORS_USE_PROFILE_ROLE: "True"
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/', timeout=3)",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    stop_grace_period: 30s
+    restart: unless-stopped
+
+  # Celery worker: runs the long Groq AI calls off the request cycle.
+  worker:
+    build: .
+    command: celery -A HackFlow worker --loglevel=info --concurrency=2
+    volumes:
+      # Share uploads with the web container.
+      - media_data:/app/media
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
+      AI_ASYNC_ENABLED: "True"
+      # Only the web container runs migrations/collectstatic.
+      RUN_MIGRATIONS: "0"
+      RUN_COLLECTSTATIC: "0"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    stop_grace_period: 30s
     restart: unless-stopped
 
 volumes:
   postgres_data:
+  media_data:

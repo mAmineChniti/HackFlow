@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% load sponsor_tags %}
+
+{% can_export user as user_can_export %}
+{% can_manage_sponsors user as user_can_manage_sponsors %}
+
+{% block title %}Sponsor & Sponsorship Management — HackFlow{% endblock %}
+
+{% block content %}
+<div class="container-page py-8 lg:py-12">
+    <!-- Header with Breadcrumbs & Action -->
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <nav class="flex items-center gap-2 text-xs text-muted-foreground font-mono" aria-label="Breadcrumb">
+                <c-button_link href="{% url 'sponsors:dashboard' %}" variant="ghost" size="sm" class="text-xs">Dashboard</c-button_link>
+                <span>/</span>
+                <span class="text-primary font-semibold">Management & Directory</span>
+            </nav>
+            <h1 class="mt-2 text-3xl font-bold tracking-tight text-foreground">
+                Sponsorships & Companies
+            </h1>
+            <p class="text-sm text-muted-foreground mt-1">
+                Search and filter companies and their sponsorship agreements in real time.
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2.5">
+            {% if user_can_export %}
+            <c-button_link href="{% url 'sponsors:sponsor_export_excel' %}?{{ request.GET.urlencode }}" variant="outline" class="border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20" title="Export the active selection to Excel (.xlsx)">
+                <c-lucideicon.download class="size-4" />
+                Export to Excel
+            </c-button_link>
+            {% endif %}
+            {% if user_can_manage_sponsors %}
+            <c-button_link href="{% url 'sponsors:sponsor_create' %}" variant="outline" size="sm">
+                <c-lucideicon.plus class="size-4 text-primary" />
+                New sponsor
+            </c-button_link>
+            <c-button_link href="{% url 'sponsors:sponsorship_create' %}" size="sm">
+                <c-lucideicon.link-2 class="size-4" />
+                Add sponsorship
+            </c-button_link>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- HTMX Live Filter Form -->
+    <form method="get"
+          action="{% url 'sponsors:sponsor_list' %}"
+          hx-get="{% url 'sponsors:sponsor_list' %}"
+          hx-target="#sponsors-results"
+          hx-push-url="true"
+          class="mt-6 rounded-2xl border border-border/80 bg-card p-4 sm:p-5 shadow-sm space-y-4">
+
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <!-- 1. Search by name (keyup changed delay:300ms) -->
+            <div class="lg:col-span-1">
+                <c-label class="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">Search</c-label>
+                <c-input
+                    type="text"
+                    name="q"
+                    value="{{ query }}"
+                    placeholder="Name, contact..."
+                    hx-get="{% url 'sponsors:sponsor_list' %}"
+                    hx-trigger="keyup changed delay:300ms"
+                    hx-target="#sponsors-results"
+                    hx-push-url="true"
+                    hx-include="closest form"
+                    class="w-full"
+                />
+            </div>
+
+            <!-- 2. Industry filter -->
+            <div>
+                <c-label class="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">Industry</c-label>
+                <c-native_select
+                    name="sector"
+                    hx-get="{% url 'sponsors:sponsor_list' %}"
+                    hx-trigger="change"
+                    hx-target="#sponsors-results"
+                    hx-push-url="true"
+                    hx-include="closest form"
+                    class="w-full"
+                >
+                    <option value="">All industries</option>
+                    {% for code, label in sectors %}
+                    <option value="{{ code }}" {% if selected_sector == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </c-native_select>
+            </div>
+
+            <!-- 3. Tier filter -->
+            <div>
+                <c-label class="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">Sponsorship tier</c-label>
+                <c-native_select
+                    name="tier"
+                    hx-get="{% url 'sponsors:sponsor_list' %}"
+                    hx-trigger="change"
+                    hx-target="#sponsors-results"
+                    hx-push-url="true"
+                    hx-include="closest form"
+                    class="w-full"
+                >
+                    <option value="">All tiers</option>
+                    {% for code, label in tiers %}
+                    <option value="{{ code }}" {% if selected_tier == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </c-native_select>
+            </div>
+
+            <!-- 4. Status filter -->
+            <div>
+                <c-label class="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">Pipeline status</c-label>
+                <c-native_select
+                    name="status"
+                    hx-get="{% url 'sponsors:sponsor_list' %}"
+                    hx-trigger="change"
+                    hx-target="#sponsors-results"
+                    hx-push-url="true"
+                    hx-include="closest form"
+                    class="w-full"
+                >
+                    <option value="">All statuses</option>
+                    {% for code, label in statuses %}
+                    <option value="{{ code }}" {% if selected_status == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </c-native_select>
+            </div>
+
+            <!-- 5. Hackathon filter -->
+            <div>
+                <c-label class="text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">Hackathon</c-label>
+                <c-native_select
+                    name="hackathon"
+                    hx-get="{% url 'sponsors:sponsor_list' %}"
+                    hx-trigger="change"
+                    hx-target="#sponsors-results"
+                    hx-push-url="true"
+                    hx-include="closest form"
+                    class="w-full"
+                >
+                    <option value="">All hackathons</option>
+                    {% for h in hackathons %}
+                    <option value="{{ h.pk }}" {% if selected_hackathon == h.pk|stringformat:"s" %}selected{% endif %}>{{ h.title }}</option>
+                    {% endfor %}
+                </c-native_select>
+            </div>
+        </div>
+
+        {% if query or selected_sector or selected_tier or selected_status or selected_hackathon %}
+        <div class="flex items-center justify-end pt-1">
+            <c-button_link href="{% url 'sponsors:sponsor_list' %}" variant="ghost" size="sm" class="text-xs"
+                hx-get="{% url 'sponsors:sponsor_list' %}"
+                hx-target="#sponsors-results"
+                hx-push-url="true">
+                <c-lucideicon.rotate-ccw class="size-3" />
+                Reset filters
+            </c-button_link>
+        </div>
+        {% endif %}
+    </form>
+
+    <!-- Table + Pagination (HTMX target) -->
+    <div class="mt-6">
+        {% include "sponsors/partials/sponsors_table.html" %}
+    </div>
+</div>
+{% endblock %}

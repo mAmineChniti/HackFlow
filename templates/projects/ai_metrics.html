@@ -1,0 +1,461 @@
+{% extends "base.html" %}
+
+{% block title %}AI Evaluation Metrics — HackFlow{% endblock %}
+
+{% block meta_description %}Reproducible classifier metrics, generative quality checks and measured async latency for HackFlow's AI features.{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+
+    <div class="flex flex-col gap-4 border-b border-border/60 pb-6 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+            <div class="mb-2 flex flex-wrap items-center gap-2">
+                <span class="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/15 px-2.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-primary">
+                    Admin Area
+                </span>
+                <span class="inline-flex items-center gap-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-purple-600 dark:text-purple-300">
+                    AI Rubric 5.2
+                </span>
+                <span class="text-xs text-muted-foreground">Measured {{ measured_at|date:"Y-m-d H:i T" }}</span>
+            </div>
+            <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                AI Evaluation Metrics
+            </h1>
+            <p class="mt-1 max-w-3xl text-sm text-muted-foreground">
+                Reproducible classifier quality, a qualitative rubric for generative reviews,
+                and measured latency for the synchronous and Celery/Redis execution paths.
+            </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="{% url 'projects:admin_dashboard' %}" class="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3.5 py-2 text-xs font-medium text-foreground transition hover:bg-accent">
+                ← Projects Admin
+            </a>
+            <a href="{% url 'projects:project_list' %}" class="inline-flex items-center gap-1.5 rounded-lg border border-border bg-secondary px-3.5 py-2 text-xs font-medium text-secondary-foreground transition hover:bg-secondary/80">
+                Project catalog
+            </a>
+        </div>
+    </div>
+
+    <!-- Headline metrics -->
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        <div class="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 shadow-xs">
+            <p class="text-xs font-medium text-emerald-600 dark:text-emerald-400">Accuracy</p>
+            <p class="mt-2 text-2xl font-bold text-foreground">{{ classification.accuracy_percent }}%</p>
+            <p class="mt-1 text-[11px] text-muted-foreground">{{ classification.correct_count }}/{{ classification.sample_count }} labelled examples</p>
+        </div>
+        <div class="rounded-xl border border-primary/30 bg-primary/5 p-4 shadow-xs">
+            <p class="text-xs font-medium text-primary">Macro F1</p>
+            <p class="mt-2 text-2xl font-bold text-foreground">{{ classification.macro_f1|floatformat:3 }}</p>
+            <p class="mt-1 text-[11px] text-muted-foreground">Across {{ classification.labels|length }} categories</p>
+        </div>
+        <div class="rounded-xl border border-border/70 bg-card p-4 shadow-xs">
+            <p class="text-xs font-medium text-muted-foreground">Classifier p95</p>
+            <p class="mt-2 text-2xl font-bold text-foreground">{{ classification.latency_p95_ms|floatformat:2 }} <span class="text-sm font-normal text-muted-foreground">ms</span></p>
+            <p class="mt-1 text-[11px] text-muted-foreground">Local fallback, per call</p>
+        </div>
+        <div class="rounded-xl border border-border/70 bg-card p-4 shadow-xs">
+            <p class="text-xs font-medium text-muted-foreground">Review p95</p>
+            <p class="mt-2 text-2xl font-bold text-foreground">{{ generative.latency_p95_ms|floatformat:2 }} <span class="text-sm font-normal text-muted-foreground">ms</span></p>
+            <p class="mt-1 text-[11px] text-muted-foreground">Local fallback, per call</p>
+        </div>
+        <div class="rounded-xl border border-border/70 bg-card p-4 shadow-xs">
+            <p class="text-xs font-medium text-muted-foreground">Live AI calls</p>
+            <p class="mt-2 text-2xl font-bold text-foreground">{{ live.total }}</p>
+            <p class="mt-1 text-[11px] text-muted-foreground">{{ live.remote_runs }} Groq · {{ live.fallback_runs }} fallback · {{ live.cache_hits }} cache</p>
+        </div>
+        <div class="rounded-xl border {% if ai_config.remote_configured %}border-emerald-500/30 bg-emerald-500/5{% else %}border-amber-500/30 bg-amber-500/5{% endif %} p-4 shadow-xs">
+            <p class="text-xs font-medium {% if ai_config.remote_configured %}text-emerald-600 dark:text-emerald-400{% else %}text-amber-600 dark:text-amber-400{% endif %}">Remote AI</p>
+            <p class="mt-2 text-lg font-bold text-foreground">
+                {% if ai_config.remote_configured %}Configured{% else %}Fallback only{% endif %}
+            </p>
+            <p class="mt-1 text-[11px] text-muted-foreground">{{ ai_config.model }}</p>
+        </div>
+    </div>
+
+    <!-- 1. Classification metrics -->
+    <section class="rounded-xl border border-border/70 bg-card p-5 shadow-xs sm:p-6" aria-labelledby="classification-heading">
+        <div class="flex flex-col gap-2 border-b border-border/50 pb-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <h2 id="classification-heading" class="text-lg font-semibold text-foreground">
+                    1. Category detection — classification metrics
+                </h2>
+                <p class="mt-1 max-w-3xl text-sm text-muted-foreground">
+                    {{ classification.method }} Precision, recall and F1 are reported per category,
+                    with macro averages and a full confusion matrix.
+                </p>
+            </div>
+            <span class="inline-flex w-fit items-center rounded-full border border-border bg-muted/40 px-2.5 py-1 font-mono text-[11px] text-muted-foreground">
+                n = {{ classification.sample_count }}
+            </span>
+        </div>
+
+        <div class="mt-5 grid gap-6 xl:grid-cols-2">
+            <div>
+                <h3 class="mb-3 text-sm font-semibold text-foreground">Per-class scores</h3>
+                <c-table class="text-xs">
+                    <caption class="sr-only">Precision, recall and F1 score for each project category</caption>
+                    <c-table.header class="bg-muted/40 text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <c-table.row>
+                            <c-table.head class="py-2.5 px-3">Category</c-table.head>
+                            <c-table.head class="py-2.5 px-3 text-right">Support</c-table.head>
+                            <c-table.head class="py-2.5 px-3 text-right">Precision</c-table.head>
+                            <c-table.head class="py-2.5 px-3 text-right">Recall</c-table.head>
+                            <c-table.head class="py-2.5 px-3 text-right">F1</c-table.head>
+                        </c-table.row>
+                    </c-table.header>
+                    <c-table.body class="divide-y divide-border/50">
+                        {% for item in classification.per_class %}
+                        <c-table.row class="hover:bg-muted/20">
+                            <c-table.cell class="py-2.5 px-3">
+                                <span class="font-mono text-[11px] text-muted-foreground">{{ item.code }}</span>
+                                <span class="ml-1.5 font-medium">{{ item.label }}</span>
+                            </c-table.cell>
+                            <c-table.cell class="py-2.5 px-3 text-right font-mono">{{ item.support }}</c-table.cell>
+                            <c-table.cell class="py-2.5 px-3 text-right font-mono">{{ item.precision|floatformat:3 }}</c-table.cell>
+                            <c-table.cell class="py-2.5 px-3 text-right font-mono">{{ item.recall|floatformat:3 }}</c-table.cell>
+                            <c-table.cell class="py-2.5 px-3 text-right font-mono font-semibold">{{ item.f1|floatformat:3 }}</c-table.cell>
+                        </c-table.row>
+                        {% endfor %}
+                    </c-table.body>
+                </c-table>
+                <p class="mt-3 text-[11px] text-muted-foreground">
+                    Macro precision {{ classification.macro_precision|floatformat:3 }} ·
+                    macro recall {{ classification.macro_recall|floatformat:3 }} ·
+                    p50 {{ classification.latency_p50_ms|floatformat:2 }} ms
+                </p>
+            </div>
+
+            <div>
+                <h3 class="mb-3 text-sm font-semibold text-foreground">Confusion matrix</h3>
+                <c-table class="text-xs">
+                    <caption class="sr-only">Confusion matrix with actual categories as rows and predicted categories as columns</caption>
+                    <c-table.header class="bg-muted/40 text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <c-table.row>
+                            <c-table.head class="py-2.5 px-2">Actual / Predicted</c-table.head>
+                            {% for label in classification.labels %}
+                            <c-table.head class="py-2.5 px-2 text-center font-mono">{{ label.code }}</c-table.head>
+                            {% endfor %}
+                        </c-table.row>
+                    </c-table.header>
+                    <c-table.body class="divide-y divide-border/50">
+                        {% for row in classification.confusion_matrix %}
+                        <c-table.row class="hover:bg-muted/20">
+                            <c-table.cell class="py-2.5 px-2 text-left text-[11px] font-medium text-foreground">{{ row.code }}</c-table.cell>
+                            {% for cell in row.cells %}
+                            <c-table.cell class="py-2.5 px-2 text-center font-mono {% if cell.is_correct %}bg-emerald-500/10 font-semibold text-emerald-600 dark:text-emerald-400{% elif cell.count %}bg-rose-500/10 text-rose-600 dark:text-rose-400{% endif %}">
+                                {{ cell.count }}
+                            </c-table.cell>
+                            {% endfor %}
+                        </c-table.row>
+                        {% endfor %}
+                    </c-table.body>
+                </c-table>
+                <p class="mt-3 text-[11px] text-muted-foreground">
+                    Rows are the expected label, columns are the classifier output.
+                    Green cells are correct; red cells are errors.
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-5 grid gap-4 lg:grid-cols-2">
+            <div class="rounded-lg border border-border/60 bg-muted/20 p-4">
+                <h3 class="text-sm font-semibold text-foreground">Confidence distribution</h3>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    {% for item in classification.confidences %}
+                    <span class="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground">
+                        {{ item.label }}
+                        <strong class="font-mono text-foreground">{{ item.count }}</strong>
+                    </span>
+                    {% endfor %}
+                </div>
+                <p class="mt-3 text-[11px] text-muted-foreground">
+                    The local classifier uses confidence only as a review hint; it never
+                    bypasses the category values accepted by the model.
+                </p>
+            </div>
+            <div class="rounded-lg border border-border/60 bg-muted/20 p-4">
+                <h3 class="text-sm font-semibold text-foreground">Misclassified examples</h3>
+                {% if classification.errors %}
+                <ul class="mt-3 space-y-2 text-xs">
+                    {% for error in classification.errors %}
+                    <li class="rounded-md border border-rose-500/25 bg-rose-500/5 px-3 py-2">
+                        <strong class="text-foreground">{{ error.title }}</strong>
+                        <span class="text-muted-foreground"> expected {{ error.expected }}, got {{ error.predicted }} ({{ error.confidence }} confidence).</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="mt-3 text-xs text-muted-foreground">No errors on this validation set. Re-run on new submissions before claiming real-world accuracy.</p>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. Generative quality -->
+    <section class="rounded-xl border border-purple-500/25 bg-card p-5 shadow-xs sm:p-6" aria-labelledby="generative-heading">
+        <div class="flex flex-col gap-2 border-b border-border/50 pb-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <h2 id="generative-heading" class="text-lg font-semibold text-foreground">
+                    2. Generative project review — qualitative rubric
+                </h2>
+                <p class="mt-1 max-w-3xl text-sm text-muted-foreground">
+                    {{ generative.method }} There is no single ground truth for a generated review,
+                    so quality is assessed against four criteria and supported by structural checks.
+                </p>
+            </div>
+            <span class="inline-flex w-fit items-center rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-1 font-mono text-[11px] text-purple-600 dark:text-purple-300">
+                {{ generative.sample_count }} samples
+            </span>
+        </div>
+
+        <div class="mt-5 grid gap-6 xl:grid-cols-2">
+            <div>
+                <h3 class="mb-3 text-sm font-semibold text-foreground">Evaluation rubric</h3>
+                <c-table class="text-xs">
+                    <caption class="sr-only">Qualitative criteria for the generative project review</caption>
+                    <c-table.header class="bg-muted/40 text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <c-table.row>
+                            <c-table.head class="py-2.5 px-3">Criterion</c-table.head>
+                            <c-table.head class="py-2.5 px-3">Question</c-table.head>
+                            <c-table.head class="py-2.5 px-3">Evidence</c-table.head>
+                        </c-table.row>
+                    </c-table.header>
+                    <c-table.body class="divide-y divide-border/50">
+                        {% for criterion in generative.criteria %}
+                        <c-table.row class="hover:bg-muted/20">
+                            <c-table.cell class="py-3 px-3 font-semibold text-foreground">{{ criterion.criterion }}</c-table.cell>
+                            <c-table.cell class="py-3 px-3 text-muted-foreground">{{ criterion.question }}</c-table.cell>
+                            <c-table.cell class="py-3 px-3 text-muted-foreground">{{ criterion.evidence }}</c-table.cell>
+                        </c-table.row>
+                        {% endfor %}
+                    </c-table.body>
+                </c-table>
+            </div>
+
+            <div>
+                <h3 class="mb-3 text-sm font-semibold text-foreground">Structural checks</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="rounded-lg border border-border/60 bg-muted/20 p-3">
+                        <p class="text-[11px] text-muted-foreground">Schema completeness</p>
+                        <p class="mt-1 text-xl font-bold text-foreground">{{ generative.completeness_percent }}%</p>
+                    </div>
+                    <div class="rounded-lg border border-border/60 bg-muted/20 p-3">
+                        <p class="text-[11px] text-muted-foreground">Valid score range</p>
+                        <p class="mt-1 text-xl font-bold text-foreground">{{ generative.score_range_percent }}%</p>
+                    </div>
+                    <div class="rounded-lg border border-border/60 bg-muted/20 p-3">
+                        <p class="text-[11px] text-muted-foreground">Deterministic output</p>
+                        <p class="mt-1 text-xl font-bold text-foreground">{{ generative.consistency_percent }}%</p>
+                    </div>
+                    <div class="rounded-lg border border-border/60 bg-muted/20 p-3">
+                        <p class="text-[11px] text-muted-foreground">Average score</p>
+                        <p class="mt-1 text-xl font-bold text-foreground">{{ generative.average_score }}/10</p>
+                    </div>
+                </div>
+                <p class="mt-3 text-[11px] text-muted-foreground">
+                    p50 {{ generative.latency_p50_ms|floatformat:2 }} ms · p95
+                    {{ generative.latency_p95_ms|floatformat:2 }} ms per review.
+                    Run <code class="font-mono text-[11px]">python manage.py ai_benchmark --remote</code>
+                    to apply the same rubric to the configured Groq model; remote
+                    calls may cost and can vary between runs.
+                </p>
+            </div>
+        </div>
+
+        {% if generative.sample %}
+        <div class="mt-6 rounded-xl border border-purple-500/30 bg-purple-500/5 p-5">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-purple-600 dark:text-purple-300">Representative output</p>
+                    <h3 class="mt-1 text-base font-semibold text-foreground">{{ generative.sample.title }}</h3>
+                    <p class="text-xs text-muted-foreground">{{ generative.sample.tagline }} · {{ generative.sample.category }}</p>
+                </div>
+                <span class="inline-flex items-center rounded-lg border border-purple-500/40 bg-purple-600/20 px-3 py-1 text-sm font-extrabold text-purple-700 dark:text-purple-200">
+                    {{ generative.sample.score }}/10
+                </span>
+            </div>
+            <p class="mt-4 text-sm leading-relaxed text-foreground">{{ generative.sample.comment }}</p>
+            <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                <div>
+                    <h4 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Strengths</h4>
+                    <ul class="mt-2 space-y-1.5 text-xs text-muted-foreground">
+                        {% for strength in generative.sample.strengths %}
+                        <li class="flex gap-2"><span class="text-emerald-500" aria-hidden="true">✓</span><span>{{ strength }}</span></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Improvement areas</h4>
+                    <ul class="mt-2 space-y-1.5 text-xs text-muted-foreground">
+                        {% for weakness in generative.sample.weaknesses %}
+                        <li class="flex gap-2"><span class="text-amber-500" aria-hidden="true">→</span><span>{{ weakness }}</span></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            <p class="mt-3 text-[11px] text-muted-foreground">Source: {{ generative.sample.source }}</p>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- 3. Performance and async -->
+    <section class="rounded-xl border border-border/70 bg-card p-5 shadow-xs sm:p-6" aria-labelledby="performance-heading">
+        <div class="flex flex-col gap-2 border-b border-border/50 pb-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <h2 id="performance-heading" class="text-lg font-semibold text-foreground">
+                    3. Performance and asynchronous execution
+                </h2>
+                <p class="mt-1 max-w-3xl text-sm text-muted-foreground">
+                    The view records real AI call durations in the Django cache. In production,
+                    Redis also brokers the Celery task that runs the long Groq request.
+                </p>
+            </div>
+            <span class="inline-flex w-fit items-center rounded-full border px-2.5 py-1 font-mono text-[11px] {% if ai_config.async_enabled %}border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400{% else %}border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400{% endif %}">
+                {% if ai_config.async_enabled %}Async enabled{% else %}Sync mode{% endif %}
+            </span>
+        </div>
+
+        <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <div class="rounded-lg border border-border/60 bg-muted/20 p-3">
+                <p class="text-[11px] text-muted-foreground">Remote key</p>
+                <p class="mt-1 text-sm font-semibold text-foreground">{% if ai_config.remote_configured %}Yes{% else %}No{% endif %}</p>
+            </div>
+            <div class="rounded-lg border border-border/60 bg-muted/20 p-3">
+                <p class="text-[11px] text-muted-foreground">Broker</p>
+                <p class="mt-1 text-sm font-semibold text-foreground">{% if ai_config.broker_configured %}Redis{% else %}None{% endif %}</p>
+            </div>
+            <div class="rounded-lg border border-border/60 bg-muted/20 p-3">
+                <p class="text-[11px] text-muted-foreground">Celery eager</p>
+                <p class="mt-1 text-sm font-semibold text-foreground">{% if ai_config.celery_eager %}Yes{% else %}No{% endif %}</p>
+            </div>
+            <div class="rounded-lg border border-border/60 bg-muted/20 p-3">
+                <p class="text-[11px] text-muted-foreground">AI model</p>
+                <p class="mt-1 truncate font-mono text-xs font-semibold text-foreground" title="{{ ai_config.model }}">{{ ai_config.model }}</p>
+            </div>
+            <div class="rounded-lg border border-border/60 bg-muted/20 p-3">
+                <p class="text-[11px] text-muted-foreground">Rate limit</p>
+                <p class="mt-1 text-sm font-semibold text-foreground">{{ ai_config.rate_limit_max }}/{{ ai_config.rate_limit_window }}s</p>
+            </div>
+            <div class="rounded-lg border border-border/60 bg-muted/20 p-3">
+                <p class="text-[11px] text-muted-foreground">AI endpoint</p>
+                <p class="mt-1 text-sm font-semibold text-foreground">{% if ai_config.async_enabled %}202 + poll{% else %}200 sync{% endif %}</p>
+            </div>
+        </div>
+
+        <div class="mt-5 grid gap-4 lg:grid-cols-4">
+            <div class="rounded-lg border border-border/60 bg-background/40 p-4">
+                <span class="font-mono text-[10px] text-primary">01</span>
+                <h3 class="mt-1 text-sm font-semibold text-foreground">Request</h3>
+                <p class="mt-1 text-xs text-muted-foreground">The browser POSTs to the project's AI endpoint with CSRF protection.</p>
+            </div>
+            <div class="rounded-lg border border-border/60 bg-background/40 p-4">
+                <span class="font-mono text-[10px] text-primary">02</span>
+                <h3 class="mt-1 text-sm font-semibold text-foreground">Enqueue</h3>
+                <p class="mt-1 text-xs text-muted-foreground">The view stores a pending task and returns <code class="font-mono text-[11px]">202 + task_id</code> immediately.</p>
+            </div>
+            <div class="rounded-lg border border-border/60 bg-background/40 p-4">
+                <span class="font-mono text-[10px] text-primary">03</span>
+                <h3 class="mt-1 text-sm font-semibold text-foreground">Worker</h3>
+                <p class="mt-1 text-xs text-muted-foreground">Celery consumes the job and calls Groq through <code class="font-mono text-[11px]">core.groq</code> with a 15s timeout.</p>
+            </div>
+            <div class="rounded-lg border border-border/60 bg-background/40 p-4">
+                <span class="font-mono text-[10px] text-primary">04</span>
+                <h3 class="mt-1 text-sm font-semibold text-foreground">Poll</h3>
+                <p class="mt-1 text-xs text-muted-foreground">The browser polls the status endpoint until the result is done or failed.</p>
+            </div>
+        </div>
+
+        <div class="mt-6 grid gap-6 xl:grid-cols-2">
+            <div>
+                <h3 class="mb-3 text-sm font-semibold text-foreground">Live latency by operation</h3>
+                {% if live.summaries %}
+                <c-table class="text-xs">
+                    <caption class="sr-only">Measured AI operation latency and success rate</caption>
+                    <c-table.header class="bg-muted/40 text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <c-table.row>
+                            <c-table.head class="py-2.5 px-3">Operation</c-table.head>
+                            <c-table.head class="py-2.5 px-3 text-right">Runs</c-table.head>
+                            <c-table.head class="py-2.5 px-3 text-right">Success</c-table.head>
+                            <c-table.head class="py-2.5 px-3 text-right">p50</c-table.head>
+                            <c-table.head class="py-2.5 px-3 text-right">p95</c-table.head>
+                        </c-table.row>
+                    </c-table.header>
+                    <c-table.body class="divide-y divide-border/50">
+                        {% for summary in live.summaries %}
+                        <c-table.row class="hover:bg-muted/20">
+                            <c-table.cell class="py-2.5 px-3">
+                                <span class="font-medium">{{ summary.label }}</span>
+                                <span class="mt-1 block text-[10px] text-muted-foreground">
+                                    {% for source in summary.sources %}{{ source.label }} {{ source.count }}{% if not forloop.last %} · {% endif %}{% endfor %}
+                                </span>
+                            </c-table.cell>
+                            <c-table.cell class="py-2.5 px-3 text-right font-mono">{{ summary.runs }}</c-table.cell>
+                            <c-table.cell class="py-2.5 px-3 text-right font-mono">{{ summary.success_rate }}</c-table.cell>
+                            <c-table.cell class="py-2.5 px-3 text-right font-mono">{{ summary.p50_ms|floatformat:1 }} ms</c-table.cell>
+                            <c-table.cell class="py-2.5 px-3 text-right font-mono">{{ summary.p95_ms|floatformat:1 }} ms</c-table.cell>
+                        </c-table.row>
+                        {% endfor %}
+                    </c-table.body>
+                </c-table>
+                {% else %}
+                <div class="rounded-lg border border-dashed border-border/70 bg-muted/20 p-4 text-xs text-muted-foreground">
+                    No live AI calls recorded yet. Open a project, run <strong class="text-foreground">Evaluate with AI</strong>, then refresh this page.
+                </div>
+                {% endif %}
+            </div>
+
+            <div>
+                <h3 class="mb-3 text-sm font-semibold text-foreground">Recent calls</h3>
+                {% if live.recent %}
+                <c-table class="text-xs">
+                    <caption class="sr-only">Most recent measured AI calls</caption>
+                    <c-table.header class="bg-muted/40 text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <c-table.row>
+                            <c-table.head class="py-2.5 px-3">Operation</c-table.head>
+                            <c-table.head class="py-2.5 px-3">Source</c-table.head>
+                            <c-table.head class="py-2.5 px-3">Mode</c-table.head>
+                            <c-table.head class="py-2.5 px-3 text-right">Duration</c-table.head>
+                        </c-table.row>
+                    </c-table.header>
+                    <c-table.body class="divide-y divide-border/50">
+                        {% for event in live.recent %}
+                        <c-table.row class="hover:bg-muted/20">
+                            <c-table.cell class="py-2.5 px-3">
+                                <span class="font-medium">{{ event.operation_label }}</span>
+                                <span class="mt-1 block font-mono text-[10px] text-muted-foreground">{{ event.timestamp|slice:":19" }}</span>
+                            </c-table.cell>
+                            <c-table.cell class="py-2.5 px-3">{{ event.source_label }}</c-table.cell>
+                            <c-table.cell class="py-2.5 px-3">{{ event.mode_label }}</c-table.cell>
+                            <c-table.cell class="py-2.5 px-3 text-right font-mono {% if event.success %}text-emerald-600 dark:text-emerald-400{% else %}text-rose-600 dark:text-rose-400{% endif %}">
+                                {{ event.duration_ms|floatformat:1 }} ms
+                            </c-table.cell>
+                        </c-table.row>
+                        {% endfor %}
+                    </c-table.body>
+                </c-table>
+                {% else %}
+                <div class="rounded-lg border border-dashed border-border/70 bg-muted/20 p-4 text-xs text-muted-foreground">
+                    Call history appears after the first AI request. The buffer keeps the latest 200 events for seven days.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="mt-6 rounded-lg border border-primary/20 bg-primary/5 p-4">
+            <h3 class="text-sm font-semibold text-foreground">How to reproduce the demo</h3>
+            <ol class="mt-2 list-decimal space-y-1 pl-5 text-xs text-muted-foreground">
+                <li>Sign in as the organizer or admin demo account.</li>
+                <li>Open a project and run <strong class="text-foreground">Evaluate with AI</strong>; in async mode the HTTP response is <code class="font-mono text-[11px]">202</code> and the UI polls the status endpoint.</li>
+                <li>Refresh this page to see the new p50/p95 call in the live table.</li>
+                <li>Run <code class="font-mono text-[11px] text-foreground">python manage.py ai_benchmark</code> for the same classifier and rubric metrics from the terminal.</li>
+            </ol>
+        </div>
+    </section>
+
+    <p class="text-[11px] text-muted-foreground">
+        The labelled set is a small, hand-built validation set, not a production benchmark.
+        Re-measure accuracy and latency on new submissions before making quality claims.
+        The metrics buffer contains no project descriptions, prompts, API keys or user data.
+    </p>
+</div>
+{% endblock %}

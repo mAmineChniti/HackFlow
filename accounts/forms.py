@@ -1,3 +1,4 @@
+
 from django import forms
 from django.contrib.auth.forms import (
     AuthenticationForm,
@@ -10,6 +11,14 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
+
+from .models import Profile
+
+# Roles that confer elevated access must never be self-assigned at signup or
+# through self-service account settings. Organizers can see every draft,
+# review/accept submissions and export all team data; administrators can do
+# everything.
+PRIVILEGED_ROLES = (Profile.Role.ADMIN, Profile.Role.ORGANIZER)
 
 
 class HackFlowAuthenticationForm(AuthenticationForm):
@@ -48,6 +57,9 @@ class HackFlowAuthenticationForm(AuthenticationForm):
     }
 
 
+from .models import Profile
+
+
 class HackFlowSignupForm(UserCreationForm):
     email = forms.EmailField(
         label=_("Email"),
@@ -57,6 +69,31 @@ class HackFlowSignupForm(UserCreationForm):
                 "autocomplete": "email",
                 "placeholder": "you@example.com",
             }
+        ),
+    )
+    SIGNUP_ROLE_CHOICES = [
+        (value, label)
+        for value, label in Profile.Role.choices
+        if value not in PRIVILEGED_ROLES
+    ]
+
+    role = forms.ChoiceField(
+        label=_("Role"),
+        choices=SIGNUP_ROLE_CHOICES,
+        initial=Profile.Role.STUDENT,
+        required=False,
+        widget=forms.Select(
+            attrs={
+                "class": (
+                    "flex h-10 w-full rounded-md border border-input bg-card/90 px-3 py-2 "
+                    "text-sm text-foreground shadow-xs transition-colors focus-visible:outline-hidden "
+                    "focus-visible:ring-1 focus-visible:ring-ring"
+                )
+            }
+        ),
+        help_text=_(
+            "Your role in HackFlow. Organizer and administrator roles are "
+            "granted by the HackFlow team."
         ),
     )
 
@@ -74,6 +111,7 @@ class HackFlowSignupForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["role"].choices = self.SIGNUP_ROLE_CHOICES
         self.fields["username"].label = _("Username")
         self.fields["username"].help_text = _(
             "Letters, digits and @/./+/-/_ only. This is your public handle."
@@ -87,6 +125,17 @@ class HackFlowSignupForm(UserCreationForm):
             {"autocomplete": "new-password", "placeholder": "Repeat your password"}
         )
         self.fields["password2"].help_text = _("Re-enter your password to confirm.")
+
+    def clean_role(self):
+        role = self.cleaned_data.get("role") or Profile.Role.STUDENT
+        # Defense in depth: a forged POST can send a value that is not in
+        # SIGNUP_ROLE_CHOICES, so reject privileged roles server-side.
+        if role in PRIVILEGED_ROLES:
+            raise ValidationError(
+                _("That role can only be granted by an administrator."),
+                code="role_forbidden",
+            )
+        return role
 
     def clean_username(self):
         username = self.cleaned_data["username"]
@@ -111,10 +160,16 @@ class HackFlowSignupForm(UserCreationForm):
         return email
 
     def save(self, commit=True):
-        user = super().save(commit=False)
+        user = super().save(commit=commit)
         user.email = self.cleaned_data["email"]
+        role = self.cleaned_data.get("role") or Profile.Role.STUDENT
+        if role in PRIVILEGED_ROLES:
+            role = Profile.Role.STUDENT
         if commit:
             user.save()
+            profile, _ = Profile.objects.get_or_create(user=user)
+            profile.role = role
+            profile.save(update_fields=["role"])
         return user
 
 
@@ -203,6 +258,10 @@ class AccountSettingsForm(forms.ModelForm):
         )
         self.fields["first_name"].label = _("First name")
         self.fields["last_name"].label = _("Last name")
+        # The global role is intentionally NOT editable here: profile.role drives
+        # every permission check in projects/services.py, so exposing it to
+        # self-service updates would let any user promote themselves.
+        # Administrators change roles through the Django admin instead.
 
     def clean_username(self):
         username = self.cleaned_data["username"]
@@ -237,6 +296,9 @@ class AccountSettingsForm(forms.ModelForm):
         if not self.is_valid():
             return False
         return self.cleaned_data.get("email", "").lower() != self.original_email
+
+    def save(self, commit=True):
+        return super().save(commit=commit)
 
 
 class HackFlowPasswordChangeForm(PasswordChangeForm):

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Check-In Verification — {{ registration.ticket_code }} — HackFlow{% endblock %}
+
+{% block content %}
+<div class="relative py-12 md:py-16">
+    <div class="container-page max-w-lg space-y-6">
+        <!-- Top Back Link -->
+        <div>
+            <a href="{% url 'hackathons:detail' hackathon.slug %}" class="inline-flex items-center gap-1.5 text-xs font-mono text-muted-foreground transition-colors hover:text-foreground">
+                <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                Back to {{ hackathon.title }}
+            </a>
+        </div>
+
+        <!-- Verification Card -->
+        <div class="rounded-3xl border border-border/70 bg-card/80 p-8 shadow-2xl backdrop-blur-md space-y-6 text-center">
+            <!-- Icon Status -->
+            {% if registration.checked_in %}
+            <div class="mx-auto flex size-16 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                <svg class="size-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="space-y-1">
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 font-mono text-xs font-bold text-emerald-400">
+                    ✓ PARTICIPANT CHECKED-IN
+                </span>
+                <p class="text-xs text-muted-foreground">
+                    Checked in on {{ registration.checked_in_at|date:"M d, Y at H:i" }}
+                </p>
+            </div>
+            {% else %}
+            <div class="mx-auto flex size-16 items-center justify-center rounded-2xl bg-primary/10 border border-primary/30 text-primary">
+                <svg class="size-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/>
+                </svg>
+            </div>
+            <div class="space-y-1">
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 px-3 py-1 font-mono text-xs font-bold text-amber-400">
+                    PENDING CHECK-IN
+                </span>
+                <p class="text-xs text-muted-foreground">Ready for door verification</p>
+            </div>
+            {% endif %}
+
+            <!-- Participant Details -->
+            <div class="space-y-2 border-y border-border/60 py-5">
+                <h1 class="text-2xl font-extrabold text-foreground">
+                    {{ participant.get_full_name|default:participant.username }}
+                </h1>
+                <p class="font-mono text-xs text-muted-foreground">{{ participant.email }}</p>
+
+                <div class="flex flex-wrap items-center justify-center gap-2 pt-2">
+                    {% if registration.university %}
+                    <span class="rounded-md border border-border/60 bg-secondary/60 px-2.5 py-0.5 font-mono text-xs text-foreground">
+                        🏛️ {{ registration.university }}
+                    </span>
+                    {% endif %}
+                    <span class="rounded-md border border-border/60 bg-secondary/60 px-2.5 py-0.5 font-mono text-xs text-foreground">
+                        🎓 {{ registration.get_study_level_display }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Ticket Code -->
+            <div class="rounded-xl border border-border/60 bg-background/60 p-4 space-y-1 text-xs">
+                <span class="text-muted-foreground font-mono uppercase text-[10px]">Verifiable Ticket Code</span>
+                <p class="font-mono text-base font-extrabold tracking-widest text-primary">{{ registration.ticket_code }}</p>
+                <p class="text-muted-foreground text-[11px] pt-1">Event: {{ hackathon.title }}</p>
+            </div>
+
+            <!-- Organizer Action -->
+            {% if is_authorized %}
+                {% if not registration.checked_in %}
+                <form method="post" class="pt-2">
+                    {% csrf_token %}
+                    <button
+                        type="submit"
+                        class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3.5 font-mono text-xs font-bold text-primary-foreground shadow-lg hover:bg-primary/90 transition-all cursor-pointer"
+                    >
+                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        Validate Attendee Check-In
+                    </button>
+                </form>
+                {% else %}
+                <div class="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-xs text-emerald-400 font-mono">
+                    Attendee is already admitted to the venue.
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="rounded-xl border border-border/60 bg-background/50 p-3 text-xs text-muted-foreground font-mono">
+                    ✓ Valid Official Participant Credential for {{ hackathon.title }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -3,10 +3,7 @@
         <c-sheet.header>
             <a href="{% url 'core:home' %}" class="flex items-center gap-2.5">
                 <span class="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true">
-                        <path d="m5 7 5 5-5 5"/>
-                        <path d="M13 17h6"/>
-                    </svg>
+                    <c-lucideicon.arrow-right class="size-5" />
                 </span>
                 <span class="text-lg font-semibold tracking-tight">Hack<span class="text-primary">Flow</span></span>
             </a>
@@ -18,8 +15,15 @@
             <span class="flex size-10 items-center justify-center rounded-full bg-primary/15 font-mono text-xs font-medium uppercase text-primary">
                 {{ user.username|slice:":2" }}
             </span>
-            <div class="min-w-0">
-                <p class="truncate text-sm font-medium">{{ user.username }}</p>
+            <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-2">
+                    <p class="truncate text-sm font-medium">{{ user.username }}</p>
+                    {% if user.profile.role %}
+                    <span class="inline-flex items-center rounded-md bg-primary/10 border border-primary/25 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-primary">
+                        {{ user.profile.get_role_display }}
+                    </span>
+                    {% endif %}
+                </div>
                 <p class="truncate text-xs text-muted-foreground">{{ user.email|default:"No email on file" }}</p>
                 <span class="mt-1.5 inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider
                     {% if user.profile.email_verified %}border-primary/25 bg-primary/10 text-primary{% else %}border-amber-600/30 bg-amber-500/10 text-amber-700 dark:text-amber-300{% endif %}">
@@ -32,10 +36,13 @@
 
         <nav class="mt-6 flex flex-col gap-1" aria-label="Mobile navigation">
             <a href="{% url 'teams:list' %}" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Teams</a>
+            <a href="{% url 'projects:project_list' %}" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Projects</a>
+
             <a href="{% url 'core:home' %}#hackathons" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Hackathons</a>
             <a href="{% url 'core:home' %}#challenges" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Challenges</a>
             <a href="{% url 'core:home' %}#leaderboard" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Leaderboard</a>
             <a href="{% url 'core:home' %}#organizers" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">For organizers</a>
+            <a href="{% url 'core:home' %}#sponsors" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Sponsors</a>
             <a href="{% url 'core:home' %}#faq" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">FAQ</a>
         </nav>
 
@@ -43,7 +50,11 @@
 
         <div class="flex flex-col gap-2">
             {% if user.is_authenticated %}
-            <c-button_link href="{% url 'core:home' %}#hackathons" class="w-full" @click="hideSheet()">
+            <c-button_link href="{% url 'projects:project_create' %}" class="w-full" @click="hideSheet()">
+                New Project
+                <c-lucideicon.plus-circle />
+            </c-button_link>
+            <c-button_link href="{% url 'core:home' %}#hackathons" variant="outline" class="w-full" @click="hideSheet()">
                 Start hacking
                 <c-lucideicon.arrow-right />
             </c-button_link>
@@ -80,7 +91,7 @@
         </div>
 
         <p class="mt-8 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-            120k+ builders · 190 countries
+            Hackathons · Projects · Sponsors
         </p>
     </c-sheet.content>
 </c-sheet>

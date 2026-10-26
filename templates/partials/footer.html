@@ -4,10 +4,7 @@
             <div class="space-y-5">
                 <a href="{% url 'core:home' %}" class="flex items-center gap-2.5">
                     <span class="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="size-5" aria-hidden="true">
-                            <path d="m5 7 5 5-5 5"/>
-                            <path d="M13 17h6"/>
-                        </svg>
+                        <c-lucideicon.terminal class="size-5" />
                     </span>
                     <span class="text-lg font-semibold tracking-tight">Hack<span class="text-primary">Flow</span></span>
                 </a>
@@ -53,7 +50,7 @@
                         <li>
                             <form method="post" action="{% url 'accounts:logout' %}">
                                 {% csrf_token %}
-                                <button type="submit" class="text-muted-foreground hover:text-foreground">Sign out</button>
+                                <button type="submit" class="text-muted-foreground hover:text-foreground" aria-label="Sign out">Sign out</button>
                             </form>
                         </li>
                         {% else %}

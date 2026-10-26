@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Hackathon Projects — HackFlow{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <!-- Header Section -->
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-border/50 pb-6">
+        <div>
+            <c-badge variant="outline" class="border-primary/30 bg-primary/10 font-mono text-[10px] uppercase tracking-[0.18em] text-primary mb-2">
+                Projects Module
+            </c-badge>
+            <h1 class="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                Projects & Hackathons
+            </h1>
+            <p class="mt-1 text-sm text-muted-foreground">
+                Discover innovative solutions built by student teams or submit your own project.
+            </p>
+        </div>
+        <div class="flex items-center gap-3">
+            {% if user_role == 'admin' or user_role == 'organizer' %}
+            <c-button_link href="{% url 'projects:admin_dashboard' %}" variant="outline" class="border-primary/30 bg-primary/10 text-primary shadow-sm hover:bg-primary/20">
+                <c-lucideicon.shield-check class="size-4" />
+                Admin / Organizer Area
+            </c-button_link>
+            {% endif %}
+            {% if can_create %}
+            <c-button_link href="{% url 'projects:project_create' %}" size="default">
+                <c-lucideicon.plus class="size-4" />
+                New Project
+            </c-button_link>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Filters & Search -->
+    <div class="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <form method="get" class="flex flex-1 items-center gap-2 max-w-md">
+            <div class="relative w-full">
+                <c-input
+                    type="text"
+                    name="q"
+                    value="{{ query }}"
+                    placeholder="Search by title, keyword..."
+                    class="h-10 w-full"
+                />
+            </div>
+            {% if selected_category %}
+                <input type="hidden" name="category" value="{{ selected_category }}">
+            {% endif %}
+            <c-button type="submit" variant="secondary" size="sm">
+                Search
+            </c-button>
+            {% if query or selected_category %}
+            <c-button_link href="{% url 'projects:project_list' %}" variant="ghost" size="sm" class="text-xs">
+                Reset
+            </c-button_link>
+            {% endif %}
+        </form>
+
+        <!-- Category Filter -->
+        <div class="flex flex-wrap items-center gap-1.5">
+            <c-button
+                variant="{% if not selected_category %}default{% else %}secondary{% endif %}"
+                size="sm"
+                class="rounded-full"
+                hx-get="?{% if query %}q={{ query }}&{% endif %}"
+                hx-target="#projects-grid"
+                hx-push-url="true"
+            >
+                All
+            </c-button>
+            {% for cat_val, cat_label in categories %}
+            <c-button
+                variant="{% if selected_category == cat_val %}default{% else %}secondary{% endif %}"
+                size="sm"
+                class="rounded-full"
+                hx-get="?category={{ cat_val }}{% if query %}&q={{ query }}{% endif %}"
+                hx-target="#projects-grid"
+                hx-push-url="true"
+            >
+                {{ cat_label }}
+            </c-button>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Projects Grid -->
+    <div id="projects-grid" class="mt-8">
+        {% if projects %}
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {% for project in projects %}
+            <c-card class="group flex flex-col justify-between border-border hover:border-primary/50 hover:shadow-md transition-all">
+                <c-card.header class="pb-0">
+                    <div class="flex items-start justify-between gap-2">
+                        <c-badge variant="outline" class="border-primary/30 bg-primary/10 text-primary">
+                            {{ project.get_category_display }}
+                        </c-badge>
+                        <c-badge variant="outline" class="border-border text-muted-foreground">
+                            {{ project.get_status_display }}
+                        </c-badge>
+                    </div>
+
+                    <c-card.title class="mt-3 text-lg group-hover:text-primary transition" as="h2">
+                        <a href="{% url 'projects:project_detail' project.slug %}">{{ project.title }}</a>
+                    </c-card.title>
+                    <c-card.description class="text-xs line-clamp-2">{{ project.tagline }}</c-card.description>
+                </c-card.header>
+
+                <c-card.footer class="pt-3 border-t border-border/50">
+                    <div class="flex items-center justify-between text-xs text-muted-foreground">
+                        <div class="flex items-center gap-1.5">
+                            <div class="inline-block h-6 w-6 rounded-full bg-secondary text-center leading-6 font-semibold text-foreground text-xs">
+                                {{ project.created_by.get_username|slice:":1"|upper }}
+                            </div>
+                            <span>{{ project.created_by.get_username }}</span>
+                        </div>
+                        <span class="flex items-center gap-1">
+                            <c-lucideicon.users class="size-3" /> {{ project.members.count }} member{{ project.members.count|pluralize }}
+                        </span>
+                    </div>
+                </c-card.footer>
+            </c-card>
+            {% endfor %}
+        </div>
+        {% else %}
+        <c-card class="border-dashed border-border p-12 text-center">
+            <div class="text-4xl">🚀</div>
+            <c-card.title class="mt-2 text-base" as="h3">No projects found</c-card.title>
+            <c-card.description>Be the first team to submit a project for this hackathon!</c-card.description>
+            <div class="mt-4">
+                <c-button_link href="{% url 'projects:project_create' %}" size="default">
+                    <c-lucideicon.plus class="size-4" />
+                    Create a Project
+                </c-button_link>
+            </div>
+        </c-card>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

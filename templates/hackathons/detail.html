@@ -1,0 +1,1021 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}{{ hackathon.title }} — HackFlow{% endblock %}
+{% block meta_description %}{{ hackathon.tagline|default:hackathon.description|truncatewords:30 }}{% endblock %}
+
+{% block content %}
+<div class="relative py-8 md:py-12">
+    <!-- Breadcrumb & Back -->
+    <div class="container-page mb-6 flex items-center justify-between">
+        <a href="{% url 'hackathons:list' %}" class="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
+            <c-lucideicon.arrow-left class="size-3.5" />
+            Back to Hackathons
+        </a>
+
+        {% if is_organizer %}
+        <div class="flex items-center gap-2">
+            <c-button_link href="{% url 'hackathons:export_participants' hackathon.slug %}" variant="outline" size="sm" class="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20">
+                <c-lucideicon.download class="size-3.5" />
+                Export CSV
+            </c-button_link>
+            <c-button_link href="{% url 'hackathons:update' hackathon.slug %}" variant="outline" size="sm">
+                <c-lucideicon.pencil class="size-3.5" />
+                Edit Event
+            </c-button_link>
+            <c-button_link href="{% url 'hackathons:delete' hackathon.slug %}" variant="destructive" size="sm">
+                <c-lucideicon.trash-2 class="size-3.5" />
+                Delete
+            </c-button_link>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Hero / Banner Section -->
+    <div class="container-page">
+        <div class="relative overflow-hidden rounded-2xl border border-border/80 bg-card/60 p-6 md:p-10 shadow-xl backdrop-blur-md">
+            {% if hackathon.banner_image %}
+            <div class="absolute inset-0 -z-10 overflow-hidden">
+                <img src="{{ hackathon.banner_image.url }}" alt="{{ hackathon.title }}" class="size-full object-cover opacity-25 filter blur-xs" />
+                <div class="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent"></div>
+            </div>
+            {% else %}
+            <div class="pointer-events-none absolute inset-0 -z-10 bg-grid-pattern opacity-20 [mask-image:radial-gradient(ellipse_at_top,black,transparent_75%)]"></div>
+            {% endif %}
+
+            <div class="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
+                <div class="max-w-3xl space-y-4">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="rounded-md border border-primary/30 bg-primary/10 px-2.5 py-1 font-mono text-xs uppercase tracking-wider text-primary">
+                            {{ hackathon.category }}
+                        </span>
+                        
+                        {% if is_registration_upcoming %}
+                        <span class="rounded-md border border-sky-500/40 bg-sky-500/10 px-2.5 py-0.5 font-mono text-xs text-sky-400 font-medium">
+                            🔒 Registration Upcoming
+                        </span>
+                        {% elif is_registration_open %}
+                            {% if is_full %}
+                            <span class="rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 font-mono text-xs text-amber-400 font-medium">
+                                ⏳ Capacity Full — Waitlist
+                            </span>
+                            {% else %}
+                            <span class="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-0.5 font-mono text-xs text-emerald-400 font-medium">
+                                🟢 Registration Open
+                            </span>
+                            {% endif %}
+                        {% elif is_deadline_passed %}
+                        <span class="rounded-md border border-border bg-background/60 px-2.5 py-0.5 font-mono text-xs text-muted-foreground">
+                            Registration Closed
+                        </span>
+                        {% else %}
+                        <c-badge variant="outline" class="px-2.5 py-0.5 text-xs">
+                            {{ hackathon.get_status_display }}
+                        </c-badge>
+                        {% endif %}
+
+                        <span class="rounded-md border border-border/80 bg-background/60 px-2.5 py-1 font-mono text-xs text-muted-foreground">
+                            {{ hackathon.get_difficulty_display }}
+                        </span>
+                    </div>
+
+                    <h1 class="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+                        {{ hackathon.title }}
+                    </h1>
+
+                    <p class="text-base text-muted-foreground sm:text-lg leading-relaxed">
+                        {{ hackathon.tagline }}
+                    </p>
+
+                    <div class="flex flex-wrap items-center gap-y-2 gap-x-6 pt-2 text-xs text-muted-foreground">
+                        <span class="inline-flex items-center gap-1.5">
+                            <c-lucideicon.user class="size-3.5 text-primary" />
+                            Organized by <strong class="text-foreground">{{ hackathon.organizer.username }}</strong>
+                        </span>
+                        <span class="inline-flex items-center gap-1.5">
+                            <c-lucideicon.map-pin class="size-3.5 text-primary" />
+                            {{ hackathon.location|default:hackathon.get_mode_display }} ({{ hackathon.get_mode_display }})
+                        </span>
+                        {% if hackathon.contact_email %}
+                        <a href="mailto:{{ hackathon.contact_email }}" class="inline-flex items-center gap-1.5 hover:text-primary transition-colors">
+                            <c-lucideicon.mail class="size-3.5 text-primary" />
+                            {{ hackathon.contact_email }}
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Registration / Action Card -->
+                <div class="w-full lg:max-w-sm rounded-xl border border-border/80 bg-background/90 p-6 shadow-md shrink-0">
+                    <div class="space-y-4">
+                        {% if hackathon.prize_pool %}
+                        <div class="rounded-lg border border-primary/25 bg-primary/10 p-3 text-center">
+                            <p class="font-mono text-[11px] uppercase tracking-wider text-primary">Total Prizes</p>
+                            <p class="mt-0.5 text-2xl font-bold text-foreground">🏆 {{ hackathon.prize_pool }}</p>
+                        </div>
+                        {% endif %}
+
+                        <!-- Countdown Timer -->
+                        <div
+                            x-data="{
+                                targetDate: new Date('{{ hackathon.start_date|date:'c' }}').getTime(),
+                                days: 0, hours: 0, minutes: 0, seconds: 0,
+                                updateTimer() {
+                                    const now = new Date().getTime();
+                                    const diff = this.targetDate - now;
+                                    if (diff > 0) {
+                                        this.days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                                        this.hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                        this.minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                                        this.seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                                    } else {
+                                        this.days = 0; this.hours = 0; this.minutes = 0; this.seconds = 0;
+                                    }
+                                }
+                            }"
+                            x-init="updateTimer(); setInterval(() => updateTimer(), 1000)"
+                            class="rounded-lg border border-border/60 bg-card/60 p-3 text-center"
+                        >
+                            <p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Countdown to Kickoff</p>
+                            <div class="mt-2 grid grid-cols-4 gap-1 font-mono text-center">
+                                <div class="rounded bg-background/80 p-1.5">
+                                    <span class="block text-lg font-bold text-primary" x-text="days">0</span>
+                                    <span class="text-[9px] uppercase text-muted-foreground">Days</span>
+                                </div>
+                                <div class="rounded bg-background/80 p-1.5">
+                                    <span class="block text-lg font-bold text-primary" x-text="hours">0</span>
+                                    <span class="text-[9px] uppercase text-muted-foreground">Hours</span>
+                                </div>
+                                <div class="rounded bg-background/80 p-1.5">
+                                    <span class="block text-lg font-bold text-primary" x-text="minutes">0</span>
+                                    <span class="text-[9px] uppercase text-muted-foreground">Min</span>
+                                </div>
+                                <div class="rounded bg-background/80 p-1.5">
+                                    <span class="block text-lg font-bold text-primary" x-text="seconds">0</span>
+                                    <span class="text-[9px] uppercase text-muted-foreground">Sec</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Capacity fill -->
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between text-xs text-muted-foreground">
+                                <span>Confirmed Builders: <strong>{{ hackathon.registered_count }}</strong> / {{ hackathon.max_participants }}</span>
+                                <span class="font-mono font-medium">{{ hackathon.registration_progress_percent }}%</span>
+                            </div>
+                            <c-progress value="{{ hackathon.registered_count }}" max="{{ hackathon.max_participants }}" />
+                            {% if hackathon.waitlist_count > 0 %}
+                            <p class="text-[11px] text-amber-400 font-mono text-right">
+                                +{{ hackathon.waitlist_count }} on priority waitlist
+                            </p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Registration Action Buttons -->
+                        <div class="pt-2">
+                            {% if is_organizer %}
+                                <div class="space-y-3">
+                                    <div class="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 p-3 text-xs text-primary">
+                                        <c-lucideicon.shield class="size-4 shrink-0 text-primary" />
+                                        <span>You are the <strong>Organizer</strong> of this event.</span>
+                                    </div>
+                                    <c-button_link href="{% url 'hackathons:update' hackathon.slug %}" variant="outline" size="lg" class="w-full">
+                                        <c-lucideicon.pencil class="size-4" />
+                                        Edit & Manage Event
+                                    </c-button_link>
+                                </div>
+
+                            {% elif is_assigned_judge %}
+                                <div class="space-y-2">
+                                    <div class="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-400">
+                                        <span>⚖️</span>
+                                        <span>You are an official <strong>Judge</strong> for this event.</span>
+                                    </div>
+                                </div>
+
+                            {% elif is_assigned_mentor %}
+                                <div class="space-y-2">
+                                    <div class="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-400">
+                                        <span>🧑‍🏫</span>
+                                        <span>You are an official <strong>Mentor</strong> for this event.</span>
+                                    </div>
+                                </div>
+
+                            {% elif is_registered %}
+                                <div class="space-y-2.5">
+                                    {% if user_registration.status == 'waitlist' %}
+                                    <div class="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
+                                        <span class="text-base">⏳</span>
+                                        <div>
+                                            <p class="font-semibold text-amber-200">On Priority Waitlist</p>
+                                            <p class="mt-0.5 text-[11px] text-amber-300/80">
+                                                You will be promoted automatically as soon as a confirmed spot opens up.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <div class="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-400">
+                                        <c-lucideicon.check-circle class="size-4 shrink-0 text-emerald-400" />
+                                        <span>You are <strong>officially registered</strong>!</span>
+                                    </div>
+                                    {% endif %}
+
+                                    <!-- Digital Badge Button -->
+                                    <c-button_link href="{% url 'hackathons:participant_badge' hackathon.slug %}" variant="outline" class="w-full border-primary/50 bg-primary/20 font-mono text-xs font-bold text-primary hover:bg-primary/30">
+                                        🎫 View Official Badge &amp; QR Pass
+                                    </c-button_link>
+
+                                    {% if can_unregister %}
+                                    <form method="post" action="{% url 'hackathons:unregister' hackathon.slug %}">
+                                        {% csrf_token %}
+                                        <c-button type="submit" variant="outline" size="sm" class="w-full text-destructive hover:bg-destructive/10">
+                                            Cancel Registration (Before Deadline)
+                                        </c-button>
+                                    </form>
+                                    {% else %}
+                                    <p class="text-center text-[11px] text-muted-foreground italic">
+                                        Registration deadline passed — withdrawals are locked.
+                                    </p>
+                                    {% endif %}
+                                </div>
+
+                            {% elif is_registration_upcoming %}
+                                <!-- Upcoming registration -->
+                                <div class="space-y-2.5">
+                                    <div class="rounded-lg border border-sky-500/30 bg-sky-500/10 p-3 text-xs text-sky-400">
+                                        <p class="font-semibold flex items-center gap-1.5">
+                                            <span>🔒</span> Registration Not Open Yet
+                                        </p>
+                                        <p class="mt-1 text-[11px] text-sky-300/90 leading-relaxed">
+                                            Registration opens on <strong>{{ hackathon.registration_start|date:"M d, Y @ H:i" }}</strong>. Browse the full schedule and rules below while you prepare!
+                                        </p>
+                                    </div>
+                                    <c-button disabled size="lg" class="w-full opacity-60 cursor-not-allowed">
+                                        <c-lucideicon.lock class="size-4" />
+                                        Registration Opens {{ hackathon.registration_start|date:"M d, Y" }}
+                                    </c-button>
+                                </div>
+
+                            {% elif is_registration_open %}
+                                <!-- Open registration -->
+                                {% if user.is_authenticated %}
+                                    {% if user.profile.is_student_user or user.is_superuser %}
+                                        {% if is_full %}
+                                            <div class="space-y-2">
+                                                <div class="rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 text-center text-xs text-amber-300">
+                                                    All standard spots filled! You can join the priority waitlist.
+                                                </div>
+                                                <c-button_link href="{% url 'hackathons:register' hackathon.slug %}" size="lg" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold">
+                                                    <c-lucideicon.clock class="size-4" />
+                                                    Join Priority Waitlist
+                                                </c-button_link>
+                                            </div>
+                                        {% else %}
+                                            <c-button_link href="{% url 'hackathons:register' hackathon.slug %}" size="lg" class="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-md">
+                                                <c-lucideicon.user-plus class="size-4" />
+                                                Register as Participant
+                                            </c-button_link>
+                                        {% endif %}
+                                    {% else %}
+                                        <div class="rounded-lg border border-border/70 bg-card/60 p-3 text-center text-xs text-muted-foreground">
+                                            Participant registration is reserved for students.
+                                        </div>
+                                    {% endif %}
+                                {% else %}
+                                    <c-button_link href="{% url 'accounts:login' %}?next={% url 'hackathons:detail' hackathon.slug %}" size="lg" class="w-full">
+                                        Sign in to Register
+                                    </c-button_link>
+                                {% endif %}
+
+                            {% else %}
+                                <!-- Closed registration -->
+                                <div class="space-y-2">
+                                    <div class="rounded-lg border border-border/60 bg-muted/40 p-2.5 text-center text-xs text-muted-foreground">
+                                        Registration Closed (Deadline was {{ hackathon.registration_deadline|date:"M d, Y @ H:i" }})
+                                    </div>
+                                    <c-button disabled size="lg" class="w-full opacity-50 cursor-not-allowed">
+                                        <c-lucideicon.calendar-x class="size-4" />
+                                        Registration Closed
+                                    </c-button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Highlights Bar -->
+    <div class="container-page mt-8">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="rounded-xl border border-border/70 bg-card/40 p-4">
+                <span class="font-mono text-[10px] uppercase text-muted-foreground">Registration Window</span>
+                <p class="mt-1 text-xs font-semibold text-foreground">
+                    {{ hackathon.registration_start|date:"M d" }} → {{ hackathon.registration_deadline|date:"M d, Y" }}
+                </p>
+            </div>
+            <div class="rounded-xl border border-border/70 bg-card/40 p-4">
+                <span class="font-mono text-[10px] uppercase text-muted-foreground">Competition Dates</span>
+                <p class="mt-1 text-xs font-semibold text-primary">
+                    {{ hackathon.start_date|date:"M d" }} → {{ hackathon.end_date|date:"M d, Y" }}
+                </p>
+            </div>
+            <div class="rounded-xl border border-border/70 bg-card/40 p-4">
+                <span class="font-mono text-[10px] uppercase text-muted-foreground">Team Constraints</span>
+                <p class="mt-1 text-xs font-semibold text-foreground">
+                    {{ hackathon.min_team_size }} to {{ hackathon.max_team_size }} members
+                </p>
+            </div>
+            <div class="rounded-xl border border-border/70 bg-card/40 p-4">
+                <span class="font-mono text-[10px] uppercase text-muted-foreground">Format & Venue</span>
+                <p class="mt-1 text-xs font-semibold text-foreground">
+                    {{ hackathon.get_mode_display }} · {{ hackathon.location|default:"Online" }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comprehensive Event Details Section (Tabs) -->
+    <div class="container-page mt-10" x-data="{ activeTab: 'presentation' }">
+        <!-- Horizontal Scrollable Tab Bar with Active Indicator -->
+        <div class="flex items-center gap-2 border-b border-border/80 pb-3 overflow-x-auto scrollbar-none">
+            <button
+                type="button"
+                @click="activeTab = 'presentation'"
+                :class="activeTab === 'presentation' ? 'bg-primary/15 text-primary border-primary shadow-xs font-semibold' : 'bg-card/50 text-muted-foreground border-border/70 hover:text-foreground hover:bg-card/80'"
+                class="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 cursor-pointer"
+            >
+                <span>📋 Overview</span>
+            </button>
+
+            <button
+                type="button"
+                @click="activeTab = 'schedule'"
+                :class="activeTab === 'schedule' ? 'bg-primary/15 text-primary border-primary shadow-xs font-semibold' : 'bg-card/50 text-muted-foreground border-border/70 hover:text-foreground hover:bg-card/80'"
+                class="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 cursor-pointer"
+            >
+                <span>📅 Schedule</span>
+            </button>
+
+            <button
+                type="button"
+                @click="activeTab = 'rules'"
+                :class="activeTab === 'rules' ? 'bg-primary/15 text-primary border-primary shadow-xs font-semibold' : 'bg-card/50 text-muted-foreground border-border/70 hover:text-foreground hover:bg-card/80'"
+                class="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 cursor-pointer"
+            >
+                <span>⚖️ Rules & Criteria</span>
+            </button>
+
+            <button
+                type="button"
+                @click="activeTab = 'faq'"
+                :class="activeTab === 'faq' ? 'bg-primary/15 text-primary border-primary shadow-xs font-semibold' : 'bg-card/50 text-muted-foreground border-border/70 hover:text-foreground hover:bg-card/80'"
+                class="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 cursor-pointer"
+            >
+                <span>&#x2753; FAQ</span>
+            </button>
+
+            <button
+                type="button"
+                @click="activeTab = 'ideas'"
+                :class="activeTab === 'ideas' ? 'bg-primary/15 text-primary border-primary shadow-xs font-semibold' : 'bg-card/50 text-muted-foreground border-border/70 hover:text-foreground hover:bg-card/80'"
+                class="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 cursor-pointer"
+            >
+                <span>💡 AI Project Ideas</span>
+            </button>
+
+            <button
+                type="button"
+                @click="activeTab = 'badge'"
+                :class="activeTab === 'badge' ? 'bg-primary/15 text-primary border-primary shadow-xs font-semibold' : 'bg-card/50 text-muted-foreground border-border/70 hover:text-foreground hover:bg-card/80'"
+                class="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 cursor-pointer"
+            >
+                {% if is_organizer or user.is_staff %}
+                <span>🎫 Check-in Desk &amp; Badges ({{ checked_in_count }}/{{ confirmed_registrations_count }})</span>
+                {% elif is_registered %}
+                <span>🎫 My Badge &amp; QR Pass</span>
+                {% else %}
+                <span>🎫 Participant Badge &amp; QR</span>
+                {% endif %}
+            </button>
+        </div>
+
+        <!-- Tab 1: Overview -->
+        <div x-show="activeTab === 'presentation'" class="mt-6" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+            <div class="grid gap-6 lg:grid-cols-3">
+
+                <!-- Description card -->
+                <div class="lg:col-span-2">
+                    <div class="rounded-2xl border border-border/70 bg-card/40 p-7">
+                        <div class="flex items-center gap-3 mb-5">
+                            <div class="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                <span class="text-sm">&#x1F4DD;</span>
+                            </div>
+                            <h2 class="text-lg font-semibold text-foreground">About the Hackathon</h2>
+                        </div>
+                        <div class="whitespace-pre-line text-sm leading-7 text-muted-foreground">
+                            {{ hackathon.description }}
+                        </div>
+
+                        {% if hackathon.resources_link %}
+                        <div class="mt-7 pt-6 border-t border-border/50">
+                            <div class="flex items-start gap-3">
+                                <div class="size-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5 text-xs">&#x1F517;</div>
+                                <div>
+                                    <h3 class="text-sm font-semibold text-foreground">Starter Kits &amp; Resources</h3>
+                                    <p class="mt-0.5 text-xs text-muted-foreground mb-3">Official repos, API credentials and datasets for participants.</p>
+                                    <c-button_link href="{{ hackathon.resources_link }}" target="_blank" rel="noopener noreferrer" variant="outline" size="sm" class="border-primary/30 bg-primary/10 text-primary hover:bg-primary/20">
+                                        &#x2197; Access Resources
+                                    </c-button_link>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Event Summary Sidebar -->
+                <div class="space-y-5">
+                    <div class="rounded-2xl border border-border/70 bg-card/40 p-6">
+                        <p class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-4">Event Summary</p>
+                        <div>
+                            <div class="flex items-center gap-3 py-3 border-b border-border/30">
+                                <div class="size-7 rounded-md bg-emerald-500/10 flex items-center justify-center shrink-0 text-[11px]">&#x1F7E2;</div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-[10px] text-muted-foreground uppercase tracking-wide">Registration opens</p>
+                                    <p class="text-xs font-semibold text-foreground mt-0.5">{{ hackathon.registration_start|date:"M d, Y \u00b7 H:i" }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 py-3 border-b border-border/30">
+                                <div class="size-7 rounded-md bg-red-500/10 flex items-center justify-center shrink-0 text-[11px]">&#x1F534;</div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-[10px] text-muted-foreground uppercase tracking-wide">Registration closes</p>
+                                    <p class="text-xs font-semibold text-foreground mt-0.5">{{ hackathon.registration_deadline|date:"M d, Y \u00b7 H:i" }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 py-3 border-b border-border/30">
+                                <div class="size-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0 text-[11px]">&#x1F680;</div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-[10px] text-muted-foreground uppercase tracking-wide">Competition start</p>
+                                    <p class="text-xs font-semibold text-foreground mt-0.5">{{ hackathon.start_date|date:"M d, Y \u00b7 H:i" }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 py-3 border-b border-border/30">
+                                <div class="size-7 rounded-md bg-violet-500/10 flex items-center justify-center shrink-0 text-[11px]">&#x1F3C1;</div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-[10px] text-muted-foreground uppercase tracking-wide">Competition end</p>
+                                    <p class="text-xs font-semibold text-foreground mt-0.5">{{ hackathon.end_date|date:"M d, Y \u00b7 H:i" }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 py-3 border-b border-border/30">
+                                <div class="size-7 rounded-md bg-sky-500/10 flex items-center justify-center shrink-0 text-[11px]">&#x1F465;</div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-[10px] text-muted-foreground uppercase tracking-wide">Team size</p>
+                                    <p class="text-xs font-semibold text-foreground mt-0.5">{{ hackathon.min_team_size }} &#x2013; {{ hackathon.max_team_size }} builders</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 py-3">
+                                <div class="size-7 rounded-md bg-amber-500/10 flex items-center justify-center shrink-0 text-[11px]">&#x1F3AF;</div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-[10px] text-muted-foreground uppercase tracking-wide">Max capacity</p>
+                                    <p class="text-xs font-semibold text-foreground mt-0.5">{{ hackathon.max_participants }} builders</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Schedule / Timeline -->
+        <div x-show="activeTab === 'schedule'" class="mt-6" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" style="display: none;">
+            <c-card class="border-border/70 bg-card/40 p-6 md:p-8">
+                <h2 class="text-xl font-semibold text-foreground mb-6">Schedule & Milestones</h2>
+                {% if schedule_items %}
+                <div class="relative border-l-2 border-primary/40 ml-4 space-y-8 pl-6">
+                    {% for item in schedule_items %}
+                    <div class="relative">
+                        <div class="absolute -left-[31px] top-1 size-3.5 rounded-full border-2 border-primary bg-background"></div>
+                        <span class="font-mono text-xs text-primary">{{ item.scheduled_at|date:"l, M d @ H:i" }}</span>
+                        <h3 class="text-base font-semibold text-foreground mt-0.5">{{ item.title }}</h3>
+                        {% if item.description %}
+                        <p class="text-xs text-muted-foreground mt-1">{{ item.description }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="py-8 text-center text-muted-foreground text-sm space-y-3">
+                    <p>Detailed workshops and checkpoint milestones will be published shortly by the organizers.</p>
+                    <div class="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-card/40 px-3 py-1.5 text-xs">
+                        <span>🚀 Official Kickoff: {{ hackathon.start_date|date:"l, M d, Y @ H:i" }}</span>
+                    </div>
+                </div>
+                {% endif %}
+            </c-card>
+        </div>
+
+        <!-- Tab 3: Rules -->
+        <div x-show="activeTab === 'rules'" class="mt-6" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" style="display: none;">
+            <c-card class="border-border/70 bg-card/40 p-6 md:p-8">
+                <h2 class="text-xl font-semibold text-foreground mb-4">Guidelines & Evaluation Criteria</h2>
+                {% if hackathon.rules %}
+                <div class="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+                    {{ hackathon.rules }}
+                </div>
+                {% else %}
+                <div class="space-y-4 text-sm text-muted-foreground leading-relaxed">
+                    <p>
+                        1. <strong>Original Code:</strong> All software, designs, and prototypes must be developed exclusively during the official hackathon competition window.
+                    </p>
+                    <p>
+                        2. <strong>Fair Play & Code of Conduct:</strong> Mutual respect among teams, mentors, and judges is mandatory. Harassment of any kind will result in immediate disqualification.
+                    </p>
+                    <p>
+                        3. <strong>Submission:</strong> Each team must submit their project repository, pitch deck, and a working video or live demo before the final deadline.
+                    </p>
+                </div>
+                {% endif %}
+            </c-card>
+        </div>
+
+        <!-- Tab 4: FAQ -->
+        <div x-show="activeTab === 'faq'" class="mt-6" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" style="display: none;">
+            <div class="rounded-2xl border border-border/70 bg-card/40 p-7">
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="size-9 rounded-lg bg-sky-500/10 flex items-center justify-center shrink-0 text-sm">&#x2753;</div>
+                    <div>
+                        <h2 class="text-lg font-semibold text-foreground">Frequently Asked Questions</h2>
+                        <p class="text-xs text-muted-foreground mt-0.5">Common questions about this hackathon</p>
+                    </div>
+                </div>
+
+                {% if faqs %}
+                <div class="space-y-2" x-data="{ open: null }">
+                    {% for faq in faqs %}
+                    <div class="rounded-xl border border-border/50 bg-background/50 overflow-hidden hover:border-primary/30 transition-colors">
+                        <button type="button"
+                                class="w-full flex items-center justify-between px-5 py-4 text-left gap-3 cursor-pointer"
+                                @click="open === {{ forloop.counter }} ? open = null : open = {{ forloop.counter }}">
+                            <span class="text-sm font-semibold text-foreground">{{ faq.question }}</span>
+                            <span class="shrink-0 size-5 rounded-full border border-border/60 flex items-center justify-center text-muted-foreground text-sm transition-transform"
+                                  :class="open === {{ forloop.counter }} ? 'rotate-45 border-primary text-primary' : ''">+</span>
+                        </button>
+                        <div x-show="open === {{ forloop.counter }}"
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 -translate-y-1"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             class="px-5 pb-4">
+                            <p class="text-xs text-muted-foreground leading-relaxed border-t border-border/40 pt-3">{{ faq.answer }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="space-y-3" x-data="{ open: null }">
+                    <div class="rounded-xl border border-border/50 bg-background/50 overflow-hidden hover:border-sky-500/30 transition-colors">
+                        <button type="button" class="w-full flex items-center justify-between px-5 py-4 text-left gap-3 cursor-pointer"
+                                @click="open === 1 ? open = null : open = 1">
+                            <div class="flex items-center gap-3">
+                                <span class="size-6 rounded-lg bg-sky-500/10 flex items-center justify-center shrink-0 text-xs">&#x1F465;</span>
+                                <span class="text-sm font-semibold text-foreground">Can I participate solo or do I need a team?</span>
+                            </div>
+                            <span class="shrink-0 size-5 rounded-full border border-border/60 flex items-center justify-center text-muted-foreground text-sm transition-transform"
+                                  :class="open === 1 ? 'rotate-45 border-sky-400 text-sky-400' : ''">+</span>
+                        </button>
+                        <div x-show="open === 1" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" class="px-5 pb-4">
+                            <p class="text-xs text-muted-foreground leading-relaxed border-t border-border/40 pt-3">
+                                Teams must have between <strong class="text-foreground">{{ hackathon.min_team_size }}</strong> and <strong class="text-foreground">{{ hackathon.max_team_size }}</strong> builders.
+                                If you don't have a team yet, check the <em>"Looking for a team"</em> option during registration to connect with fellow participants.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="rounded-xl border border-border/50 bg-background/50 overflow-hidden hover:border-amber-500/30 transition-colors">
+                        <button type="button" class="w-full flex items-center justify-between px-5 py-4 text-left gap-3 cursor-pointer"
+                                @click="open === 2 ? open = null : open = 2">
+                            <div class="flex items-center gap-3">
+                                <span class="size-6 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0 text-xs">&#x23F3;</span>
+                                <span class="text-sm font-semibold text-foreground">What happens if maximum capacity is reached?</span>
+                            </div>
+                            <span class="shrink-0 size-5 rounded-full border border-border/60 flex items-center justify-center text-muted-foreground text-sm transition-transform"
+                                  :class="open === 2 ? 'rotate-45 border-amber-400 text-amber-400' : ''">+</span>
+                        </button>
+                        <div x-show="open === 2" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" class="px-5 pb-4">
+                            <p class="text-xs text-muted-foreground leading-relaxed border-t border-border/40 pt-3">
+                                You will be placed on the <strong class="text-foreground">priority waitlist</strong>. If any confirmed participant withdraws before the deadline, you will automatically be promoted to confirmed status and notified by email.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="rounded-xl border border-border/50 bg-background/50 overflow-hidden hover:border-emerald-500/30 transition-colors">
+                        <button type="button" class="w-full flex items-center justify-between px-5 py-4 text-left gap-3 cursor-pointer"
+                                @click="open === 3 ? open = null : open = 3">
+                            <div class="flex items-center gap-3">
+                                <span class="size-6 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0 text-xs">&#x1F4E6;</span>
+                                <span class="text-sm font-semibold text-foreground">What do I need to submit at the end?</span>
+                            </div>
+                            <span class="shrink-0 size-5 rounded-full border border-border/60 flex items-center justify-center text-muted-foreground text-sm transition-transform"
+                                  :class="open === 3 ? 'rotate-45 border-emerald-400 text-emerald-400' : ''">+</span>
+                        </button>
+                        <div x-show="open === 3" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" class="px-5 pb-4">
+                            <p class="text-xs text-muted-foreground leading-relaxed border-t border-border/40 pt-3">
+                                Each team must submit a <strong class="text-foreground">public GitHub repository</strong>, a <strong class="text-foreground">pitch deck</strong>, and a <strong class="text-foreground">working video demo</strong> or live URL before the final deadline.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="rounded-xl border border-border/50 bg-background/50 overflow-hidden hover:border-violet-500/30 transition-colors">
+                        <button type="button" class="w-full flex items-center justify-between px-5 py-4 text-left gap-3 cursor-pointer"
+                                @click="open === 4 ? open = null : open = 4">
+                            <div class="flex items-center gap-3">
+                                <span class="size-6 rounded-lg bg-violet-500/10 flex items-center justify-center shrink-0 text-xs">&#x1F3C6;</span>
+                                <span class="text-sm font-semibold text-foreground">How are projects judged?</span>
+                            </div>
+                            <span class="shrink-0 size-5 rounded-full border border-border/60 flex items-center justify-center text-muted-foreground text-sm transition-transform"
+                                  :class="open === 4 ? 'rotate-45 border-violet-400 text-violet-400' : ''">+</span>
+                        </button>
+                        <div x-show="open === 4" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" class="px-5 pb-4">
+                            <p class="text-xs text-muted-foreground leading-relaxed border-t border-border/40 pt-3">
+                                Projects are scored on four axes: <strong class="text-foreground">Innovation</strong> (25%), <strong class="text-foreground">Technical Execution</strong> (30%), <strong class="text-foreground">Impact &amp; Feasibility</strong> (25%), and <strong class="text-foreground">Presentation Quality</strong> (20%).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Tab 5: AI Project Ideas & Inspiration (Generated from Event) -->
+        <div x-show="activeTab === 'ideas'"
+             class="mt-6"
+             x-transition:enter="transition ease-out duration-150"
+             x-transition:enter-start="opacity-0 translate-y-1"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             style="display: none;">
+            <div class="rounded-2xl border border-border/70 bg-card/40 p-6 md:p-8">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 pb-5 border-b border-border/50">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">💡</span>
+                            <h2 class="text-xl font-semibold text-foreground">AI Project Ideas &amp; Challenge Prompts</h2>
+                        </div>
+                        <p class="text-xs text-muted-foreground">
+                            Generated by AI directly from the theme of <strong class="text-foreground">{{ hackathon.title }}</strong> ({{ hackathon.category }}).
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <c-button
+                            type="button"
+                            id="btn-regenerate-ideas"
+                            data-endpoint="{% url 'hackathons:ai_ideas' hackathon.slug %}"
+                            onclick="regenerateAIIdeas(this)"
+                            variant="outline"
+                            size="sm"
+                            class="border-primary/40 bg-primary/10 font-mono text-primary hover:bg-primary/20"
+                        >
+                            <c-lucideicon.sparkles class="size-3.5" />
+                            <span id="btn-ideas-label">Regenerate Ideas</span>
+                        </c-button>
+                    </div>
+                </div>
+
+                <div id="ai-ideas-grid" class="grid gap-6 md:grid-cols-3 transition-opacity duration-200">
+                    {% for idea in project_ideas %}
+                    <div class="rounded-xl border border-border/60 bg-background/50 p-5 flex flex-col justify-between hover:border-emerald-500/40 hover:shadow-lg transition-all group">
+                        <div class="space-y-3">
+                            <div class="flex items-start justify-between gap-2">
+                                <h3 class="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{{ idea.title }}</h3>
+                                <span class="rounded-md border border-border/60 bg-card/60 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">
+                                    {{ idea.difficulty }}
+                                </span>
+                            </div>
+
+                            <div class="space-y-1">
+                                <p class="text-[11px] font-semibold text-amber-500 uppercase font-mono tracking-wider">🎯 Problem</p>
+                                <p class="text-xs text-muted-foreground leading-relaxed">{{ idea.problem }}</p>
+                            </div>
+
+                            <div class="space-y-1">
+                                <p class="text-[11px] font-semibold text-emerald-400 uppercase font-mono tracking-wider">⚡ Proposed Solution</p>
+                                <p class="text-xs text-muted-foreground leading-relaxed">{{ idea.solution }}</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-t border-border/40">
+                            <p class="text-[10px] font-mono uppercase text-muted-foreground mb-2">Recommended Tech Stack</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                {% for tech in idea.tech_stack %}
+                                <span class="rounded-md bg-secondary/80 border border-border/60 px-2 py-0.5 font-mono text-[10px] text-foreground font-medium">{{ tech }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-span-3 text-center py-8 text-muted-foreground text-xs font-mono">
+                        No project ideas generated yet. Click “Regenerate Ideas”.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 6: Digital Badge Pass & Verifiable QR Code (Role-Aware) -->
+        <div x-show="activeTab === 'badge'"
+             class="mt-6"
+             x-transition:enter="transition ease-out duration-150"
+             x-transition:enter-start="opacity-0 translate-y-1"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             style="display: none;">
+            
+            {% if is_organizer or user.is_staff %}
+            <!-- ORGANIZER VIEW: Check-in Desk & Attendance Console -->
+            <div class="rounded-2xl border border-border/70 bg-card/40 p-6 md:p-8 space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/50 pb-5">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🎫</span>
+                            <h2 class="text-xl font-semibold text-foreground">Organizer Check-in Desk &amp; Attendance Console</h2>
+                        </div>
+                        <p class="text-xs text-muted-foreground">
+                            Real-time door check-in, QR ticket verification, and venue presence tracking for <strong class="text-foreground">{{ hackathon.title }}</strong>.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <c-button_link
+                            href="{% url 'hackathons:export_participants' hackathon.slug %}"
+                            variant="outline"
+                            size="sm"
+                            class="bg-background/60 font-mono text-muted-foreground"
+                        >
+                            <c-lucideicon.download class="size-3" />
+                            Export Attendee CSV
+                        </c-button_link>
+                    </div>
+                </div>
+
+                <!-- Live Attendance KPIs -->
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <div class="rounded-xl border border-border/60 bg-background/50 p-4 space-y-1">
+                        <span class="font-mono text-[11px] uppercase text-muted-foreground">Confirmed Builders</span>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-2xl font-black text-foreground">{{ confirmed_registrations_count }}</span>
+                            <span class="text-xs text-muted-foreground">/ {{ hackathon.max_participants }} capacity</span>
+                        </div>
+                    </div>
+                    <div class="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 space-y-1">
+                        <span class="font-mono text-[11px] uppercase text-emerald-400">Checked-in Present in Venue</span>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-2xl font-black text-emerald-400">{{ checked_in_count }}</span>
+                            <span class="text-xs text-emerald-300/80">({{ attendance_rate }}% attendance)</span>
+                        </div>
+                    </div>
+                    <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 space-y-1">
+                        <span class="font-mono text-[11px] uppercase text-amber-300">Pending Arrival</span>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-2xl font-black text-amber-300">{{ pending_checkin_count }}</span>
+                            <span class="text-xs text-amber-300/80">ticket passes issued</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Registered Attendees Table -->
+                <div class="overflow-hidden rounded-xl border border-border/60 bg-background/40">
+                    <div class="overflow-x-auto">
+                        <c-table class="w-full text-left text-xs">
+                            <c-table.header class="border-b border-border/60 bg-muted/40 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                                <c-table.row>
+                                    <c-table.head class="px-4 py-3">Attendee</c-table.head>
+                                    <c-table.head class="px-4 py-3">University</c-table.head>
+                                    <c-table.head class="px-4 py-3">Ticket Identifier</c-table.head>
+                                    <c-table.head class="px-4 py-3">Check-in Status</c-table.head>
+                                    <c-table.head class="px-4 py-3 text-right">Door Actions</c-table.head>
+                                </c-table.row>
+                            </c-table.header>
+                            <c-table.body class="divide-y divide-border/40 font-mono">
+                                {% for reg in organizer_registrations %}
+                                <c-table.row class="hover:bg-muted/20 transition-colors">
+                                    <c-table.cell class="px-4 py-3 font-sans">
+                                        <div class="flex items-center gap-2.5">
+                                            <div class="flex size-7 items-center justify-center rounded-lg bg-primary/20 text-xs font-bold text-primary font-mono shrink-0">
+                                                {{ reg.participant.first_name|first|default:reg.participant.username|first|upper }}
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-foreground">{{ reg.participant.get_full_name|default:reg.participant.username }}</p>
+                                                <p class="text-[11px] font-mono text-muted-foreground">{{ reg.participant.email }}</p>
+                                            </div>
+                                        </div>
+                                    </c-table.cell>
+                                    <c-table.cell class="px-4 py-3 font-sans text-muted-foreground">
+                                        {{ reg.university|default:"Not specified" }} · {{ reg.get_study_level_display }}
+                                    </c-table.cell>
+                                    <c-table.cell class="px-4 py-3 font-mono font-bold text-primary">
+                                        {{ reg.ticket_code }}
+                                    </c-table.cell>
+                                    <c-table.cell class="px-4 py-3">
+                                        {% if reg.checked_in %}
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400">
+                                            ✓ Present ({{ reg.checked_in_at|date:"H:i" }})
+                                        </span>
+                                        {% else %}
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 text-[10px] text-amber-400">
+                                            ⏳ Pending
+                                        </span>
+                                        {% endif %}
+                                    </c-table.cell>
+                                    <c-table.cell class="px-4 py-3 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <c-button_link
+                                                href="{% url 'hackathons:toggle_checkin' hackathon.slug reg.ticket_code %}"
+                                                variant="outline"
+                                                size="xs"
+                                                class="{% if reg.checked_in %}border-destructive/30 text-destructive hover:bg-destructive/10{% else %}border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/15{% endif %} font-sans"
+                                            >
+                                                {% if reg.checked_in %}Undo check-in{% else %}✓ Check in{% endif %}
+                                            </c-button_link>
+                                            <c-button_link
+                                                href="{% url 'hackathons:participant_badge' hackathon.slug %}?ticket={{ reg.ticket_code }}"
+                                                target="_blank"
+                                                variant="outline"
+                                                size="xs"
+                                                class="font-sans text-muted-foreground"
+                                                title="View this participant's badge"
+                                            >
+                                                🔍 View Badge
+                                            </c-button_link>
+                                        </div>
+                                    </c-table.cell>
+                                </c-table.row>
+                                {% empty %}
+                                <c-table.row>
+                                    <c-table.cell colspan="5" class="py-8 text-center text-muted-foreground text-xs font-sans">
+                                        No participants registered yet.
+                                    </c-table.cell>
+                                </c-table.row>
+                                {% endfor %}
+                            </c-table.body>
+                        </c-table>
+                    </div>
+                </div>
+            </div>
+
+            {% elif is_registered and badge_registration %}
+            <!-- STUDENT VIEW: Personal Official Holographic Badge & Scannable QR -->
+            <div class="rounded-2xl border border-border/70 bg-card/40 p-6 md:p-8">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 pb-5 border-b border-border/50">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🎫</span>
+                            <h2 class="text-xl font-semibold text-foreground">My Official Participant Badge</h2>
+                        </div>
+                        <p class="text-xs text-muted-foreground">
+                            Present this QR code at the welcome desk to validate your entry to <strong class="text-foreground">{{ hackathon.title }}</strong>.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <c-button_link
+                            href="{% url 'hackathons:participant_badge' hackathon.slug %}"
+                            variant="outline"
+                            size="sm"
+                            class="border-primary/40 bg-primary/10 font-mono text-primary hover:bg-primary/20"
+                        >
+                            <c-lucideicon.printer class="size-3.5" />
+                            <span>Full Screen / Print PDF</span>
+                        </c-button_link>
+                    </div>
+                </div>
+
+                <div class="max-w-md mx-auto">
+                    <!-- Holographic Badge Card -->
+                    <div class="relative overflow-hidden rounded-3xl border border-primary/40 bg-gradient-to-b from-card/90 via-background to-card/90 p-7 shadow-2xl backdrop-blur-xl space-y-5 text-center">
+                        <div class="mx-auto h-2 w-14 rounded-full bg-border/80 border border-border"></div>
+
+                        <div class="flex items-center justify-between border-b border-border/60 pb-4 text-left">
+                            <div class="flex items-center gap-2">
+                                <span class="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground font-black text-xs">&gt;_</span>
+                                <div>
+                                    <span class="font-mono text-xs font-bold text-foreground">HACKFLOW PASS</span>
+                                    <p class="text-[9px] font-mono text-muted-foreground">Official Credential</p>
+                                </div>
+                            </div>
+                            <span class="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-0.5 font-mono text-[10px] font-bold text-emerald-400 uppercase">
+                                <span class="size-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                {{ badge_registration.get_status_display }}
+                            </span>
+                        </div>
+
+                        <!-- Attendee info -->
+                        <div class="space-y-1">
+                            <div class="mx-auto flex size-14 items-center justify-center rounded-xl border border-primary/40 bg-primary/10 text-xl font-black text-primary">
+                                {{ badge_registration.participant.first_name|first|default:badge_registration.participant.username|first|upper }}
+                            </div>
+                            <h3 class="text-lg font-extrabold text-foreground">{{ badge_registration.participant.get_full_name|default:badge_registration.participant.username }}</h3>
+                            <p class="font-mono text-xs text-muted-foreground">{{ badge_registration.participant.email }}</p>
+                            <div class="flex items-center justify-center gap-2 pt-1 font-mono text-[10px]">
+                                {% if badge_registration.university %}
+                                <span class="rounded bg-secondary/70 px-2 py-0.5 text-foreground">🏛️ {{ badge_registration.university }}</span>
+                                {% endif %}
+                                <span class="rounded bg-secondary/70 px-2 py-0.5 text-foreground">🎓 {{ badge_registration.get_study_level_display }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Scannable QR Code -->
+                        <div class="rounded-2xl border border-border/60 bg-card/60 p-4 space-y-2">
+                            <div class="mx-auto size-44 rounded-xl bg-white p-2.5 flex items-center justify-center shadow-inner">
+                                <img src="{{ badge_qr_b64 }}" alt="My badge QR code" class="size-full object-contain" />
+                            </div>
+                            <p class="font-mono text-xs font-bold tracking-widest text-primary">{{ badge_registration.ticket_code }}</p>
+                            {% if badge_registration.checked_in %}
+                            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-3 py-1 font-mono text-xs font-bold text-emerald-400">
+                                ✓ ENTRY VALIDATED AT VENUE
+                            </span>
+                            {% else %}
+                            <p class="text-[10px] font-mono text-muted-foreground">Present this QR code at the welcome desk to enter</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% else %}
+            <!-- UNREGISTERED VISITOR VIEW -->
+            <div class="rounded-2xl border border-border/70 bg-card/40 p-8 text-center space-y-4 max-w-lg mx-auto">
+                <div class="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary text-2xl">
+                    🎫
+                </div>
+                <h3 class="text-lg font-bold text-foreground">Get Your Official Pass</h3>
+                <p class="text-xs text-muted-foreground leading-relaxed">
+                    You are not registered for <strong>{{ hackathon.title }}</strong> yet. Register to receive your official access badge with a verifiable QR code.
+                </p>
+                <div class="pt-2">
+                    <c-button_link href="{% url 'hackathons:register' hackathon.slug %}" class="font-mono text-xs font-bold">
+                        Register for the Hackathon
+                    </c-button_link>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <script>
+        async function regenerateAIIdeas(button) {
+            const grid = document.getElementById('ai-ideas-grid');
+            const label = document.getElementById('btn-ideas-label');
+            const endpoint = button ? button.getAttribute('data-endpoint') : null;
+            if (!grid || !button || !endpoint) return;
+
+            button.disabled = true;
+            if (label) label.innerText = 'Generating ideas...';
+            grid.style.opacity = '0.4';
+
+            try {
+                const res = await fetch(endpoint);
+                const data = await res.json();
+                if (data.success && Array.isArray(data.ideas) && data.ideas.length > 0) {
+                    grid.innerHTML = data.ideas.map(idea => `
+                        <div class="rounded-xl border border-border/60 bg-background/50 p-5 flex flex-col justify-between hover:border-emerald-500/40 hover:shadow-lg transition-all group">
+                            <div class="space-y-3">
+                                <div class="flex items-start justify-between gap-2">
+                                    <h3 class="text-sm font-bold text-foreground group-hover:text-primary transition-colors">${escapeXml(idea.title)}</h3>
+                                    <span class="rounded-md border border-border/60 bg-card/60 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">
+                                        ${escapeXml(idea.difficulty)}
+                                    </span>
+                                </div>
+                                <div class="space-y-1">
+                                    <p class="text-[11px] font-semibold text-amber-500 uppercase font-mono tracking-wider">🎯 Problem</p>
+                                    <p class="text-xs text-muted-foreground leading-relaxed">${escapeXml(idea.problem)}</p>
+                                </div>
+                                <div class="space-y-1">
+                                    <p class="text-[11px] font-semibold text-emerald-400 uppercase font-mono tracking-wider">⚡ Proposed Solution</p>
+                                    <p class="text-xs text-muted-foreground leading-relaxed">${escapeXml(idea.solution)}</p>
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-border/40">
+                                <p class="text-[10px] font-mono uppercase text-muted-foreground mb-2">Recommended Tech Stack</p>
+                                <div class="flex flex-wrap gap-1.5">
+                                    ${(idea.tech_stack || []).map(t => `<span class="rounded-md bg-secondary/80 border border-border/60 px-2 py-0.5 font-mono text-[10px] text-foreground font-medium">${escapeXml(t)}</span>`).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error('Failed to regenerate ideas:', err);
+            } finally {
+                grid.style.opacity = '1';
+                button.disabled = false;
+                if (label) label.innerText = 'Regenerate Ideas';
+            }
+        }
+        function escapeXml(unsafe) {
+            return String(unsafe || '').replace(/[<>&'"]/g, c => {
+                switch (c) {
+                    case '<': return '&lt;';
+                    case '>': return '&gt;';
+                    case '&': return '&amp;';
+                    case '\'': return '&apos;';
+                    case '"': return '&quot;';
+                }
+            });
+        }
+        </script>
+    </div>
+</div>
+{% endblock %}

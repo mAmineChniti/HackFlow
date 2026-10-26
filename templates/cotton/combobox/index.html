@@ -12,7 +12,7 @@
     open: {{ default_open|lower }},
     value: '{{ selected_value }}',
     buttonText: '{{ button_text }}',
-    options: {{ options|default:'[]'|safe }},
+    options: {{ options|default:'[]'|safe }}, {# safe: options must be valid JSON from server-side, not user input #}
     search: '',
     highlightedIndex: -1,
     filteredOptions: [],
