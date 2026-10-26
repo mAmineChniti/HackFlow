@@ -205,9 +205,7 @@ def my_invitations(request):
     received = Invitation.objects.filter(invitee=request.user).select_related(
         "team", "team__hackathon", "invited_by"
     )
-    sent = Invitation.objects.filter(team__leader=request.user).select_related(
-        "team", "invitee"
-    )
+    sent = Invitation.objects.filter(team__leader=request.user).select_related("team", "invitee")
     pending = Invitation.Status.PENDING
     return render(
         request,

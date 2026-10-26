@@ -76,6 +76,7 @@ class ProjectForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.user = user
         from . import services
+
         # Retirer le champ 'status' pour les étudiants (seuls Organizer et Admin ont ce champ)
         if user is None or not (services.is_organizer(user) or services.is_admin(user)):
             self.fields.pop("status", None)
@@ -84,6 +85,7 @@ class ProjectForm(forms.ModelForm):
         status = self.cleaned_data.get("status")
         if status and self.user:
             from . import services
+
             services.validate_status_permission(self.user, status)
         return status
 
@@ -114,14 +116,19 @@ class ProjectMemberForm(forms.ModelForm):
         # Filtrer la liste des utilisateurs pour ne proposer que des étudiants
         from django.contrib.auth import get_user_model
         from accounts.models import Profile
+
         User = get_user_model()
         students_qs = User.objects.filter(profile__role=Profile.Role.STUDENT, is_active=True)
         if project:
             # Exclure les membres déjà présents dans l'équipe
             existing_user_ids = project.team_memberships.values_list("user_id", flat=True)
-            students_qs = students_qs.exclude(id__in=existing_user_ids).exclude(id=project.created_by_id)
+            students_qs = students_qs.exclude(id__in=existing_user_ids).exclude(
+                id=project.created_by_id
+            )
         self.fields["user"].queryset = students_qs
-        self.fields["user"].label_from_instance = lambda u: f"{u.get_username()} ({u.email or 'Student'})"
+        self.fields["user"].label_from_instance = lambda u: (
+            f"{u.get_username()} ({u.email or 'Student'})"
+        )
 
 
 class ProjectReviewDecisionForm(forms.Form):
@@ -131,9 +138,7 @@ class ProjectReviewDecisionForm(forms.Form):
     )
     decision = forms.ChoiceField(
         choices=DECISION_CHOICES,
-        widget=forms.RadioSelect(
-            attrs={"class": "accent-primary"}
-        ),
+        widget=forms.RadioSelect(attrs={"class": "accent-primary"}),
         initial="accept",
     )
     rejection_reason = forms.CharField(
@@ -153,7 +158,9 @@ class ProjectReviewDecisionForm(forms.Form):
         decision = cleaned_data.get("decision")
         reason = (cleaned_data.get("rejection_reason") or "").strip()
         if decision == "reject" and not reason:
-            self.add_error("rejection_reason", "Please provide a reason explaining the project rejection.")
+            self.add_error(
+                "rejection_reason", "Please provide a reason explaining the project rejection."
+            )
         return cleaned_data
 
 
@@ -162,6 +169,7 @@ SCORE_CHOICES = [(i, f"{i} / 10") for i in range(1, 11)]
 
 class ProjectScoreForm(forms.Form):
     """Scoring form for organizers (1 to 10)."""
+
     score = forms.ChoiceField(
         choices=SCORE_CHOICES,
         label="Score (1 = low, 10 = excellent)",
@@ -175,6 +183,7 @@ class ProjectScoreForm(forms.Form):
 
 class ConseilMentorForm(forms.ModelForm):
     """Mentor advice submission form."""
+
     class Meta:
         model = ConseilMentor
         fields = ["texte"]

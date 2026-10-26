@@ -10,12 +10,13 @@ import os
 
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'HackFlow.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "HackFlow.settings")
 
 django_application = get_asgi_application()
 
 try:
     from django_mcp import mount_mcp_server
+
     application = mount_mcp_server(django_application)
 except Exception:
     application = django_application

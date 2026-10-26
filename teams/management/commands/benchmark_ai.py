@@ -24,10 +24,18 @@ class Command(BaseCommand):
             "missing_roles": ["designer", "data"],
         }
         suggestions = [
-            {"username": "alice", "role": "designer", "score": 6,
-             "reasons": ["comble le rôle manquant : designer", "apporte : figma"]},
-            {"username": "karim", "role": "data", "score": 6,
-             "reasons": ["comble le rôle manquant : data", "apporte : ml"]},
+            {
+                "username": "alice",
+                "role": "designer",
+                "score": 6,
+                "reasons": ["comble le rôle manquant : designer", "apporte : figma"],
+            },
+            {
+                "username": "karim",
+                "role": "data",
+                "score": 6,
+                "reasons": ["comble le rôle manquant : data", "apporte : ml"],
+            },
         ]
         prompt = ai.build_prompt(team, analysis, suggestions)
 

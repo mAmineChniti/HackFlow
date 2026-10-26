@@ -20,11 +20,13 @@ class TeamAdmin(admin.ModelAdmin):
     search_fields = ("name", "leader__username")
     inlines = [TeamMemberInline]
 
+
 @admin.register(SkillProfile)
 class SkillProfileAdmin(admin.ModelAdmin):
     list_display = ("user", "main_role", "skills", "looking_for_team")
     list_filter = ("main_role", "looking_for_team")
     search_fields = ("user__username", "skills")
+
 
 @admin.register(Invitation)
 class InvitationAdmin(admin.ModelAdmin):

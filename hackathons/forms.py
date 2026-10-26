@@ -5,6 +5,7 @@ from .models import Hackathon, HackathonRegistration, HackathonSchedule
 
 class TailwindFormMixin:
     """Helper mixin to give Django form fields the HackFlow / Shadcn Tailwind styling."""
+
     input_class = (
         "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs "
         "transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium "
@@ -21,21 +22,27 @@ class TailwindFormMixin:
         "transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring "
         "disabled:cursor-not-allowed disabled:opacity-50"
     )
-    checkbox_class = (
-        "size-4 rounded border-border text-primary focus:ring-primary accent-primary cursor-pointer shrink-0"
-    )
+    checkbox_class = "size-4 rounded border-border text-primary focus:ring-primary accent-primary cursor-pointer shrink-0"
 
     def apply_tailwind_classes(self):
         for name, field in self.fields.items():
             widget = field.widget
             if isinstance(widget, (forms.CheckboxInput, forms.CheckboxSelectMultiple)):
-                widget.attrs["class"] = f"{widget.attrs.get('class', '')} {self.checkbox_class}".strip()
+                widget.attrs["class"] = (
+                    f"{widget.attrs.get('class', '')} {self.checkbox_class}".strip()
+                )
             elif isinstance(widget, forms.Textarea):
-                widget.attrs["class"] = f"{widget.attrs.get('class', '')} {self.textarea_class}".strip()
+                widget.attrs["class"] = (
+                    f"{widget.attrs.get('class', '')} {self.textarea_class}".strip()
+                )
             elif isinstance(widget, (forms.Select, forms.SelectMultiple)):
-                widget.attrs["class"] = f"{widget.attrs.get('class', '')} {self.select_class}".strip()
+                widget.attrs["class"] = (
+                    f"{widget.attrs.get('class', '')} {self.select_class}".strip()
+                )
             else:
-                widget.attrs["class"] = f"{widget.attrs.get('class', '')} {self.input_class}".strip()
+                widget.attrs["class"] = (
+                    f"{widget.attrs.get('class', '')} {self.input_class}".strip()
+                )
 
 
 class HackathonForm(TailwindFormMixin, forms.ModelForm):
@@ -79,12 +86,27 @@ class HackathonForm(TailwindFormMixin, forms.ModelForm):
             "end_date": forms.DateTimeInput(
                 attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"
             ),
-            "description": forms.Textarea(attrs={"rows": 4, "placeholder": "Describe the theme, challenge prompt and goals..."}),
-            "rules": forms.Textarea(attrs={"rows": 4, "placeholder": "Eligibility, code of conduct, scoring rubric..."}),
-            "tagline": forms.TextInput(attrs={"placeholder": "Ex: 48 hours to build autonomous AI agents"}),
-            "category": forms.TextInput(attrs={"placeholder": "Ex: AI & Data, Web3, GreenTech, Cybersecurity"}),
-            "location": forms.TextInput(attrs={"placeholder": "Ex: ESPRIT Building B / Remote via Discord"}),
-            "prize_pool": forms.TextInput(attrs={"placeholder": "Ex: $10,000 + Incubation Support"}),
+            "description": forms.Textarea(
+                attrs={
+                    "rows": 4,
+                    "placeholder": "Describe the theme, challenge prompt and goals...",
+                }
+            ),
+            "rules": forms.Textarea(
+                attrs={"rows": 4, "placeholder": "Eligibility, code of conduct, scoring rubric..."}
+            ),
+            "tagline": forms.TextInput(
+                attrs={"placeholder": "Ex: 48 hours to build autonomous AI agents"}
+            ),
+            "category": forms.TextInput(
+                attrs={"placeholder": "Ex: AI & Data, Web3, GreenTech, Cybersecurity"}
+            ),
+            "location": forms.TextInput(
+                attrs={"placeholder": "Ex: ESPRIT Building B / Remote via Discord"}
+            ),
+            "prize_pool": forms.TextInput(
+                attrs={"placeholder": "Ex: $10,000 + Incubation Support"}
+            ),
             "resources_link": forms.URLInput(attrs={"placeholder": "https://..."}),
             "contact_email": forms.EmailInput(attrs={"placeholder": "organizers@hackflow.dev"}),
         }
@@ -94,9 +116,12 @@ class HackathonForm(TailwindFormMixin, forms.ModelForm):
         self.apply_tailwind_classes()
         for date_field in ["registration_start", "registration_deadline", "start_date", "end_date"]:
             if self.instance and getattr(self.instance, date_field, None):
-                self.initial[date_field] = getattr(self.instance, date_field).strftime("%Y-%m-%dT%H:%M")
+                self.initial[date_field] = getattr(self.instance, date_field).strftime(
+                    "%Y-%m-%dT%H:%M"
+                )
 
         from django.contrib.auth import get_user_model
+
         User = get_user_model()
         if "judges" in self.fields:
             self.fields["judges"].queryset = User.objects.filter(
@@ -167,7 +192,9 @@ class RegistrationForm(TailwindFormMixin, forms.ModelForm):
         choices=POPULAR_SKILLS,
         required=False,
         widget=forms.CheckboxSelectMultiple(
-            attrs={"class": "size-4 rounded border-border text-primary accent-primary cursor-pointer shrink-0"}
+            attrs={
+                "class": "size-4 rounded border-border text-primary accent-primary cursor-pointer shrink-0"
+            }
         ),
         help_text="Check all your primary technical skills",
     )
@@ -282,7 +309,9 @@ class ScheduleForm(TailwindFormMixin, forms.ModelForm):
             "scheduled_at": forms.DateTimeInput(
                 attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"
             ),
-            "description": forms.Textarea(attrs={"rows": 2, "placeholder": "Key details for this milestone..."}),
+            "description": forms.Textarea(
+                attrs={"rows": 2, "placeholder": "Key details for this milestone..."}
+            ),
         }
 
     def __init__(self, *args, **kwargs):

@@ -17,7 +17,14 @@ class HackathonFAQInline(admin.TabularInline):
 class HackathonRegistrationInline(admin.TabularInline):
     model = HackathonRegistration
     extra = 0
-    readonly_fields = ("participant", "ticket_code", "checked_in", "checked_in_at", "registered_at", "skills")
+    readonly_fields = (
+        "participant",
+        "ticket_code",
+        "checked_in",
+        "checked_in_at",
+        "registered_at",
+        "skills",
+    )
     can_delete = True
 
 
@@ -43,35 +50,60 @@ class HackathonAdmin(admin.ModelAdmin):
     actions = ("publish_hackathons", "unpublish_hackathons")
 
     fieldsets = (
-        ("General Information", {
-            "fields": ("title", "slug", "tagline", "description", "category", "banner_image"),
-        }),
-        ("Dates & Milestones", {
-            "fields": ("registration_start", "registration_deadline", "start_date", "end_date"),
-        }),
-        ("Mode & Venue", {
-            "fields": ("mode", "location"),
-        }),
-        ("Capacity & Team Constraints", {
-            "fields": ("max_participants", "min_team_size", "max_team_size"),
-        }),
-        ("Prizes & Difficulty", {
-            "fields": ("prize_pool", "difficulty"),
-        }),
-        ("Rules & Resources", {
-            "fields": ("rules", "resources_link", "contact_email"),
-        }),
-        ("Visibility & Ownership", {
-            "fields": ("organizer", "status", "is_published"),
-        }),
-        ("Metadata", {
-            "fields": ("created_at", "updated_at"),
-            "classes": ("collapse",),
-        }),
+        (
+            "General Information",
+            {
+                "fields": ("title", "slug", "tagline", "description", "category", "banner_image"),
+            },
+        ),
+        (
+            "Dates & Milestones",
+            {
+                "fields": ("registration_start", "registration_deadline", "start_date", "end_date"),
+            },
+        ),
+        (
+            "Mode & Venue",
+            {
+                "fields": ("mode", "location"),
+            },
+        ),
+        (
+            "Capacity & Team Constraints",
+            {
+                "fields": ("max_participants", "min_team_size", "max_team_size"),
+            },
+        ),
+        (
+            "Prizes & Difficulty",
+            {
+                "fields": ("prize_pool", "difficulty"),
+            },
+        ),
+        (
+            "Rules & Resources",
+            {
+                "fields": ("rules", "resources_link", "contact_email"),
+            },
+        ),
+        (
+            "Visibility & Ownership",
+            {
+                "fields": ("organizer", "status", "is_published"),
+            },
+        ),
+        (
+            "Metadata",
+            {
+                "fields": ("created_at", "updated_at"),
+                "classes": ("collapse",),
+            },
+        ),
     )
 
     def registered_count(self, obj):
         return obj.registered_count
+
     registered_count.short_description = "Registered"
 
     @admin.action(description="Publish selected hackathons")

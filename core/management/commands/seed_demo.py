@@ -1457,6 +1457,5 @@ class Command(BaseCommand):
             f"{SponsorEmailLog.objects.filter(sponsor__name__in=sponsor_names).count()}"
         )
         self.stdout.write(
-            "Passwords are not printed. All demo users share password: "
-            f"{DEMO_PASSWORD}"
+            f"Passwords are not printed. All demo users share password: {DEMO_PASSWORD}"
         )

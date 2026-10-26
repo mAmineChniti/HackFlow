@@ -44,9 +44,7 @@ def get_user_roles(user) -> set[str]:
 
     # Enable SPONSORS_USE_GROUP_ROLES when Django groups become the role source.
     if getattr(settings, "SPONSORS_USE_GROUP_ROLES", False):
-        group_roles = set(
-            user.groups.values_list("name", flat=True)
-        )
+        group_roles = set(user.groups.values_list("name", flat=True))
         normalized_roles = {
             normalized
             for role in group_roles
@@ -69,10 +67,7 @@ def user_has_sponsor_permission(user, perm: str) -> bool:
         return False
 
     role_permissions = _role_permissions()
-    return any(
-        perm in role_permissions.get(role, ())
-        for role in get_user_roles(user)
-    )
+    return any(perm in role_permissions.get(role, ()) for role in get_user_roles(user))
 
 
 def can_manage_sponsors(user) -> bool:
@@ -113,8 +108,7 @@ def sponsors_visible_to(user) -> QuerySet:
 
     visible_sponsorships = sponsorships_visible_to(user)
     return Sponsor.objects.filter(
-        Q(sponsorships__in=visible_sponsorships)
-        | Q(sponsorships__isnull=True)
+        Q(sponsorships__in=visible_sponsorships) | Q(sponsorships__isnull=True)
     ).distinct()
 
 

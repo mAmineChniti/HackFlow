@@ -73,16 +73,16 @@ def make_hackathon(
 class SponsorAdminInterfaceTests(TestCase):
     def setUp(self):
         self.admin_user = User.objects.create_superuser(
-            username='sponsor_admin',
-            email='admin@example.com',
-            password='StrongPassword123!',
+            username="sponsor_admin",
+            email="admin@example.com",
+            password="StrongPassword123!",
         )
         self.client.force_login(self.admin_user)
-        self.sponsor = Sponsor.objects.create(name='Admin Template Sponsor')
+        self.sponsor = Sponsor.objects.create(name="Admin Template Sponsor")
         self.hackathon = make_hackathon(
             self.admin_user,
-            title='Admin Template Hackathon',
-            tagline='Technology',
+            title="Admin Template Hackathon",
+            tagline="Technology",
             start_date=timezone.now(),
             end_date=timezone.now() + timezone.timedelta(days=1),
         )
@@ -92,44 +92,42 @@ class SponsorAdminInterfaceTests(TestCase):
         )
 
     def test_admin_root_responds_200(self):
-        response = self.client.get(reverse('admin:index'))
+        response = self.client.get(reverse("admin:index"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Django administration')
-        self.assertContains(response, reverse('admin:sponsors_sponsor_changelist'))
+        self.assertContains(response, "Django administration")
+        self.assertContains(response, reverse("admin:sponsors_sponsor_changelist"))
 
     def test_sponsor_lists_do_not_expose_contact_emails_or_internal_notes(self):
-        self.sponsor.contact_email = 'private-contact@example.com'
-        self.sponsor.save(update_fields=('contact_email',))
-        self.sponsorship.notes = 'Confidential negotiation note'
-        self.sponsorship.save(update_fields=('notes',))
+        self.sponsor.contact_email = "private-contact@example.com"
+        self.sponsor.save(update_fields=("contact_email",))
+        self.sponsorship.notes = "Confidential negotiation note"
+        self.sponsorship.save(update_fields=("notes",))
 
-        sponsor_response = self.client.get(reverse('admin:sponsors_sponsor_changelist'))
-        sponsorship_response = self.client.get(
-            reverse('admin:sponsors_sponsorship_changelist')
-        )
+        sponsor_response = self.client.get(reverse("admin:sponsors_sponsor_changelist"))
+        sponsorship_response = self.client.get(reverse("admin:sponsors_sponsorship_changelist"))
 
-        self.assertNotContains(sponsor_response, 'private-contact@example.com')
-        self.assertNotContains(sponsorship_response, 'private-contact@example.com')
-        self.assertNotContains(sponsorship_response, 'Confidential negotiation note')
+        self.assertNotContains(sponsor_response, "private-contact@example.com")
+        self.assertNotContains(sponsorship_response, "private-contact@example.com")
+        self.assertNotContains(sponsorship_response, "Confidential negotiation note")
 
     def test_sponsorship_admin_actions_use_status_service_and_record_history(self):
         actions = (
-            ('mark_contacted', StatusChoices.CONTACTE),
-            ('mark_negotiation', StatusChoices.NEGOCIATION),
-            ('mark_confirmed', StatusChoices.CONFIRME),
-            ('mark_refused', StatusChoices.REFUSE),
+            ("mark_contacted", StatusChoices.CONTACTE),
+            ("mark_negotiation", StatusChoices.NEGOCIATION),
+            ("mark_confirmed", StatusChoices.CONFIRME),
+            ("mark_refused", StatusChoices.REFUSE),
         )
-        url = reverse('admin:sponsors_sponsorship_changelist')
+        url = reverse("admin:sponsors_sponsorship_changelist")
 
         for action, expected_status in actions:
             with self.subTest(action=action):
                 response = self.client.post(
                     url,
                     {
-                        'action': action,
-                        '_selected_action': [str(self.sponsorship.pk)],
-                        'index': 0,
-                        'post': 'yes',
+                        "action": action,
+                        "_selected_action": [str(self.sponsorship.pk)],
+                        "index": 0,
+                        "post": "yes",
                     },
                 )
                 self.assertEqual(response.status_code, 302)
@@ -142,14 +140,14 @@ class SponsorAdminInterfaceTests(TestCase):
         )
         self.assertEqual(
             StatusHistory.objects.filter(sponsorship=self.sponsorship)
-            .order_by('changed_at')
+            .order_by("changed_at")
             .last()
             .new_status,
             StatusChoices.REFUSE,
         )
 
     def test_status_and_email_logs_are_read_only_in_admin(self):
-        response = self.client.get(reverse('admin:sponsors_statushistory_changelist'))
+        response = self.client.get(reverse("admin:sponsors_statushistory_changelist"))
         request = response.wsgi_request
         for model in (StatusHistory, SponsorEmailLog):
             model_admin = admin.site._registry[model]
@@ -160,16 +158,17 @@ class SponsorAdminInterfaceTests(TestCase):
 
     def test_non_confidential_roles_cannot_open_sponsor_admin(self):
         staff_user = User.objects.create_superuser(
-            username='sponsor_admin_student_role',
-            email='student-role@example.com',
-            password='StrongPassword123!',
+            username="sponsor_admin_student_role",
+            email="student-role@example.com",
+            password="StrongPassword123!",
         )
         self.client.force_login(staff_user)
 
-        with patch('sponsors.permissions.get_user_roles', return_value={'etudiant'}):
-            response = self.client.get(reverse('admin:sponsors_sponsor_changelist'))
+        with patch("sponsors.permissions.get_user_roles", return_value={"etudiant"}):
+            response = self.client.get(reverse("admin:sponsors_sponsor_changelist"))
 
         self.assertEqual(response.status_code, 403)
+
 
 class SponsorModelAndViewsTest(TestCase):
     def setUp(self):
@@ -408,7 +407,9 @@ class SponsorModelAndViewsTest(TestCase):
         self.assertNotContains(response, "Zeta Logistics")
 
         # 2. Filtre par statut 'refusé'
-        response = self.client.get(reverse("sponsors:sponsor_list"), {"status": StatusChoices.REFUSE})
+        response = self.client.get(
+            reverse("sponsors:sponsor_list"), {"status": StatusChoices.REFUSE}
+        )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Zeta Logistics")
         self.assertNotContains(response, "Alpha Corp")
@@ -541,7 +542,9 @@ class SponsorModelAndViewsTest(TestCase):
         }
         post_response = self.client.post(url, post_data)
         self.assertEqual(post_response.status_code, 302)
-        self.assertRedirects(post_response, reverse("sponsors:sponsor_detail", kwargs={"pk": self.sponsor.pk}))
+        self.assertRedirects(
+            post_response, reverse("sponsors:sponsor_detail", kwargs={"pk": self.sponsor.pk})
+        )
 
         # Vérifier l'envoi effectif via outbox Django
         self.assertEqual(len(mail.outbox), 1)
@@ -587,7 +590,9 @@ class SponsorModelAndViewsTest(TestCase):
 
         # Envoyer 5 emails autorisés
         for i in range(5):
-            res = self.client.post(url, {"subject": f"Email #{i+1}", "message": f"Message #{i+1}"})
+            res = self.client.post(
+                url, {"subject": f"Email #{i + 1}", "message": f"Message #{i + 1}"}
+            )
             self.assertEqual(res.status_code, 302)
 
         self.assertEqual(len(mail.outbox), 5)
@@ -611,7 +616,10 @@ class SponsorModelAndViewsTest(TestCase):
         self.client.login(username="staff_user", password="password123")
         url = reverse("sponsors:sponsor_contact", kwargs={"pk": self.sponsor.pk})
 
-        with patch("sponsors.services.send_mail", side_effect=Exception("SMTP Connection Refused: port 587")):
+        with patch(
+            "sponsors.services.send_mail",
+            side_effect=Exception("SMTP Connection Refused: port 587"),
+        ):
             response = self.client.post(
                 url,
                 {"subject": "Objet test panne", "message": "Message lors d'une panne SMTP."},
@@ -675,7 +683,12 @@ class SponsorModelAndViewsTest(TestCase):
         # Vérifier que des mots-clés explicatifs pertinents sont extraits
         keywords = recs[0]["keywords"]
         self.assertGreater(len(keywords), 0)
-        self.assertTrue(any(kw in ["finance", "paiement", "digitale", "mobile", "tech", "payflow"] for kw in keywords))
+        self.assertTrue(
+            any(
+                kw in ["finance", "paiement", "digitale", "mobile", "tech", "payflow"]
+                for kw in keywords
+            )
+        )
 
     def test_ai_recommendation_excludes_existing_partnerships_for_same_hackathon(self):
         """Les sponsors ayant déjà un partenariat sur ce hackathon sont strictement exclus des suggestions."""
@@ -710,7 +723,9 @@ class SponsorModelAndViewsTest(TestCase):
 
     def test_ai_recommendations_view_non_staff_rejected(self):
         """L'accès à l'endpoint de recommandations requiert les privilèges Staff."""
-        url = reverse("sponsors:sponsor_recommendations", kwargs={"hackathon_id": self.hackathon.pk})
+        url = reverse(
+            "sponsors:sponsor_recommendations", kwargs={"hackathon_id": self.hackathon.pk}
+        )
 
         # 1. Anonyme -> 302
         response = self.client.get(url)
@@ -754,18 +769,20 @@ class SponsorModelAndViewsTest(TestCase):
         url = reverse("sponsors:sponsor_ai_generate_email", kwargs={"pk": self.sponsor.pk})
 
         # Groq uses the OpenAI-compatible response shape.
-        fake_api_response = json.dumps({
-            "choices": [
-                {
-                    "message": {
-                        "content": (
-                            "SUBJECT: Excellence in partnership with Alpha Corp — ESPRIT Hack 2026\n\n"
-                            "Dear Karim,\nJoin Hackathon 2026."
-                        )
+        fake_api_response = json.dumps(
+            {
+                "choices": [
+                    {
+                        "message": {
+                            "content": (
+                                "SUBJECT: Excellence in partnership with Alpha Corp — ESPRIT Hack 2026\n\n"
+                                "Dear Karim,\nJoin Hackathon 2026."
+                            )
+                        }
                     }
-                }
-            ]
-        }).encode("utf-8")
+                ]
+            }
+        ).encode("utf-8")
 
         mock_resp = MagicMock()
         mock_resp.read.return_value = fake_api_response
@@ -820,7 +837,9 @@ class SponsorModelAndViewsTest(TestCase):
             notes="Dossier strictement confidentiel - Négociation exclusive 45000 DT.",
         )
 
-        payload = build_sanitized_ai_payload(confidential_sponsor, self.hackathon, tone="professionnel")
+        payload = build_sanitized_ai_payload(
+            confidential_sponsor, self.hackathon, tone="professionnel"
+        )
         serialized_payload = str(payload)
 
         # 1. Vérifier la présence des informations publiques autorisées
@@ -947,7 +966,10 @@ class SponsorModelAndViewsTest(TestCase):
                 self.assertEqual(cell.data_type, "s")
                 self.assertFalse(val.startswith("'"))
                 found_cell = True
-        self.assertTrue(found_cell, "La cellule avec formule aurait dû être trouvée et neutralisée avec le type texte ('s').")
+        self.assertTrue(
+            found_cell,
+            "La cellule avec formule aurait dû être trouvée et neutralisée avec le type texte ('s').",
+        )
 
     def test_excel_export_row_limit_handled_gracefully(self):
         """Au-delà de 5000 lignes, l'export affiche un message clair sans planter."""

@@ -211,21 +211,15 @@ class Hackathon(models.Model):
 
         if self.registration_deadline and self.start_date:
             if self.start_date < self.registration_deadline:
-                errors["start_date"] = (
-                    "The hackathon cannot start before registration closes."
-                )
+                errors["start_date"] = "The hackathon cannot start before registration closes."
 
         if self.start_date and self.end_date:
             if self.end_date <= self.start_date:
-                errors["end_date"] = (
-                    "End date must be after start date."
-                )
+                errors["end_date"] = "End date must be after start date."
 
         if self.min_team_size and self.max_team_size:
             if self.min_team_size > self.max_team_size:
-                errors["min_team_size"] = (
-                    "Minimum team size cannot exceed maximum team size."
-                )
+                errors["min_team_size"] = "Minimum team size cannot exceed maximum team size."
 
         if errors:
             raise ValidationError(errors)

@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
+
 class Profile(models.Model):
     class Role(models.TextChoices):
         STUDENT = "student", "Student / Participant"

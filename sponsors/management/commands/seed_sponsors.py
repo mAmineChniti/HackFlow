@@ -144,11 +144,7 @@ class Command(BaseCommand):
                 self.reset_demo_records()
 
             staff_user = next(
-                (
-                    user
-                    for user in get_user_model().objects.all()
-                    if can_manage_sponsors(user)
-                ),
+                (user for user in get_user_model().objects.all() if can_manage_sponsors(user)),
                 None,
             )
             if staff_user is None:
@@ -218,10 +214,7 @@ class Command(BaseCommand):
                     previous_status = status
 
         self.stdout.write(
-            self.style.SUCCESS(
-                "Created or updated 5 tagged demo sponsors and their "
-                "partnerships."
-            )
+            self.style.SUCCESS("Created or updated 5 tagged demo sponsors and their partnerships.")
         )
 
     def reset_demo_records(self):

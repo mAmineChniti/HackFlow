@@ -91,9 +91,7 @@ class HomePageDataTests(TestCase):
     def test_same_month_dates_are_formatted_as_a_range(self):
         now = timezone.localtime()
         year = now.year if now.month <= 11 else now.year + 1
-        start = now.replace(
-            year=year, month=11, day=14, hour=9, minute=0, second=0, microsecond=0
-        )
+        start = now.replace(year=year, month=11, day=14, hour=9, minute=0, second=0, microsecond=0)
         Hackathon.objects.create(
             title="Range Event",
             tagline="Date formatting",
@@ -126,9 +124,7 @@ class HomePageDataTests(TestCase):
     # Leaderboard
     # ------------------------------------------------------------------
     def test_leaderboard_uses_scored_projects(self):
-        self._make_project(
-            "Scored Project", status=Project.Status.ACCEPTED, score=9
-        )
+        self._make_project("Scored Project", status=Project.Status.ACCEPTED, score=9)
 
         response = self.client.get(reverse("core:home"))
 
@@ -146,9 +142,7 @@ class HomePageDataTests(TestCase):
         self.assertContains(response, "No projects have been scored yet")
 
     def test_leaderboard_excludes_drafts(self):
-        self._make_project(
-            "Draft Scored Project", status=Project.Status.DRAFT, score=10
-        )
+        self._make_project("Draft Scored Project", status=Project.Status.DRAFT, score=10)
 
         response = self.client.get(reverse("core:home"))
 
@@ -160,9 +154,7 @@ class HomePageDataTests(TestCase):
 
         content = self.client.get(reverse("core:home")).content.decode()
 
-        self.assertLess(
-            content.index("Higher Scored"), content.index("Lower Scored")
-        )
+        self.assertLess(content.index("Higher Scored"), content.index("Lower Scored"))
 
     # ------------------------------------------------------------------
     # Recent submissions (hero tabs)
@@ -247,6 +239,4 @@ class HomePageDataTests(TestCase):
 
         response = self.client.get(reverse("core:home"))
 
-        self.assertEqual(
-            response.context["featured_event"]["name"], "Newest Past Event"
-        )
+        self.assertEqual(response.context["featured_event"]["name"], "Newest Past Event")

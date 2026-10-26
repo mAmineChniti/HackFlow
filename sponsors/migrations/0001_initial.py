@@ -9,89 +9,292 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('hackathons', '0001_initial'),
+        ("hackathons", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Sponsor',
+            name="Sponsor",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=255, unique=True, verbose_name='Company name')),
-                ('logo', models.ImageField(blank=True, help_text='Recommended format: PNG or SVG with a transparent background, max 2 MB.', null=True, upload_to=sponsors.models.logo_upload_path, verbose_name='Logo')),
-                ('website', models.URLField(blank=True, verbose_name='Website')),
-                ('sector', models.CharField(choices=[('tech', 'Technology / IT'), ('finance', 'Finance / Banking'), ('sante', 'Healthcare / Biotech'), ('education', 'Education / Training'), ('energie', 'Energy / Environment'), ('industrie', 'Industry / Manufacturing'), ('media', 'Media / Communications'), ('retail', 'Retail / Distribution'), ('autre', 'Other')], default='tech', max_length=50, verbose_name='Industry')),
-                ('description', models.TextField(blank=True, help_text='A short description shown on the public page.', verbose_name='Description')),
-                ('contact_name', models.CharField(blank=True, max_length=255, verbose_name='Contact name')),
-                ('contact_email', models.EmailField(blank=True, max_length=254, verbose_name='Contact email')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Created at')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Updated at')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(max_length=255, unique=True, verbose_name="Company name"),
+                ),
+                (
+                    "logo",
+                    models.ImageField(
+                        blank=True,
+                        help_text="Recommended format: PNG or SVG with a transparent background, max 2 MB.",
+                        null=True,
+                        upload_to=sponsors.models.logo_upload_path,
+                        verbose_name="Logo",
+                    ),
+                ),
+                ("website", models.URLField(blank=True, verbose_name="Website")),
+                (
+                    "sector",
+                    models.CharField(
+                        choices=[
+                            ("tech", "Technology / IT"),
+                            ("finance", "Finance / Banking"),
+                            ("sante", "Healthcare / Biotech"),
+                            ("education", "Education / Training"),
+                            ("energie", "Energy / Environment"),
+                            ("industrie", "Industry / Manufacturing"),
+                            ("media", "Media / Communications"),
+                            ("retail", "Retail / Distribution"),
+                            ("autre", "Other"),
+                        ],
+                        default="tech",
+                        max_length=50,
+                        verbose_name="Industry",
+                    ),
+                ),
+                (
+                    "description",
+                    models.TextField(
+                        blank=True,
+                        help_text="A short description shown on the public page.",
+                        verbose_name="Description",
+                    ),
+                ),
+                (
+                    "contact_name",
+                    models.CharField(blank=True, max_length=255, verbose_name="Contact name"),
+                ),
+                (
+                    "contact_email",
+                    models.EmailField(blank=True, max_length=254, verbose_name="Contact email"),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True, verbose_name="Created at")),
+                ("updated_at", models.DateTimeField(auto_now=True, verbose_name="Updated at")),
             ],
             options={
-                'verbose_name': 'Sponsor',
-                'verbose_name_plural': 'Sponsors',
-                'ordering': ['name'],
+                "verbose_name": "Sponsor",
+                "verbose_name_plural": "Sponsors",
+                "ordering": ["name"],
             },
         ),
         migrations.CreateModel(
-            name='SponsorEmailLog',
+            name="SponsorEmailLog",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('subject', models.CharField(max_length=255, verbose_name='Subject')),
-                ('body', models.TextField(verbose_name='Message')),
-                ('sent_at', models.DateTimeField(default=django.utils.timezone.now, verbose_name='Sent at')),
-                ('success', models.BooleanField(default=True, verbose_name='Successful')),
-                ('ai_generated', models.BooleanField(default=False, verbose_name='AI generated')),
-                ('error_message', models.TextField(blank=True, verbose_name='Error message')),
-                ('sent_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='sponsor_emails_sent', to=settings.AUTH_USER_MODEL, verbose_name='Sent by')),
-                ('sponsor', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='email_logs', to='sponsors.sponsor', verbose_name='Sponsor')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("subject", models.CharField(max_length=255, verbose_name="Subject")),
+                ("body", models.TextField(verbose_name="Message")),
+                (
+                    "sent_at",
+                    models.DateTimeField(default=django.utils.timezone.now, verbose_name="Sent at"),
+                ),
+                ("success", models.BooleanField(default=True, verbose_name="Successful")),
+                ("ai_generated", models.BooleanField(default=False, verbose_name="AI generated")),
+                ("error_message", models.TextField(blank=True, verbose_name="Error message")),
+                (
+                    "sent_by",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="sponsor_emails_sent",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Sent by",
+                    ),
+                ),
+                (
+                    "sponsor",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="email_logs",
+                        to="sponsors.sponsor",
+                        verbose_name="Sponsor",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Sponsor email log',
-                'verbose_name_plural': 'Sponsor email logs',
-                'ordering': ['-sent_at'],
+                "verbose_name": "Sponsor email log",
+                "verbose_name_plural": "Sponsor email logs",
+                "ordering": ["-sent_at"],
             },
         ),
         migrations.CreateModel(
-            name='Sponsorship',
+            name="Sponsorship",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('tier', models.CharField(choices=[('platinum', 'Platinum'), ('gold', 'Gold'), ('silver', 'Silver'), ('bronze', 'Bronze')], default='bronze', max_length=20, verbose_name='Tier')),
-                ('amount', models.DecimalField(decimal_places=3, default=0, help_text='Financial contribution amount in DT (e.g. 2500.000 DT). Use 0 for non-financial contributions.', max_digits=12, validators=[django.core.validators.MinValueValidator(0)], verbose_name='Amount (DT)')),
-                ('status', models.CharField(choices=[('prospect', 'Prospect'), ('contacté', 'Contacted'), ('négociation', 'Negotiating'), ('confirmé', 'Confirmed'), ('refusé', 'Declined')], default='prospect', max_length=20, verbose_name='Status')),
-                ('contribution_type', models.CharField(choices=[('financier', 'Financial'), ('matériel', 'Equipment'), ('prix', 'Prizes / Rewards'), ('mentors', 'Mentors / Experts')], default='financier', max_length=20, verbose_name='Contribution type')),
-                ('notes', models.TextField(blank=True, help_text='Notes visible only to authorized organizers.', verbose_name='Internal notes')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Created at')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Updated at')),
-                ('hackathon', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='sponsorships', to='hackathons.hackathon', verbose_name='Hackathon')),
-                ('sponsor', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='sponsorships', to='sponsors.sponsor', verbose_name='Sponsor')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "tier",
+                    models.CharField(
+                        choices=[
+                            ("platinum", "Platinum"),
+                            ("gold", "Gold"),
+                            ("silver", "Silver"),
+                            ("bronze", "Bronze"),
+                        ],
+                        default="bronze",
+                        max_length=20,
+                        verbose_name="Tier",
+                    ),
+                ),
+                (
+                    "amount",
+                    models.DecimalField(
+                        decimal_places=3,
+                        default=0,
+                        help_text="Financial contribution amount in DT (e.g. 2500.000 DT). Use 0 for non-financial contributions.",
+                        max_digits=12,
+                        validators=[django.core.validators.MinValueValidator(0)],
+                        verbose_name="Amount (DT)",
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("prospect", "Prospect"),
+                            ("contacté", "Contacted"),
+                            ("négociation", "Negotiating"),
+                            ("confirmé", "Confirmed"),
+                            ("refusé", "Declined"),
+                        ],
+                        default="prospect",
+                        max_length=20,
+                        verbose_name="Status",
+                    ),
+                ),
+                (
+                    "contribution_type",
+                    models.CharField(
+                        choices=[
+                            ("financier", "Financial"),
+                            ("matériel", "Equipment"),
+                            ("prix", "Prizes / Rewards"),
+                            ("mentors", "Mentors / Experts"),
+                        ],
+                        default="financier",
+                        max_length=20,
+                        verbose_name="Contribution type",
+                    ),
+                ),
+                (
+                    "notes",
+                    models.TextField(
+                        blank=True,
+                        help_text="Notes visible only to authorized organizers.",
+                        verbose_name="Internal notes",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True, verbose_name="Created at")),
+                ("updated_at", models.DateTimeField(auto_now=True, verbose_name="Updated at")),
+                (
+                    "hackathon",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="sponsorships",
+                        to="hackathons.hackathon",
+                        verbose_name="Hackathon",
+                    ),
+                ),
+                (
+                    "sponsor",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="sponsorships",
+                        to="sponsors.sponsor",
+                        verbose_name="Sponsor",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Partnership',
-                'verbose_name_plural': 'Partnerships',
-                'ordering': ['tier', 'sponsor__name'],
-                'unique_together': {('sponsor', 'hackathon')},
+                "verbose_name": "Partnership",
+                "verbose_name_plural": "Partnerships",
+                "ordering": ["tier", "sponsor__name"],
+                "unique_together": {("sponsor", "hackathon")},
             },
         ),
         migrations.CreateModel(
-            name='StatusHistory',
+            name="StatusHistory",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('old_status', models.CharField(choices=[('prospect', 'Prospect'), ('contacté', 'Contacted'), ('négociation', 'Negotiating'), ('confirmé', 'Confirmed'), ('refusé', 'Declined')], max_length=20, verbose_name='Previous status')),
-                ('new_status', models.CharField(choices=[('prospect', 'Prospect'), ('contacté', 'Contacted'), ('négociation', 'Negotiating'), ('confirmé', 'Confirmed'), ('refusé', 'Declined')], max_length=20, verbose_name='New status')),
-                ('changed_at', models.DateTimeField(default=django.utils.timezone.now, verbose_name='Changed at')),
-                ('changed_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='sponsorship_status_changes', to=settings.AUTH_USER_MODEL, verbose_name='Changed by')),
-                ('sponsorship', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='history', to='sponsors.sponsorship', verbose_name='Partnership')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "old_status",
+                    models.CharField(
+                        choices=[
+                            ("prospect", "Prospect"),
+                            ("contacté", "Contacted"),
+                            ("négociation", "Negotiating"),
+                            ("confirmé", "Confirmed"),
+                            ("refusé", "Declined"),
+                        ],
+                        max_length=20,
+                        verbose_name="Previous status",
+                    ),
+                ),
+                (
+                    "new_status",
+                    models.CharField(
+                        choices=[
+                            ("prospect", "Prospect"),
+                            ("contacté", "Contacted"),
+                            ("négociation", "Negotiating"),
+                            ("confirmé", "Confirmed"),
+                            ("refusé", "Declined"),
+                        ],
+                        max_length=20,
+                        verbose_name="New status",
+                    ),
+                ),
+                (
+                    "changed_at",
+                    models.DateTimeField(
+                        default=django.utils.timezone.now, verbose_name="Changed at"
+                    ),
+                ),
+                (
+                    "changed_by",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="sponsorship_status_changes",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Changed by",
+                    ),
+                ),
+                (
+                    "sponsorship",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="history",
+                        to="sponsors.sponsorship",
+                        verbose_name="Partnership",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Status history',
-                'verbose_name_plural': 'Status history',
-                'ordering': ['-changed_at'],
+                "verbose_name": "Status history",
+                "verbose_name_plural": "Status history",
+                "ordering": ["-changed_at"],
             },
         ),
     ]

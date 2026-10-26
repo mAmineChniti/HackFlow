@@ -12,7 +12,13 @@ TEAM_NAME = "Alpha Team"
 
 # username, rôle principal, compétences, bio, cherche une équipe
 DEMO_USERS = [
-    ("demo_chef", "backend", "django, python, postgresql, docker", "Chef d'équipe, backend.", False),
+    (
+        "demo_chef",
+        "backend",
+        "django, python, postgresql, docker",
+        "Chef d'équipe, backend.",
+        False,
+    ),
     ("demo_front", "frontend", "react, javascript, css, tailwind", "Développeuse frontend.", False),
     ("demo_design", "designer", "figma, ui, ux, css", "Designer UI/UX.", True),
     ("demo_data", "data", "python, pandas, sql, machine learning", "Data scientist.", True),

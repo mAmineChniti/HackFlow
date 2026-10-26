@@ -76,10 +76,7 @@ class LoginView(auth_views.LoginView):
 
     def _lockout_message(self):
         minutes = max(1, settings.LOGIN_LOCKOUT_SECONDS // 60)
-        return (
-            "Too many failed sign-in attempts. "
-            f"Try again in {minutes} minutes."
-        )
+        return f"Too many failed sign-in attempts. Try again in {minutes} minutes."
 
 
 class SignupView(FormView):
@@ -151,9 +148,7 @@ class PasswordResetDoneView(PasswordExpiryContextMixin, auth_views.PasswordReset
     template_name = "accounts/password_reset_done.html"
 
 
-class PasswordResetConfirmView(
-    PasswordExpiryContextMixin, auth_views.PasswordResetConfirmView
-):
+class PasswordResetConfirmView(PasswordExpiryContextMixin, auth_views.PasswordResetConfirmView):
     template_name = "accounts/password_reset_confirm.html"
     form_class = HackFlowSetPasswordForm
     success_url = reverse_lazy("accounts:password_reset_complete")
@@ -194,8 +189,7 @@ class ProfileView(LoginRequiredMixin, View):
                 if send_verification_email(request, user):
                     messages.success(
                         request,
-                        "Account updated. Check your inbox to verify your "
-                        "new email address.",
+                        "Account updated. Check your inbox to verify your new email address.",
                     )
                 else:
                     messages.warning(

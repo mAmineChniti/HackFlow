@@ -6,23 +6,59 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('teams', '0001_initial'),
+        ("teams", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='SkillProfile',
+            name="SkillProfile",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('main_role', models.CharField(choices=[('backend', 'Développeur backend'), ('frontend', 'Développeur frontend'), ('designer', 'Designer UI/UX'), ('data', 'Data / IA'), ('other', 'Autre')], default='other', max_length=10, verbose_name='Rôle principal')),
-                ('skills', models.CharField(blank=True, help_text='Séparées par des virgules : python, django, figma', max_length=200, verbose_name='Compétences')),
-                ('bio', models.TextField(blank=True, verbose_name='Présentation')),
-                ('looking_for_team', models.BooleanField(default=True, verbose_name='Je cherche une équipe')),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='skill_profile', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "main_role",
+                    models.CharField(
+                        choices=[
+                            ("backend", "Développeur backend"),
+                            ("frontend", "Développeur frontend"),
+                            ("designer", "Designer UI/UX"),
+                            ("data", "Data / IA"),
+                            ("other", "Autre"),
+                        ],
+                        default="other",
+                        max_length=10,
+                        verbose_name="Rôle principal",
+                    ),
+                ),
+                (
+                    "skills",
+                    models.CharField(
+                        blank=True,
+                        help_text="Séparées par des virgules : python, django, figma",
+                        max_length=200,
+                        verbose_name="Compétences",
+                    ),
+                ),
+                ("bio", models.TextField(blank=True, verbose_name="Présentation")),
+                (
+                    "looking_for_team",
+                    models.BooleanField(default=True, verbose_name="Je cherche une équipe"),
+                ),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="skill_profile",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

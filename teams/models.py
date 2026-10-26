@@ -5,6 +5,7 @@ from django.db import models
 
 class Hackathon(models.Model):
     """Modèle PROVISOIRE : sera remplacé par celui du module Gestion des hackathons."""
+
     title = models.CharField("Titre", max_length=120)
     start_date = models.DateField("Date de début")
     end_date = models.DateField("Date de fin")
@@ -24,11 +25,14 @@ class Team(models.Model):
         Hackathon, on_delete=models.CASCADE, related_name="teams", verbose_name="Hackathon"
     )
     leader = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
-        related_name="led_teams", verbose_name="Team leader",
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="led_teams",
+        verbose_name="Team leader",
     )
     max_members = models.PositiveSmallIntegerField(
-        "Nombre max de membres", default=4,
+        "Nombre max de membres",
+        default=4,
         validators=[MinValueValidator(2), MaxValueValidator(6)],
     )
     created_at = models.DateTimeField(auto_now_add=True)
@@ -36,7 +40,9 @@ class Team(models.Model):
     class Meta:
         ordering = ("-created_at",)
         constraints = [
-            models.UniqueConstraint(fields=["hackathon", "name"], name="unique_team_name_per_hackathon")
+            models.UniqueConstraint(
+                fields=["hackathon", "name"], name="unique_team_name_per_hackathon"
+            )
         ]
 
     def __str__(self):
@@ -61,8 +67,12 @@ class TeamMember(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="team_memberships"
     )
     role = models.CharField("Rôle", max_length=10, choices=Role.choices, default=Role.OTHER)
-    skills = models.CharField("Compétences", max_length=200, blank=True,
-                              help_text="Comma-separated: python, django, figma")
+    skills = models.CharField(
+        "Compétences",
+        max_length=200,
+        blank=True,
+        help_text="Comma-separated: python, django, figma",
+    )
     joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -74,19 +84,20 @@ class TeamMember(models.Model):
         return f"{self.user} - {self.team}"
 
 
-
-
 class SkillProfile(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="skill_profile"
     )
     main_role = models.CharField(
-        "Rôle principal", max_length=10,
+        "Rôle principal",
+        max_length=10,
         choices=[c for c in TeamMember.Role.choices if c[0] != "leader"],
         default=TeamMember.Role.OTHER,
     )
     skills = models.CharField(
-        "Compétences", max_length=200, blank=True,
+        "Compétences",
+        max_length=200,
+        blank=True,
         help_text="Comma-separated: python, django, figma",
     )
     bio = models.TextField("Présentation", blank=True)
@@ -94,7 +105,7 @@ class SkillProfile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Compétences de {self.user}"    
+        return f"Compétences de {self.user}"
 
 
 class Invitation(models.Model):
@@ -112,9 +123,7 @@ class Invitation(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="sent_invitations"
     )
     message = models.CharField("Message", max_length=200, blank=True)
-    status = models.CharField(
-        max_length=10, choices=Status.choices, default=Status.PENDING
-    )
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
     responded_at = models.DateTimeField(null=True, blank=True)
 

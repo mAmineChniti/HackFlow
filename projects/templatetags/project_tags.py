@@ -1,6 +1,7 @@
 """
 Template tags for the projects app using the service layer.
 """
+
 from django import template
 
 from projects.services import (

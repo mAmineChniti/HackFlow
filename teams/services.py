@@ -48,6 +48,7 @@ def leave_team(*, team, user):
 CORE_ROLES = ("backend", "frontend", "designer", "data")
 MAX_SCORE = 8  # 5 (rôle manquant) + 3 (compétences nouvelles, plafonnées)
 
+
 def parse_skills(text):
     """'Python, Django ,python' -> ['python', 'django']"""
     skills = []
@@ -75,8 +76,7 @@ def score_candidate(*, role, skills, missing_roles, team_skills):
 def analyze_team(team):
     members = list(team.members.select_related("user"))
     profiles = {
-        p.user_id: p
-        for p in SkillProfile.objects.filter(user_id__in=[m.user_id for m in members])
+        p.user_id: p for p in SkillProfile.objects.filter(user_id__in=[m.user_id for m in members])
     }
     roles, skills = set(), set()
     for member in members:

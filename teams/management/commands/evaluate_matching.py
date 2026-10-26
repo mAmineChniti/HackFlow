@@ -134,7 +134,8 @@ class Command(BaseCommand):
             self.stdout.write(
                 r["name"].ljust(38)
                 + f"{r['precision']:.2f}   {r['recall']:.2f}   {r['f1']:.2f}   {r['baseline']:.2f}"
-                + "   -> " + ", ".join(r["suggested"])
+                + "   -> "
+                + ", ".join(r["suggested"])
             )
         self.stdout.write("-" * 70)
         self.stdout.write(

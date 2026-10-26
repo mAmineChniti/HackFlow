@@ -46,6 +46,7 @@ class JoinTeamForm(StyledFormMixin, forms.ModelForm):
         ]
         self._apply_styles()
 
+
 class SkillProfileForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = SkillProfile

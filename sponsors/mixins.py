@@ -21,7 +21,6 @@ class SponsorPermissionRequiredMixin(UserPassesTestMixin):
             return redirect(f"/accounts/login/?next={self.request.path}")
 
         messages.error(
-            self.request,
-            "Access to this sponsor feature is not permitted for your role."
+            self.request, "Access to this sponsor feature is not permitted for your role."
         )
         return redirect("sponsors:public_list")

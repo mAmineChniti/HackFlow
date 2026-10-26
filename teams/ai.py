@@ -114,6 +114,9 @@ def build_report(team):
     report["duration_ms"] = round((time.perf_counter() - started) * 1000)
     logger.info(
         "AI suggestion team=%s source=%s cached=%s duration_ms=%s",
-        team.pk, report["source"], report["cached"], report["duration_ms"],
+        team.pk,
+        report["source"],
+        report["cached"],
+        report["duration_ms"],
     )
     return report

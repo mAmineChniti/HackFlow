@@ -6,26 +6,40 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('teams', '0003_invitation'),
+        ("teams", "0003_invitation"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='skillprofile',
-            name='skills',
-            field=models.CharField(blank=True, help_text='Comma-separated: python, django, figma', max_length=200, verbose_name='Compétences'),
+            model_name="skillprofile",
+            name="skills",
+            field=models.CharField(
+                blank=True,
+                help_text="Comma-separated: python, django, figma",
+                max_length=200,
+                verbose_name="Compétences",
+            ),
         ),
         migrations.AlterField(
-            model_name='team',
-            name='leader',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='led_teams', to=settings.AUTH_USER_MODEL, verbose_name='Team leader'),
+            model_name="team",
+            name="leader",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="led_teams",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="Team leader",
+            ),
         ),
         migrations.AlterField(
-            model_name='teammember',
-            name='skills',
-            field=models.CharField(blank=True, help_text='Comma-separated: python, django, figma', max_length=200, verbose_name='Compétences'),
+            model_name="teammember",
+            name="skills",
+            field=models.CharField(
+                blank=True,
+                help_text="Comma-separated: python, django, figma",
+                max_length=200,
+                verbose_name="Compétences",
+            ),
         ),
     ]

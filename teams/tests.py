@@ -15,6 +15,7 @@ from .management.commands.evaluate_matching import evaluate
 
 User = get_user_model()
 
+
 @override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
 class BaseTeamTestCase(TestCase):
     password = "S3curePassw0rd!"
@@ -49,9 +50,7 @@ class ModelTests(BaseTeamTestCase):
 
     def test_unique_team_name_per_hackathon(self):
         with self.assertRaises(IntegrityError), transaction.atomic():
-            Team.objects.create(
-                name="Alpha Team", hackathon=self.hackathon, leader=self.member
-            )
+            Team.objects.create(name="Alpha Team", hackathon=self.hackathon, leader=self.member)
 
     def test_unique_member_per_team(self):
         with self.assertRaises(IntegrityError), transaction.atomic():
@@ -65,15 +64,21 @@ class ModelTests(BaseTeamTestCase):
 
     def test_max_members_bounds(self):
         for bad in (1, 7):
-            team = Team(name="Bounds", hackathon=self.hackathon, leader=self.leader, max_members=bad)
+            team = Team(
+                name="Bounds", hackathon=self.hackathon, leader=self.leader, max_members=bad
+            )
             with self.assertRaises(ValidationError):
                 team.full_clean()
 
     def test_is_full(self):
         team = services.create_team(
-            leader=self.member, name="Small", description="", hackathon=Hackathon.objects.create(
+            leader=self.member,
+            name="Small",
+            description="",
+            hackathon=Hackathon.objects.create(
                 title="Autre", start_date=date(2026, 12, 5), end_date=date(2026, 12, 6)
-            ), max_members=2,
+            ),
+            max_members=2,
         )
         self.assertFalse(team.is_full)
         TeamMember.objects.create(team=team, user=self.outsider)
@@ -100,8 +105,11 @@ class ServiceTests(BaseTeamTestCase):
 
     def test_one_team_per_hackathon(self):
         other = services.create_team(
-            leader=self.member, name="Beta Team", description="",
-            hackathon=self.hackathon, max_members=4,
+            leader=self.member,
+            name="Beta Team",
+            description="",
+            hackathon=self.hackathon,
+            max_members=4,
         )
         with self.assertRaises(services.TeamError):
             services.join_team(team=self.team, user=self.member, role="backend")
@@ -110,8 +118,11 @@ class ServiceTests(BaseTeamTestCase):
     def test_leader_cannot_create_second_team_same_hackathon(self):
         with self.assertRaises(services.TeamError):
             services.create_team(
-                leader=self.leader, name="Gamma", description="",
-                hackathon=self.hackathon, max_members=4,
+                leader=self.leader,
+                name="Gamma",
+                description="",
+                hackathon=self.hackathon,
+                max_members=4,
             )
 
     def test_leader_cannot_leave(self):
@@ -134,7 +145,12 @@ class FormTests(BaseTeamTestCase):
         services.join_team(team=self.team, user=self.member, role="backend")
         services.join_team(team=self.team, user=self.outsider, role="frontend")
         form = TeamForm(
-            data={"name": "Alpha Team", "description": "", "hackathon": self.hackathon.pk, "max_members": 2},
+            data={
+                "name": "Alpha Team",
+                "description": "",
+                "hackathon": self.hackathon.pk,
+                "max_members": 2,
+            },
             instance=self.team,
         )
         self.assertFalse(form.is_valid())
@@ -167,10 +183,13 @@ class PublicViewTests(BaseTeamTestCase):
 
     def test_search_filters_results(self):
         services.create_team(
-            leader=self.member, name="Zeta Squad", description="",
+            leader=self.member,
+            name="Zeta Squad",
+            description="",
             hackathon=Hackathon.objects.create(
                 title="Autre", start_date=date(2026, 12, 5), end_date=date(2026, 12, 6)
-            ), max_members=4,
+            ),
+            max_members=4,
         )
         response = self.client.get(reverse("teams:list"), {"q": "Zeta"})
         self.assertContains(response, "Zeta Squad")
@@ -194,7 +213,9 @@ class PermissionTests(BaseTeamTestCase):
 
     def test_anonymous_cannot_post_create(self):
         url = reverse("teams:create")
-        response = self.client.post(url, {"name": "Hack", "hackathon": self.hackathon.pk, "max_members": 4})
+        response = self.client.post(
+            url, {"name": "Hack", "hackathon": self.hackathon.pk, "max_members": 4}
+        )
         self.assertRedirectsToLogin(response, url)
         self.assertEqual(Team.objects.count(), 1)
 
@@ -231,8 +252,12 @@ class PermissionTests(BaseTeamTestCase):
     def test_regular_member_cannot_edit_or_delete(self):
         services.join_team(team=self.team, user=self.member, role="backend")
         self.login(self.member)
-        self.assertEqual(self.client.get(reverse("teams:update", args=[self.team.pk])).status_code, 403)
-        self.assertEqual(self.client.post(reverse("teams:delete", args=[self.team.pk])).status_code, 403)
+        self.assertEqual(
+            self.client.get(reverse("teams:update", args=[self.team.pk])).status_code, 403
+        )
+        self.assertEqual(
+            self.client.post(reverse("teams:delete", args=[self.team.pk])).status_code, 403
+        )
 
     def test_anonymous_cannot_join(self):
         url = reverse("teams:join", args=[self.team.pk])
@@ -260,7 +285,12 @@ class CrudTests(BaseTeamTestCase):
         self.login(self.member)
         response = self.client.post(
             reverse("teams:create"),
-            {"name": "Beta Team", "description": "Desc", "hackathon": self.hackathon.pk, "max_members": 3},
+            {
+                "name": "Beta Team",
+                "description": "Desc",
+                "hackathon": self.hackathon.pk,
+                "max_members": 3,
+            },
         )
         team = Team.objects.get(name="Beta Team")
         self.assertRedirects(response, reverse("teams:detail", args=[team.pk]))
@@ -274,13 +304,20 @@ class CrudTests(BaseTeamTestCase):
             {"name": "ab", "description": "", "hackathon": self.hackathon.pk, "max_members": 4},
         )
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response.context["form"], "name", "Le nom doit contenir au moins 3 caractères.")
+        self.assertFormError(
+            response.context["form"], "name", "Le nom doit contenir au moins 3 caractères."
+        )
 
     def test_create_second_team_same_hackathon_is_rejected(self):
         self.login(self.leader)
         response = self.client.post(
             reverse("teams:create"),
-            {"name": "Another", "description": "", "hackathon": self.hackathon.pk, "max_members": 4},
+            {
+                "name": "Another",
+                "description": "",
+                "hackathon": self.hackathon.pk,
+                "max_members": 4,
+            },
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Team.objects.count(), 1)
@@ -289,7 +326,12 @@ class CrudTests(BaseTeamTestCase):
         self.login(self.leader)
         response = self.client.post(
             reverse("teams:update", args=[self.team.pk]),
-            {"name": "Alpha Renamed", "description": "Nouvelle", "hackathon": self.hackathon.pk, "max_members": 5},
+            {
+                "name": "Alpha Renamed",
+                "description": "Nouvelle",
+                "hackathon": self.hackathon.pk,
+                "max_members": 5,
+            },
         )
         self.assertRedirects(response, reverse("teams:detail", args=[self.team.pk]))
         self.team.refresh_from_db()
@@ -305,7 +347,9 @@ class CrudTests(BaseTeamTestCase):
 
     def test_join_and_leave_via_views(self):
         self.login(self.member)
-        self.client.post(reverse("teams:join", args=[self.team.pk]), {"role": "backend", "skills": "django"})
+        self.client.post(
+            reverse("teams:join", args=[self.team.pk]), {"role": "backend", "skills": "django"}
+        )
         self.assertTrue(self.team.members.filter(user=self.member, skills="django").exists())
         self.client.post(reverse("teams:leave", args=[self.team.pk]))
         self.assertFalse(self.team.members.filter(user=self.member).exists())
@@ -333,7 +377,6 @@ class CrudTests(BaseTeamTestCase):
         self.assertTrue(Team.objects.filter(pk=self.team.pk).exists())
 
 
-
 class MatchingTests(BaseTeamTestCase):
     def setUp(self):
         super().setUp()
@@ -343,7 +386,9 @@ class MatchingTests(BaseTeamTestCase):
             user=self.designer, main_role="designer", skills="figma, ui"
         )
         self.backend2 = User.objects.create_user("backend2", "b2@example.com", self.password)
-        SkillProfile.objects.create(user=self.backend2, main_role="backend", skills="python, django")
+        SkillProfile.objects.create(
+            user=self.backend2, main_role="backend", skills="python, django"
+        )
 
     def test_parse_skills_normalizes_and_deduplicates(self):
         self.assertEqual(services.parse_skills(" Python, django ,python,, "), ["python", "django"])
@@ -354,7 +399,10 @@ class MatchingTests(BaseTeamTestCase):
             role="designer", skills=[], missing_roles=["designer"], team_skills=set()
         )
         skill_score, _ = services.score_candidate(
-            role="backend", skills=["a", "b", "c", "d"], missing_roles=["designer"], team_skills=set()
+            role="backend",
+            skills=["a", "b", "c", "d"],
+            missing_roles=["designer"],
+            team_skills=set(),
         )
         self.assertGreater(role_score, skill_score)
 
@@ -382,7 +430,6 @@ class MatchingTests(BaseTeamTestCase):
         _, results = services.suggest_candidates(self.team)
         self.assertNotIn(self.designer, [r["user"] for r in results])
 
-
     def test_synergy_and_skill_badges(self):
         _, results = services.suggest_candidates(self.team)
         best = results[0]
@@ -394,8 +441,7 @@ class MatchingTests(BaseTeamTestCase):
     def test_synergy_never_exceeds_100(self):
         _, results = services.suggest_candidates(self.team)
         for r in results:
-            self.assertLessEqual(r["synergy"], 100)    
-
+            self.assertLessEqual(r["synergy"], 100)
 
 
 class AISuggestionTests(BaseTeamTestCase):
@@ -472,12 +518,12 @@ class AISuggestionTests(BaseTeamTestCase):
         self.assertEqual(self.client.post(self.url).status_code, 400)
 
 
-
 class MatchingEvaluationTests(TestCase):
     def test_matching_beats_random_selection(self):
         result = evaluate()
         self.assertGreaterEqual(result["precision"], 0.8)
         self.assertGreater(result["precision"], result["baseline"])
+
 
 class InvitationModelTests(BaseTeamTestCase):
     def make(self, **kwargs):
@@ -589,8 +635,11 @@ class InvitationServiceTests(BaseTeamTestCase):
 
     def test_accept_cancels_other_pending_invitations_for_same_hackathon(self):
         other_team = services.create_team(
-            leader=self.outsider, name="Beta Team", description="",
-            hackathon=self.hackathon, max_members=4,
+            leader=self.outsider,
+            name="Beta Team",
+            description="",
+            hackathon=self.hackathon,
+            max_members=4,
         )
         first = self.invite()
         second = self.invite(team=other_team, invited_by=self.outsider)
@@ -628,6 +677,7 @@ class InvitationServiceTests(BaseTeamTestCase):
         with self.assertRaises(services.TeamError):
             services.cancel_invitation(invitation=invitation, user=self.leader)
 
+
 class InvitationViewTests(BaseTeamTestCase):
     def send(self, user, **data):
         self.client.force_login(user)
@@ -641,7 +691,9 @@ class InvitationViewTests(BaseTeamTestCase):
         response = self.send(self.leader, username=self.member.username, message="Hello")
         self.assertEqual(response.status_code, 302)
         self.assertTrue(
-            Invitation.objects.filter(team=self.team, invitee=self.member, status="pending").exists()
+            Invitation.objects.filter(
+                team=self.team, invitee=self.member, status="pending"
+            ).exists()
         )
 
     def test_non_leader_gets_403(self):
@@ -686,40 +738,52 @@ class InvitationViewTests(BaseTeamTestCase):
         self.assertContains(response, "Alpha Team")
 
     def test_invitee_can_accept(self):
-        invitation = services.invite_user(team=self.team, invited_by=self.leader, invitee=self.member)
+        invitation = services.invite_user(
+            team=self.team, invited_by=self.leader, invitee=self.member
+        )
         self.client.force_login(self.member)
         response = self.client.post(f"/teams/invitations/{invitation.pk}/accept/")
         self.assertEqual(response.status_code, 302)
         self.assertTrue(self.team.members.filter(user=self.member).exists())
 
     def test_invitee_can_decline(self):
-        invitation = services.invite_user(team=self.team, invited_by=self.leader, invitee=self.member)
+        invitation = services.invite_user(
+            team=self.team, invited_by=self.leader, invitee=self.member
+        )
         self.client.force_login(self.member)
         self.client.post(f"/teams/invitations/{invitation.pk}/decline/")
         invitation.refresh_from_db()
         self.assertEqual(invitation.status, "declined")
 
     def test_stranger_gets_404(self):
-        invitation = services.invite_user(team=self.team, invited_by=self.leader, invitee=self.member)
+        invitation = services.invite_user(
+            team=self.team, invited_by=self.leader, invitee=self.member
+        )
         self.client.force_login(self.outsider)
         response = self.client.post(f"/teams/invitations/{invitation.pk}/accept/")
         self.assertEqual(response.status_code, 404)
 
     def test_unknown_action_gets_404(self):
-        invitation = services.invite_user(team=self.team, invited_by=self.leader, invitee=self.member)
+        invitation = services.invite_user(
+            team=self.team, invited_by=self.leader, invitee=self.member
+        )
         self.client.force_login(self.member)
         response = self.client.post(f"/teams/invitations/{invitation.pk}/hack/")
         self.assertEqual(response.status_code, 404)
 
     def test_leader_can_cancel(self):
-        invitation = services.invite_user(team=self.team, invited_by=self.leader, invitee=self.member)
+        invitation = services.invite_user(
+            team=self.team, invited_by=self.leader, invitee=self.member
+        )
         self.client.force_login(self.leader)
         self.client.post(f"/teams/invitations/{invitation.pk}/cancel/")
         invitation.refresh_from_db()
         self.assertEqual(invitation.status, "cancelled")
 
     def test_invitee_cannot_cancel_via_view(self):
-        invitation = services.invite_user(team=self.team, invited_by=self.leader, invitee=self.member)
+        invitation = services.invite_user(
+            team=self.team, invited_by=self.leader, invitee=self.member
+        )
         self.client.force_login(self.member)
         self.client.post(f"/teams/invitations/{invitation.pk}/cancel/")
         invitation.refresh_from_db()
@@ -744,6 +808,7 @@ class SuggestionInviteFlowTests(BaseTeamTestCase):
             )
             self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(Invitation.objects.filter(status="pending").count(), len(usernames))
+
 
 class SeedDemoTests(TestCase):
     def test_seed_demo_is_idempotent(self):

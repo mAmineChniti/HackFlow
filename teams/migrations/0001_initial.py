@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -16,46 +15,139 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Hackathon',
+            name="Hackathon",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=120, verbose_name='Titre')),
-                ('start_date', models.DateField(verbose_name='Date de début')),
-                ('end_date', models.DateField(verbose_name='Date de fin')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("title", models.CharField(max_length=120, verbose_name="Titre")),
+                ("start_date", models.DateField(verbose_name="Date de début")),
+                ("end_date", models.DateField(verbose_name="Date de fin")),
             ],
         ),
         migrations.CreateModel(
-            name='Team',
+            name="Team",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=60, validators=[django.core.validators.MinLengthValidator(3, 'Le nom doit contenir au moins 3 caractères.')], verbose_name='Nom')),
-                ('description', models.TextField(blank=True, verbose_name='Description')),
-                ('max_members', models.PositiveSmallIntegerField(default=4, validators=[django.core.validators.MinValueValidator(2), django.core.validators.MaxValueValidator(6)], verbose_name='Nombre max de membres')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('hackathon', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='teams', to='teams.hackathon', verbose_name='Hackathon')),
-                ('leader', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='led_teams', to=settings.AUTH_USER_MODEL, verbose_name="Chef d'équipe")),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        max_length=60,
+                        validators=[
+                            django.core.validators.MinLengthValidator(
+                                3, "Le nom doit contenir au moins 3 caractères."
+                            )
+                        ],
+                        verbose_name="Nom",
+                    ),
+                ),
+                ("description", models.TextField(blank=True, verbose_name="Description")),
+                (
+                    "max_members",
+                    models.PositiveSmallIntegerField(
+                        default=4,
+                        validators=[
+                            django.core.validators.MinValueValidator(2),
+                            django.core.validators.MaxValueValidator(6),
+                        ],
+                        verbose_name="Nombre max de membres",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "hackathon",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="teams",
+                        to="teams.hackathon",
+                        verbose_name="Hackathon",
+                    ),
+                ),
+                (
+                    "leader",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="led_teams",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="Chef d'équipe",
+                    ),
+                ),
             ],
             options={
-                'ordering': ('-created_at',),
+                "ordering": ("-created_at",),
             },
         ),
         migrations.CreateModel(
-            name='TeamMember',
+            name="TeamMember",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('role', models.CharField(choices=[('leader', "Chef d'équipe"), ('backend', 'Développeur backend'), ('frontend', 'Développeur frontend'), ('designer', 'Designer UI/UX'), ('data', 'Data / IA'), ('other', 'Autre')], default='other', max_length=10, verbose_name='Rôle')),
-                ('skills', models.CharField(blank=True, help_text='Séparées par des virgules : python, django, figma', max_length=200, verbose_name='Compétences')),
-                ('joined_at', models.DateTimeField(auto_now_add=True)),
-                ('team', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='members', to='teams.team')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='team_memberships', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "role",
+                    models.CharField(
+                        choices=[
+                            ("leader", "Chef d'équipe"),
+                            ("backend", "Développeur backend"),
+                            ("frontend", "Développeur frontend"),
+                            ("designer", "Designer UI/UX"),
+                            ("data", "Data / IA"),
+                            ("other", "Autre"),
+                        ],
+                        default="other",
+                        max_length=10,
+                        verbose_name="Rôle",
+                    ),
+                ),
+                (
+                    "skills",
+                    models.CharField(
+                        blank=True,
+                        help_text="Séparées par des virgules : python, django, figma",
+                        max_length=200,
+                        verbose_name="Compétences",
+                    ),
+                ),
+                ("joined_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "team",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="members",
+                        to="teams.team",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="team_memberships",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.AddConstraint(
-            model_name='team',
-            constraint=models.UniqueConstraint(fields=('hackathon', 'name'), name='unique_team_name_per_hackathon'),
+            model_name="team",
+            constraint=models.UniqueConstraint(
+                fields=("hackathon", "name"), name="unique_team_name_per_hackathon"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='teammember',
-            constraint=models.UniqueConstraint(fields=('team', 'user'), name='unique_member_per_team'),
+            model_name="teammember",
+            constraint=models.UniqueConstraint(
+                fields=("team", "user"), name="unique_member_per_team"
+            ),
         ),
     ]

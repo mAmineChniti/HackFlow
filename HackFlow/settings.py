@@ -98,7 +98,6 @@ INSTALLED_APPS = [
     "hackathons",
     "sponsors",
     "projects",
-
 ]
 
 MIDDLEWARE = [
@@ -132,7 +131,6 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "teams.context_processors.pending_invitations",
-
             ],
         },
     },
