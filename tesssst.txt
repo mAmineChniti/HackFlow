@@ -1,0 +1,19 @@
+Champ	Valeur à saisir
+Nom de l’entreprise	NovaTech Test 2026
+Secteur	Technology / IT
+Site web	https://novatech.example
+Description	Entreprise fictive spécialisée dans le développement logiciel, le cloud et l'intelligence artificielle.
+Nom du contact	Alex Martin
+E-mail du contact	alex.martin@example.com
+Logo	Laisser vide — facultatif
+
+
+
+
+Champ	Valeur à choisir ou saisir
+Sponsor	NovaTech Test 2026
+Hackathon	Choisir un hackathon déjà présent dans la liste
+Niveau	Gold
+Type de contribution	Financier
+Montant	2500 DT
+Notes internes	Scénario de test : proposition Gold de 2 500 DT. À relancer après la réunion de présentation.

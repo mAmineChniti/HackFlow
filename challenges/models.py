@@ -157,6 +157,7 @@ class ChallengeAnswer(models.Model):
     answer_text = models.CharField(max_length=500, verbose_name="Answer")
     is_correct = models.BooleanField(default=False, verbose_name="Is correct")
     points_earned = models.PositiveIntegerField(default=0, verbose_name="Points earned")
+    last_hint = models.TextField(blank=True, default="", verbose_name="Last AI hint")
 
     class Meta:
         unique_together = [("submission", "question")]

@@ -14,4 +14,5 @@ urlpatterns = [
     path("<slug:slug>/questions/add/", views.question_create, name="question_create"),
     path("<slug:slug>/questions/<int:question_id>/edit/", views.question_edit, name="question_edit"),
     path("<slug:slug>/questions/<int:question_id>/delete/", views.question_delete, name="question_delete"),
+    path("<slug:slug>/questions/<int:question_id>/hint/", views.question_hint_view, name="question_hint"),
 ]

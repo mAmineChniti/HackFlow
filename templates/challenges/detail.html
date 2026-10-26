@@ -47,7 +47,7 @@
                                 <span class="rounded-md border border-border/80 bg-background/60 px-2 py-0.5 font-mono text-xs text-muted-foreground">{{ question.get_answer_type_display }}</span>
                             </div>
                             <p class="mt-2 text-sm text-foreground">{{ question.question_text }}</p>
-                            {% if question.hint %}<p class="mt-2 text-xs text-muted-foreground"><em>Hint: {{ question.hint }}</em></p>{% endif %}
+                            {% if question.hint and is_organizer %}<p class="mt-2 text-xs text-muted-foreground"><em>Organizer hint: {{ question.hint }}</em></p>{% endif %}
                         </div>
                         {% if is_organizer %}
                         <div class="flex gap-1">
@@ -97,51 +97,66 @@
             <form method="post" action="{% url 'challenges:submit' challenge.slug %}" class="mt-4 space-y-4">
                 {% csrf_token %}
                 {% for field in submission_form %}
+                {% with question_id=field.name|cut:"question_" %}
                 <div>
                     <label class="block text-sm font-medium text-foreground mb-1.5">{{ field.label }}</label>
-                    {{ field }}
+                    <div class="flex gap-2">
+                        {{ field }}
+                        <button type="button"
+                                class="hint-btn inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1.5 text-xs font-medium hover:bg-accent disabled:opacity-50"
+                                data-hint-url="{% url 'challenges:question_hint' challenge.slug question_id %}"
+                                aria-controls="hint-box-{{ question_id }}"
+                                aria-expanded="false">
+                            <c-lucideicon.sparkles class="size-3" />
+                            <span class="hint-label">Hint</span>
+                        </button>
+                    </div>
                     {% for error in field.errors %}<p class="mt-1 text-xs text-destructive">{{ error }}</p>{% endfor %}
+                    <div id="hint-box-{{ question_id }}" class="hint-box mt-2 hidden rounded-lg border border-amber-500/30 bg-amber-500/10 p-2 text-xs text-amber-300" role="status" aria-live="polite"></div>
                 </div>
+                {% endwith %}
                 {% endfor %}
                 <div class="flex flex-wrap gap-2">
                     <c-button type="submit" size="sm">Submit answers</c-button>
-                    <button type="button" id="hint-btn" class="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent">
-                        <c-lucideicon.sparkles class="size-3.5" /> Get AI hint
-                    </button>
                 </div>
             </form>
-            <div id="hint-box" class="mt-3 hidden rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300"></div>
             <script>
-            (function(){
-                const btn = document.getElementById('hint-btn');
-                const box = document.getElementById('hint-box');
-                if (!btn) return;
-                btn.addEventListener('click', async function(){
-                    const solution = document.querySelector('textarea[name="solution"]');
-                    const sol = solution ? solution.value : '';
-                    btn.disabled = true;
-                    btn.textContent = 'Thinking...';
-                    try {
-                        const res = await fetch("{% url 'challenges:hint' challenge.slug %}", {
-                            method: 'POST',
-                            headers: {'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
-                            body: JSON.stringify({solution: sol})
-                        });
-                        const data = await res.json();
-                        if (data.success) {
-                            box.textContent = data.hint;
-                            box.classList.remove('hidden');
-                        } else {
-                            box.textContent = 'Could not get a hint.';
-                            box.classList.remove('hidden');
+            (function () {
+                const csrfToken = '{{ csrf_token }}';
+                document.querySelectorAll('.hint-btn').forEach(function (btn) {
+                    btn.addEventListener('click', async function () {
+                        const hintBox = document.getElementById(btn.getAttribute('aria-controls'));
+                        const label = btn.querySelector('.hint-label');
+                        const field = btn.parentElement.querySelector('input, textarea');
+                        if (!hintBox || !label) return;
+
+                        const answer = field ? field.value : '';
+                        btn.disabled = true;
+                        label.textContent = 'Thinking...';
+                        try {
+                            const response = await fetch(btn.dataset.hintUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': csrfToken,
+                                },
+                                body: JSON.stringify({ answer: answer }),
+                            });
+                            const data = await response.json().catch(function () { return {}; });
+                            if (response.ok && data.success) {
+                                hintBox.textContent = data.hint;
+                            } else {
+                                hintBox.textContent = data.error || 'Could not get a hint right now.';
+                            }
+                        } catch (error) {
+                            hintBox.textContent = 'Could not get a hint right now.';
+                        } finally {
+                            hintBox.classList.remove('hidden');
+                            btn.setAttribute('aria-expanded', 'true');
+                            btn.disabled = false;
+                            label.textContent = 'Hint';
                         }
-                    } catch(e){
-                        box.textContent = 'Error: ' + e.message;
-                        box.classList.remove('hidden');
-                    } finally {
-                        btn.disabled = false;
-                        btn.innerHTML = 'Get AI hint';
-                    }
+                    });
                 });
             })();
             </script>

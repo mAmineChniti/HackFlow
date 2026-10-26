@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 
 from django.conf import settings
 from django.contrib import messages
@@ -287,6 +288,116 @@ def challenge_hint_view(request, slug):
     if sub:
         sub.last_hint = hint
         sub.save(update_fields=["last_hint"])
+
+    return JsonResponse({"success": True, "hint": hint, "ai_configured": is_configured()})
+
+
+ANSWER_TYPE_HINTS = {
+    ChallengeQuestion.AnswerType.FLAG: (
+        "The answer is a flag in the format flag{...}. Re-read the challenge "
+        "details and look for where the flag is exposed."
+    ),
+    ChallengeQuestion.AnswerType.NUMBER: (
+        "The answer is a number. Work through the data step by step and "
+        "double-check your calculation before submitting."
+    ),
+    ChallengeQuestion.AnswerType.TEXT: (
+        "The answer is a short piece of text. Look for the key term the "
+        "question and challenge description point to."
+    ),
+}
+
+
+def _hint_reveals_answer(hint, answer):
+    """Return True when a generated hint contains the organizer's answer."""
+    normalized_answer = " ".join(answer.lower().split())
+    if not normalized_answer:
+        return False
+
+    candidates = {normalized_answer}
+    flag_match = re.fullmatch(r"flag\{(.+)\}", normalized_answer)
+    if flag_match:
+        candidates.add(flag_match.group(1).strip())
+
+    normalized_hint = " ".join(hint.lower().split())
+    for candidate in candidates:
+        if not candidate:
+            continue
+        pattern = rf"(?<!\w){re.escape(candidate)}(?!\w)"
+        if re.search(pattern, normalized_hint):
+            return True
+    return False
+
+
+def _build_question_hint(challenge, question, participant_answer):
+    """Return a per-question hint, preferring the organizer's own hint."""
+    organizer_hint = question.hint.strip()
+    if organizer_hint:
+        return organizer_hint
+
+    fallback = ANSWER_TYPE_HINTS.get(
+        question.answer_type,
+        "Re-read the question and the challenge description before trying again.",
+    )
+
+    system_prompt = (
+        "You are a mentor for a CTF-style challenge platform. Give one short, "
+        "non-spoiler hint (two sentences maximum) that nudges the participant "
+        "toward the answer. Never reveal, quote, spell out, or partially "
+        "disclose the reference answer, including inside examples. Match the "
+        "expected answer type without exposing the value."
+    )
+    prompt = (
+        f"Challenge: {challenge.title}\n"
+        f"Category: {challenge.category}\n"
+        f"Difficulty: {challenge.get_difficulty_display()}\n"
+        f"Description:\n{challenge.description[:1500]}\n\n"
+        f"Question: {question.question_text}\n"
+        f"Answer type: {question.get_answer_type_display()} "
+        f"({question.points} points)\n"
+        f"Reference answer (organizer only, never reveal): {question.correct_answer}\n"
+    )
+    if participant_answer:
+        prompt += f"Participant's current attempt: {participant_answer}\n"
+    prompt += "Write the hint now."
+
+    hint = call_groq(prompt, system_prompt=system_prompt, max_tokens=200)
+    if hint:
+        hint = hint.strip().strip('"').strip()
+        if hint and not _hint_reveals_answer(hint, question.correct_answer):
+            return hint
+    return fallback
+
+
+@require_POST
+@login_required
+def question_hint_view(request, slug, question_id):
+    challenge = get_object_or_404(Challenge, slug=slug)
+    question = get_object_or_404(ChallengeQuestion, pk=question_id, challenge=challenge)
+    if not services.can_submit_challenge(request.user, challenge):
+        return JsonResponse(
+            {"success": False, "error": "You cannot request hints for this challenge."},
+            status=403,
+        )
+
+    participant_answer = ""
+    try:
+        payload = json.loads(request.body.decode("utf-8")) if request.body else {}
+        if isinstance(payload, dict):
+            participant_answer = str(payload.get("answer") or "").strip()
+    except (ValueError, json.JSONDecodeError):
+        participant_answer = (request.POST.get("answer") or "").strip()
+    participant_answer = participant_answer[:500]
+
+    hint = _build_question_hint(challenge, question, participant_answer)
+
+    # Only refresh hints on answers that already exist; asking for a hint must
+    # not create a blank answer row before the participant has submitted.
+    ChallengeAnswer.objects.filter(
+        submission__challenge=challenge,
+        submission__participant=request.user,
+        question=question,
+    ).update(last_hint=hint)
 
     return JsonResponse({"success": True, "hint": hint, "ai_configured": is_configured()})
 
