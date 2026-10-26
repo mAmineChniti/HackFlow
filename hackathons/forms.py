@@ -124,11 +124,11 @@ class HackathonForm(TailwindFormMixin, forms.ModelForm):
 
         User = get_user_model()
         if "judges" in self.fields:
-            self.fields["judges"].queryset = User.objects.filter(
-                models.Q(profile__role="judge") | models.Q(is_superuser=True)
-            )
+            self.fields["judges"].queryset = User.objects.filter(is_active=True)
             self.fields["judges"].required = False
-            self.fields["judges"].help_text = "Select judges assigned to evaluate projects."
+            self.fields[
+                "judges"
+            ].help_text = "Select judges assigned to evaluate projects. Selected users are granted the Judge role."
         if "mentors" in self.fields:
             self.fields["mentors"].queryset = User.objects.filter(
                 models.Q(profile__role="mentor") | models.Q(is_superuser=True)

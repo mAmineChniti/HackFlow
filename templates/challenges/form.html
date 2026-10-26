@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title|default:"Edit Challenge" }} — HackFlow{% endblock %}
+
+{% block content %}
+<div class="relative py-10 md:py-14">
+    <div class="container-page max-w-3xl space-y-6">
+        <a href="{% url 'challenges:list' %}" class="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground">
+            <c-lucideicon.arrow-left class="size-3.5" /> Back to challenges
+        </a>
+        <h1 class="text-2xl font-bold tracking-tight">{{ page_title|default:"Challenge" }}</h1>
+        <c-card class="border-border/70 bg-card/50 p-6">
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                {% for field in form %}
+                <div class="space-y-1.5">
+                    <label class="text-xs font-medium text-foreground">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                </div>
+                {% endfor %}
+                <div class="flex gap-2 pt-2">
+                    <c-button type="submit" size="sm">Save</c-button>
+                    <c-button_link href="{% url 'challenges:list' %}" variant="outline" size="sm">Cancel</c-button_link>
+                </div>
+            </form>
+        </c-card>
+    </div>
+</div>
+{% endblock %}

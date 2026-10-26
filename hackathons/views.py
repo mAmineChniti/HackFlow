@@ -31,6 +31,7 @@ from .emails import (
 )
 from .forms import HackathonForm, RegistrationForm, ScheduleForm
 from .models import Hackathon, HackathonRegistration, HackathonSchedule
+from accounts.models import Profile
 from projects.services import is_organizer, is_admin, is_student, is_judge, is_mentor
 
 
@@ -225,6 +226,12 @@ class HackathonCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     def form_valid(self, form):
         form.instance.organizer = self.request.user
         response = super().form_valid(form)
+        # Promote selected judges to the Judge role (only organizers/admins can do this).
+        for judge in form.instance.judges.all():
+            profile, _ = Profile.objects.get_or_create(user=judge)
+            if profile.role not in (Profile.Role.ADMIN, Profile.Role.ORGANIZER):
+                profile.role = Profile.Role.JUDGE
+                profile.save(update_fields=["role", "updated_at"])
         messages.success(
             self.request,
             f"Hackathon '{self.object.title}' has been successfully created!",
@@ -257,6 +264,11 @@ class HackathonUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
+        for judge in self.object.judges.all():
+            profile, _ = Profile.objects.get_or_create(user=judge)
+            if profile.role not in (Profile.Role.ADMIN, Profile.Role.ORGANIZER):
+                profile.role = Profile.Role.JUDGE
+                profile.save(update_fields=["role", "updated_at"])
         messages.success(
             self.request,
             f"Hackathon '{self.object.title}' details updated successfully.",

@@ -16,8 +16,10 @@ from .models import Profile
 # Roles that confer elevated access must never be self-assigned at signup or
 # through self-service account settings. Organizers can see every draft,
 # review/accept submissions and export all team data; administrators can do
-# everything.
-PRIVILEGED_ROLES = (Profile.Role.ADMIN, Profile.Role.ORGANIZER)
+# everything. Judges are also privileged: evaluating submissions is a
+# trusted role, so it can only be granted by an administrator or an organizer
+# through the dedicated "make a judge" flow — never at signup.
+PRIVILEGED_ROLES = (Profile.Role.ADMIN, Profile.Role.ORGANIZER, Profile.Role.JUDGE)
 
 
 class HackFlowAuthenticationForm(AuthenticationForm):
@@ -89,8 +91,8 @@ class HackFlowSignupForm(UserCreationForm):
             }
         ),
         help_text=_(
-            "Your role in HackFlow. Organizer and administrator roles are "
-            "granted by the HackFlow team."
+            "Your role in HackFlow. Organizer, administrator and judge roles are "
+            "granted by the HackFlow team or an event organizer."
         ),
     )
 

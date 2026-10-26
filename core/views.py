@@ -19,6 +19,12 @@ from django.utils import timezone
 from hackathons.models import Hackathon, HackathonRegistration
 from projects.models import Project
 
+try:
+    from challenges.models import Challenge, ChallengeSubmission
+except Exception:  # pragma: no cover
+    Challenge = None
+    ChallengeSubmission = None
+
 try:  # Sponsors is an optional module for deployments that don't run events.
     from sponsors.models import Sponsorship, StatusChoices as SponsorshipStatus
 except Exception:  # pragma: no cover - only when the sponsors app is removed
@@ -403,6 +409,38 @@ def home(request):
         .order_by("-submitted_at", "-created_at")[:3]
     ]
 
+    # Challenges: real records when available, else placeholder.
+    challenge_cards = []
+    if Challenge is not None:
+        qs = Challenge.objects.filter(status=Challenge.Status.ACTIVE).order_by("-created_at")[:3]
+        for ch in qs:
+            solves = 0
+            if ChallengeSubmission is not None:
+                solves = ChallengeSubmission.objects.filter(
+                    challenge=ch, status=ChallengeSubmission.Status.PASSED
+                ).count()
+            difficulty_class = {
+                "beginner": "tone-emerald",
+                "intermediate": "tone-amber",
+                "advanced": "tone-rose",
+            }.get(ch.difficulty, "tone-sky")
+            challenge_cards.append(
+                {
+                    "title": ch.title,
+                    "category": ch.category,
+                    "glyph": "</>"
+                    if "security" in ch.category.lower() or "web" in ch.category.lower()
+                    else "{ }",
+                    "difficulty": ch.get_difficulty_display(),
+                    "difficulty_class": difficulty_class,
+                    "points": str(ch.points),
+                    "solves": f"{solves:,}",
+                    "tag": "New" if (timezone.now() - ch.created_at).days < 7 else "",
+                }
+            )
+    if not challenge_cards:
+        challenge_cards = DEMO_CHALLENGES
+
     return render(
         request,
         "core/home.html",
@@ -412,8 +450,7 @@ def home(request):
             "leaderboard": leaderboard,
             "recent_submissions": recent_submissions,
             "stats": _platform_stats(),
-            # Placeholder sections (no backing models yet).
-            "challenges": DEMO_CHALLENGES,
+            "challenges": challenge_cards,
             "testimonials": DEMO_TESTIMONIALS,
             "faqs": DEMO_FAQS,
         },

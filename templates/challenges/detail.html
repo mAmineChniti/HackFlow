@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}{{ challenge.title }} — Challenge{% endblock %}
+
+{% block content %}
+<div class="relative py-8 md:py-12">
+    <div class="container-page max-w-4xl space-y-6">
+        <a href="{% url 'challenges:list' %}" class="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground">
+            <c-lucideicon.arrow-left class="size-3.5" /> Back to challenges
+        </a>
+
+        <c-card class="border-border/70 bg-card/50 p-6 md:p-8">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="rounded-md border border-primary/30 bg-primary/10 px-2.5 py-1 font-mono text-xs uppercase tracking-wider text-primary">{{ challenge.category }}</span>
+                <span class="rounded-md border border-border/80 bg-background/60 px-2.5 py-1 font-mono text-xs text-muted-foreground">{{ challenge.get_difficulty_display }}</span>
+                <span class="rounded-md border border-border/80 bg-background/60 px-2.5 py-1 font-mono text-xs text-muted-foreground">{{ challenge.points }} pts</span>
+                {% if challenge.hackathon %}<span class="rounded-md border border-border/80 bg-background/60 px-2.5 py-1 font-mono text-xs text-muted-foreground">{{ challenge.hackathon.title }}</span>{% endif %}
+            </div>
+            <h1 class="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">{{ challenge.title }}</h1>
+            <p class="mt-4 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{{ challenge.description }}</p>
+
+            <div class="mt-6 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                <span>{{ solve_count }} solve{{ solve_count|pluralize }}</span>
+                <span>{{ total_attempts }} attempt{{ total_attempts|pluralize }}</span>
+                <span>By {{ challenge.organizer.username }}</span>
+            </div>
+
+            {% if is_organizer %}
+            <div class="mt-6 flex gap-2">
+                <c-button_link href="{% url 'challenges:update' challenge.slug %}" variant="outline" size="sm">Edit</c-button_link>
+                <c-button_link href="{% url 'challenges:delete' challenge.slug %}" variant="destructive" size="sm">Delete</c-button_link>
+            </div>
+            {% endif %}
+        </c-card>
+
+        <c-card class="border-border/70 bg-card/50 p-6 md:p-8">
+            <h2 class="text-lg font-semibold">Your submission</h2>
+
+            {% if submission %}
+            <div class="mt-3 rounded-lg border border-border/60 bg-background/40 p-4 text-xs">
+                <div class="flex items-center justify-between">
+                    <span class="font-medium">Status: {{ submission.get_status_display }}</span>
+                    <span class="font-mono text-muted-foreground">{{ submission.submitted_at|date:"M d, Y H:i" }}</span>
+                </div>
+                {% if submission.score is not None %}<p class="mt-1">Score: {{ submission.score }}/100</p>{% endif %}
+                {% if submission.feedback %}<p class="mt-1 text-muted-foreground">{{ submission.feedback }}</p>{% endif %}
+                {% if submission.last_hint %}<p class="mt-2 text-amber-400">Last hint: {{ submission.last_hint }}</p>{% endif %}
+            </div>
+            {% endif %}
+
+            {% if can_submit %}
+            <form method="post" action="{% url 'challenges:submit' challenge.slug %}" class="mt-4 space-y-3">
+                {% csrf_token %}
+                {{ submission_form.solution }}
+                {% for error in submission_form.solution.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                <div class="flex flex-wrap gap-2">
+                    <c-button type="submit" size="sm">Submit solution</c-button>
+                    <button type="button" id="hint-btn" class="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent">
+                        <c-lucideicon.sparkles class="size-3.5" /> Get AI hint
+                    </button>
+                </div>
+            </form>
+            <div id="hint-box" class="mt-3 hidden rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300"></div>
+            <script>
+            (function(){
+                const btn = document.getElementById('hint-btn');
+                const box = document.getElementById('hint-box');
+                if (!btn) return;
+                btn.addEventListener('click', async function(){
+                    const solution = document.querySelector('textarea[name="solution"]');
+                    const sol = solution ? solution.value : '';
+                    btn.disabled = true;
+                    btn.textContent = 'Thinking...';
+                    try {
+                        const res = await fetch("{% url 'challenges:hint' challenge.slug %}", {
+                            method: 'POST',
+                            headers: {'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
+                            body: JSON.stringify({solution: sol})
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            box.textContent = data.hint;
+                            box.classList.remove('hidden');
+                        } else {
+                            box.textContent = 'Could not get a hint.';
+                            box.classList.remove('hidden');
+                        }
+                    } catch(e){
+                        box.textContent = 'Error: ' + e.message;
+                        box.classList.remove('hidden');
+                    } finally {
+                        btn.disabled = false;
+                        btn.innerHTML = 'Get AI hint';
+                    }
+                });
+            })();
+            </script>
+            {% elif user.is_authenticated %}
+            <p class="mt-3 text-sm text-muted-foreground">You cannot submit to this challenge.</p>
+            {% else %}
+            <p class="mt-3 text-sm text-muted-foreground">
+                <a href="{% url 'accounts:login' %}" class="text-primary hover:underline">Sign in</a> to submit a solution.
+            </p>
+            {% endif %}
+        </c-card>
+    </div>
+</div>
+{% endblock %}

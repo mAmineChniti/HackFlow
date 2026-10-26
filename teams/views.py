@@ -141,7 +141,7 @@ class SkillProfileUpdateView(LoginRequiredMixin, UpdateView):
         return profile
 
     def form_valid(self, form):
-        messages.success(self.request, "Compétences enregistrées.")
+        messages.success(self.request, "Skills saved.")
         return super().form_valid(form)
 
 
@@ -150,9 +150,9 @@ class SkillProfileUpdateView(LoginRequiredMixin, UpdateView):
 def suggest_teammates(request, pk):
     team = get_object_or_404(Team.objects.select_related("hackathon"), pk=pk)
     if team.leader_id != request.user.pk:
-        return JsonResponse({"error": "Réservé au chef d'équipe."}, status=403)
+        return JsonResponse({"error": "Only the team leader can use this feature."}, status=403)
     if team.is_full:
-        return JsonResponse({"error": "L'équipe est déjà complète."}, status=400)
+        return JsonResponse({"error": "The team is already full."}, status=400)
     return JsonResponse(ai.build_report(team))
 
 
@@ -169,7 +169,7 @@ def send_invitation(request, pk):
 
     if team.leader_id != request.user.pk:
         if ajax:
-            return JsonResponse({"error": "Réservé au chef d'équipe."}, status=403)
+            return JsonResponse({"error": "Only the team leader can send invitations."}, status=403)
         raise PermissionDenied
 
     User = get_user_model()

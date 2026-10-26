@@ -96,6 +96,7 @@ INSTALLED_APPS = [
     "hackathons",
     "sponsors",
     "projects",
+    "challenges",
 ]
 
 MIDDLEWARE = [

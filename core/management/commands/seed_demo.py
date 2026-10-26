@@ -28,6 +28,7 @@ from django.utils.text import slugify
 from PIL import Image, ImageDraw, ImageFont
 
 from accounts.models import Profile
+from challenges.models import Challenge, ChallengeSubmission
 from hackathons.models import (
     Hackathon,
     HackathonFAQ,
@@ -476,6 +477,7 @@ class Command(BaseCommand):
                 generate_media=not options["skip_media"],
             )
             teams = self._seed_teams(now, users, hackathons)
+            self._seed_challenges(now, users, hackathons)
 
         self._report(users, hackathons, projects, sponsors, teams)
 
@@ -1580,6 +1582,88 @@ class Command(BaseCommand):
         teams["data-dynamos"] = team4
 
         return teams
+
+    def _seed_challenges(self, now, users, hackathons):
+        organizer = users["organizer"]
+        active = hackathons["active"]
+        specs = [
+            {
+                "title": "Rate Limit Bypass",
+                "category": "Web Security",
+                "difficulty": Challenge.Difficulty.ADVANCED,
+                "points": 500,
+                "description": (
+                    "A login endpoint appears to enforce rate limiting, but a subtle "
+                    "bug lets attackers bypass it. Find the bypass and describe a fix."
+                ),
+                "status": Challenge.Status.ACTIVE,
+                "hackathon": active,
+            },
+            {
+                "title": "Build a RAG Pipeline",
+                "category": "AI / ML",
+                "difficulty": Challenge.Difficulty.INTERMEDIATE,
+                "points": 750,
+                "description": (
+                    "Build a small retrieval-augmented generation pipeline over a "
+                    "provided corpus. Submit your approach and the key design choices."
+                ),
+                "status": Challenge.Status.ACTIVE,
+                "hackathon": active,
+            },
+            {
+                "title": "Zero-Copy Parser",
+                "category": "Systems",
+                "difficulty": Challenge.Difficulty.ADVANCED,
+                "points": 1000,
+                "description": (
+                    "Parse a binary format without copying buffers. Explain your "
+                    "memory layout and safety guarantees."
+                ),
+                "status": Challenge.Status.ACTIVE,
+                "hackathon": None,
+            },
+            {
+                "title": "Beginner Warm-up",
+                "category": "General",
+                "difficulty": Challenge.Difficulty.BEGINNER,
+                "points": 100,
+                "description": "A simple warm-up challenge for new participants.",
+                "status": Challenge.Status.ACTIVE,
+                "hackathon": None,
+            },
+        ]
+        challenges = {}
+        for spec in specs:
+            hackathon = spec.pop("hackathon")
+            challenge, _ = Challenge.objects.update_or_create(
+                title=spec["title"],
+                defaults={
+                    "description": spec["description"],
+                    "category": spec["category"],
+                    "difficulty": spec["difficulty"],
+                    "points": spec["points"],
+                    "status": spec["status"],
+                    "organizer": organizer,
+                    "hackathon": hackathon,
+                },
+            )
+            challenges[slugify(spec["title"])] = challenge
+
+        # Seed a sample submission
+        student = users["student"]
+        first = list(challenges.values())[0]
+        ChallengeSubmission.objects.update_or_create(
+            challenge=first,
+            participant=student,
+            defaults={
+                "solution": "I bypassed the rate limit by rotating the X-Forwarded-For header. Fix: trust only the direct peer IP.",
+                "status": ChallengeSubmission.Status.PASSED,
+                "score": 100,
+                "attempt_count": 1,
+            },
+        )
+        return challenges
 
     # ------------------------------------------------------------------
     # Reporting

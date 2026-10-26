@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Delete Challenge — HackFlow{% endblock %}
+{% block content %}
+<div class="container-page py-12 max-w-xl">
+    <c-card class="border-border/70 bg-card/50 p-6">
+        <h1 class="text-xl font-semibold">Delete {{ object.title }}?</h1>
+        <p class="mt-2 text-sm text-muted-foreground">This action cannot be undone.</p>
+        <form method="post" class="mt-4 flex gap-2">
+            {% csrf_token %}
+            <c-button type="submit" variant="destructive" size="sm">Delete</c-button>
+            <c-button_link href="{% url 'challenges:list' %}" variant="outline" size="sm">Cancel</c-button_link>
+        </form>
+    </c-card>
+</div>
+{% endblock %}

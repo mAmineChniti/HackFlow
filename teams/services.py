@@ -11,7 +11,7 @@ class TeamError(Exception):
 @transaction.atomic
 def create_team(*, leader, name, description, hackathon, max_members):
     if TeamMember.objects.filter(user=leader, team__hackathon=hackathon).exists():
-        raise TeamError("Vous faites déjà partie d'une équipe pour ce hackathon.")
+        raise TeamError("You are already a member of a team for this hackathon.")
     team = Team.objects.create(
         name=name,
         description=description,
@@ -27,21 +27,21 @@ def create_team(*, leader, name, description, hackathon, max_members):
 def join_team(*, team, user, role, skills=""):
     team = Team.objects.select_for_update().get(pk=team.pk)
     if TeamMember.objects.filter(team=team, user=user).exists():
-        raise TeamError("Vous êtes déjà membre de cette équipe.")
+        raise TeamError("You are already a member of this team.")
     if TeamMember.objects.filter(user=user, team__hackathon=team.hackathon).exists():
-        raise TeamError("Vous faites déjà partie d'une équipe pour ce hackathon.")
+        raise TeamError("You are already a member of a team for this hackathon.")
     if team.is_full:
-        raise TeamError("Cette équipe est complète.")
+        raise TeamError("This team is already full.")
     return TeamMember.objects.create(team=team, user=user, role=role, skills=skills)
 
 
 @transaction.atomic
 def leave_team(*, team, user):
     if team.leader_id == user.pk:
-        raise TeamError("Le chef d'équipe ne peut pas quitter l'équipe : supprimez-la.")
+        raise TeamError("The team leader cannot leave the team: delete it instead.")
     deleted, _ = TeamMember.objects.filter(team=team, user=user).delete()
     if not deleted:
-        raise TeamError("Vous n'êtes pas membre de cette équipe.")
+        raise TeamError("You are not a member of this team.")
 
 
 # ----------------------------------------------------------- Matching IA
@@ -134,17 +134,17 @@ def suggest_candidates(team, limit=3):
 def invite_user(*, team, invited_by, invitee, message=""):
     team = Team.objects.select_for_update().get(pk=team.pk)
     if team.leader_id != invited_by.pk:
-        raise TeamError("Seul le chef d'équipe peut inviter.")
+        raise TeamError("Only the team leader can send invitations.")
     if invitee.pk == invited_by.pk:
-        raise TeamError("Vous ne pouvez pas vous inviter vous-même.")
+        raise TeamError("You cannot invite yourself.")
     if team.is_full:
-        raise TeamError("L'équipe est déjà complète.")
+        raise TeamError("The team is already full.")
     if TeamMember.objects.filter(user=invitee, team__hackathon=team.hackathon).exists():
-        raise TeamError("Cet utilisateur fait déjà partie d'une équipe pour ce hackathon.")
+        raise TeamError("This user is already a member of a team for this hackathon.")
     if Invitation.objects.filter(
         team=team, invitee=invitee, status=Invitation.Status.PENDING
     ).exists():
-        raise TeamError("Une invitation est déjà en attente pour cet utilisateur.")
+        raise TeamError("An invitation is already pending for this user.")
     return Invitation.objects.create(
         team=team, invitee=invitee, invited_by=invited_by, message=message[:200]
     )
@@ -162,9 +162,9 @@ def _lock_invitation(invitation):
 def accept_invitation(*, invitation, user):
     invitation = _lock_invitation(invitation)
     if invitation.invitee_id != user.pk:
-        raise TeamError("Cette invitation ne vous est pas destinée.")
+        raise TeamError("This invitation was not sent to you.")
     if invitation.status != Invitation.Status.PENDING:
-        raise TeamError("Cette invitation n'est plus en attente.")
+        raise TeamError("This invitation is no longer pending.")
 
     profile = SkillProfile.objects.filter(user=user).first()
     role = profile.main_role if profile else TeamMember.Role.OTHER
@@ -188,9 +188,9 @@ def accept_invitation(*, invitation, user):
 def decline_invitation(*, invitation, user):
     invitation = _lock_invitation(invitation)
     if invitation.invitee_id != user.pk:
-        raise TeamError("Cette invitation ne vous est pas destinée.")
+        raise TeamError("This invitation was not sent to you.")
     if invitation.status != Invitation.Status.PENDING:
-        raise TeamError("Cette invitation n'est plus en attente.")
+        raise TeamError("This invitation is no longer pending.")
     invitation.status = Invitation.Status.DECLINED
     invitation.responded_at = timezone.now()
     invitation.save(update_fields=["status", "responded_at"])
@@ -201,9 +201,9 @@ def decline_invitation(*, invitation, user):
 def cancel_invitation(*, invitation, user):
     invitation = _lock_invitation(invitation)
     if invitation.team.leader_id != user.pk:
-        raise TeamError("Seul le chef d'équipe peut annuler une invitation.")
+        raise TeamError("Only the team leader can cancel an invitation.")
     if invitation.status != Invitation.Status.PENDING:
-        raise TeamError("Cette invitation n'est plus en attente.")
+        raise TeamError("This invitation is no longer pending.")
     invitation.status = Invitation.Status.CANCELLED
     invitation.responded_at = timezone.now()
     invitation.save(update_fields=["status", "responded_at"])

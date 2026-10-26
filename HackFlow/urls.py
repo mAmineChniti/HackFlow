@@ -34,6 +34,7 @@ urlpatterns = [
     path("hackathons/", include("hackathons.urls", namespace="hackathons")),
     path("sponsors/", include("sponsors.urls")),
     path("projects/", include("projects.urls")),
+    path("challenges/", include("challenges.urls", namespace="challenges")),
     path("admin/", admin.site.urls),
     path("health/", health_check, name="health"),
     path("healthz/", health_check, name="healthz"),
