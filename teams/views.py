@@ -76,7 +76,7 @@ class TeamCreateView(LoginRequiredMixin, CreateView):
         except services.TeamError as exc:
             form.add_error(None, str(exc))
             return self.form_invalid(form)
-        messages.success(self.request, "Équipe créée avec succès.")
+        messages.success(self.request, "Team created successfully.")
         return HttpResponseRedirect(reverse("teams:detail", args=[self.object.pk]))
 
 
@@ -85,7 +85,7 @@ class TeamUpdateView(LoginRequiredMixin, LeaderRequiredMixin, UpdateView):
     form_class = TeamForm
 
     def form_valid(self, form):
-        messages.success(self.request, "Équipe mise à jour.")
+        messages.success(self.request, "Team updated successfully.")
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -97,7 +97,7 @@ class TeamDeleteView(LoginRequiredMixin, LeaderRequiredMixin, DeleteView):
     success_url = reverse_lazy("teams:list")
 
     def form_valid(self, form):
-        messages.success(self.request, "Équipe supprimée.")
+        messages.success(self.request, "Team deleted successfully.")
         return super().form_valid(form)
 
 
@@ -109,7 +109,7 @@ def join_team(request, pk):
     if form.is_valid():
         try:
             services.join_team(team=team, user=request.user, **form.cleaned_data)
-            messages.success(request, "Vous avez rejoint l'équipe.")
+            messages.success(request, "You have joined the team.")
         except services.TeamError as exc:
             messages.error(request, str(exc))
     else:
@@ -123,7 +123,7 @@ def leave_team(request, pk):
     team = get_object_or_404(Team, pk=pk)
     try:
         services.leave_team(team=team, user=request.user)
-        messages.success(request, "Vous avez quitté l'équipe.")
+        messages.success(request, "You have left the team.")
     except services.TeamError as exc:
         messages.error(request, str(exc))
     return redirect("teams:detail", pk=pk)
@@ -227,9 +227,9 @@ def respond_invitation(request, pk, action):
     if request.user.pk not in (invitation.invitee_id, invitation.team.leader_id):
         raise Http404
     handlers = {
-        "accept": (services.accept_invitation, "Invitation acceptée : bienvenue dans l'équipe !"),
-        "decline": (services.decline_invitation, "Invitation refusée."),
-        "cancel": (services.cancel_invitation, "Invitation annulée."),
+        "accept": (services.accept_invitation, "Invitation accepted: welcome to the team!"),
+        "decline": (services.decline_invitation, "Invitation declined."),
+        "cancel": (services.cancel_invitation, "Invitation cancelled."),
     }
     if action not in handlers:
         raise Http404
