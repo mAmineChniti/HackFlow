@@ -19,6 +19,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import include, path
+from django.views.static import serve
 
 
 def health_check(request):
@@ -38,3 +39,13 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+elif getattr(settings, "SERVE_MEDIA", False) and settings.MEDIA_URL.startswith("/"):
+    # No reverse proxy/object storage (for example Render free): serve uploads
+    # through Django. Fine for a demo; use Nginx or S3/R2 for real traffic.
+    urlpatterns += [
+        path(
+            f"{settings.MEDIA_URL.strip('/')}/<path:path>",
+            serve,
+            {"document_root": settings.MEDIA_ROOT},
+        )
+    ]

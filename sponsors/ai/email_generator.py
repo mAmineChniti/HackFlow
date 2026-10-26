@@ -9,23 +9,16 @@ Règles de sécurité et RGPD :
 - Aucun envoi direct : le texte est injecté dans le formulaire pour relecture et édition par l'organisateur.
 """
 
-import json
 import logging
-import os
-import urllib.error
-import urllib.request
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple
 
-from django.conf import settings
+from core.groq import call_groq, get_api_key, get_model
 from sponsors.models import Sponsor
 from sponsors.services import check_and_increment_email_rate_limit, compose_email
 
 logger = logging.getLogger(__name__)
 
-# Modèle et prompt système lisibles et configurables
-DEFAULT_AI_MODEL = "openai/gpt-oss-120b"
-API_TIMEOUT_SECONDS = 15
-
+# Modèle et prompt système lisibles et configurables (via AI_MODEL).
 PROMPT_SYSTEM_EMAIL = (
     "You are responsible for partnerships and sponsorships at ESPRIT engineering school (HackFlow). "
     "Write concise, professional, compelling, and considerate sponsorship proposals. "
@@ -40,15 +33,9 @@ PROMPT_SYSTEM_EMAIL = (
 )
 
 
-def get_ai_config() -> tuple:
-    """Get the API key and model from the environment or Django settings."""
-    api_key = os.getenv("GROQ_API_KEY", getattr(settings, "GROQ_API_KEY", "")).strip()
-    model = os.getenv("AI_MODEL", getattr(settings, "AI_MODEL", DEFAULT_AI_MODEL)).strip() or DEFAULT_AI_MODEL
-    # Reject placeholder or empty keys
-    if not api_key or api_key.lower() in ("", "none", "null") or "your_api_key" in api_key.lower() or "gsk_" not in api_key:
-        logger.warning("GROQ_API_KEY not configured or contains placeholder - using fallback")
-        return "", model
-    return api_key, model
+def get_ai_config() -> tuple[str, str]:
+    """Return the shared Groq key and model (environment/settings-backed)."""
+    return get_api_key(), get_model()
 
 
 def build_sanitized_ai_payload(
@@ -57,8 +44,12 @@ def build_sanitized_ai_payload(
     tone: str = "professionnel",
 ) -> Dict[str, Any]:
     """Build an LLM payload that excludes sensitive or confidential data."""
-    hackathon_name = getattr(hackathon, "name", "") or "our next innovation hackathon"
-    hackathon_theme = getattr(hackathon, "theme", "") or "Technology innovation and software engineering"
+    hackathon_name = getattr(hackathon, "title", "") or "our next innovation hackathon"
+    hackathon_theme = (
+        getattr(hackathon, "tagline", "")
+        or getattr(hackathon, "category", "")
+        or "Technology innovation and software engineering"
+    )
 
     dates = ""
     start_date = getattr(hackathon, "start_date", None)
@@ -66,7 +57,9 @@ def build_sanitized_ai_payload(
     if start_date and end_date:
         dates = f"from {start_date} to {end_date}"
 
-    sector_label = sponsor.get_sector_display() if hasattr(sponsor, "get_sector_display") else sponsor.sector
+    sector_label = (
+        sponsor.get_sector_display() if hasattr(sponsor, "get_sector_display") else sponsor.sector
+    )
 
     tone_labels = {
         "professionnel": "formal and professional",
@@ -107,7 +100,7 @@ def parse_llm_response(text: str) -> Tuple[str, str]:
         if clean_line.upper().startswith("OBJET:") or clean_line.upper().startswith("SUBJECT:"):
             subject = clean_line.split(":", 1)[1].strip()
             # Le reste des lignes constitue le corps
-            body = "\n".join(lines[i + 1:]).strip()
+            body = "\n".join(lines[i + 1 :]).strip()
             break
 
     return subject, body
@@ -149,51 +142,27 @@ def generate_prospecting_email(
     # 3. Préparation du payload filtré (RGPD / Confidentialité)
     sanitized_data = build_sanitized_ai_payload(sponsor, hackathon, tone=tone)
 
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "content-type": "application/json",
-    }
-    request_body = json.dumps({
-        "model": model,
-        "max_tokens": 600,
-        "messages": [
-            {
-                "role": "system",
-                "content": PROMPT_SYSTEM_EMAIL,
-            },
-            {
-                "role": "user",
-                "content": sanitized_data["user_instructions"],
-            }
-        ],
-    }).encode("utf-8")
+    # 4. Appel via le client Groq partagé (timeout 15s, clé expurgée des logs)
+    #    et repli transparent en cas d'erreur.
+    raw_text = call_groq(
+        sanitized_data["user_instructions"],
+        system_prompt=PROMPT_SYSTEM_EMAIL,
+        max_tokens=600,
+        model=model,
+    )
+    if raw_text:
+        subject, body = parse_llm_response(raw_text)
+        return {
+            "subject": subject,
+            "body": body,
+            "ai_generated": True,
+            "notice": f"Message generated with AI ({model}). You can edit it before sending.",
+        }
 
-    # 4. Appel avec timeout court (15 secondes) et repli transparent en cas d'erreur
-    try:
-        req = urllib.request.Request(
-            "https://api.groq.com/openai/v1/chat/completions",
-            data=request_body,
-            headers=headers,
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=API_TIMEOUT_SECONDS) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            choices = data.get("choices", [])
-            raw_text = choices[0].get("message", {}).get("content", "") if choices else ""
-
-            if raw_text:
-                subject, body = parse_llm_response(raw_text)
-                return {
-                    "subject": subject,
-                    "body": body,
-                    "ai_generated": True,
-                    "notice": f"Message generated with AI ({model}). You can edit it before sending.",
-                }
-    except Exception as exc:
-        err_msg = str(exc)
-        if api_key and api_key in err_msg:
-            err_msg = err_msg.replace(api_key, "[REDACTED_API_KEY]")
-        logger.warning("AI email generation failed for sponsor %s: %s", sponsor.pk, err_msg)
+    logger.warning(
+        "AI email generation failed for sponsor %s; using the standard template",
+        sponsor.pk,
+    )
 
     # Repli en cas d'exception ou timeout
     fallback = compose_email(sponsor=sponsor, hackathon=hackathon, template_key=template_key)

@@ -19,25 +19,25 @@
 </div>
 {% endif %}
 
-<div>
-    <label for="id_subject" class="block text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
+<c-form.field>
+    <c-form.label for="id_subject" class="block text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
         Email subject <span class="text-rose-400">*</span>
-    </label>
+    </c-form.label>
     {{ form.subject }}
     {% if form.subject.errors %}
-    <p class="mt-1 text-xs text-rose-400">{{ form.subject.errors.0 }}</p>
+    <c-form.error>{{ form.subject.errors.0 }}</c-form.error>
     {% endif %}
-</div>
+</c-form.field>
 
-<div>
-    <label for="id_message" class="block text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
+<c-form.field>
+    <c-form.label for="id_message" class="block text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
         Message body <span class="text-rose-400">*</span>
-    </label>
+    </c-form.label>
     {{ form.message }}
     {% if form.message.errors %}
-    <p class="mt-1 text-xs text-rose-400">{{ form.message.errors.0 }}</p>
+    <c-form.error>{{ form.message.errors.0 }}</c-form.error>
     {% endif %}
-    <p class="mt-1.5 text-xs text-muted-foreground">
+    <c-form.description>
         Review and customize the message above before sending it.
-    </p>
-</div>
+    </c-form.description>
+</c-form.field>

@@ -2,9 +2,9 @@
 {% load sponsor_tags %}
 {% can_manage_sponsorship user item as user_can_manage_sponsorship %}
 {% can_delete user as user_can_delete %}
-<tr id="sponsorship-row-{{ item.pk }}" class="border-b border-border/50 hover:bg-muted/30 transition-colors">
+<c-table.row id="sponsorship-row-{{ item.pk }}" class="border-b border-border/50 hover:bg-muted/30 transition-colors">
     <!-- Sponsor Info -->
-    <td class="py-3 px-4">
+    <c-table.cell class="py-3 px-4">
         <div class="flex items-center gap-3">
             {% if item.sponsor.logo %}
             <img src="{{ item.sponsor.logo.url }}" alt="{{ item.sponsor.name }}" class="size-8 rounded-md object-contain bg-background/80 p-1 border border-border/60">
@@ -17,83 +17,89 @@
                 <a href="{% url 'sponsors:sponsor_detail' item.sponsor.pk %}" class="font-semibold text-foreground hover:text-primary transition-colors">
                     {{ item.sponsor.name }}
                 </a>
-                <span class="block text-[11px] text-muted-foreground">{{ item.sponsor.get_sector_display }}</span>
+                <c-badge variant="outline" class="text-[11px] font-mono">{{ item.sponsor.get_sector_display }}</c-badge>
             </div>
         </div>
-    </td>
+    </c-table.cell>
 
     <!-- Hackathon -->
-    <td class="py-3 px-4 text-xs font-medium text-muted-foreground">
-        {{ item.hackathon.name }}
-    </td>
+    <c-table.cell class="py-3 px-4 text-xs font-medium text-muted-foreground">
+        {{ item.hackathon.title }}
+    </c-table.cell>
 
     <!-- Tier -->
-    <td class="py-3 px-4">
-        <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold
-            {% if item.tier == 'platinum' %}border border-cyan-500/30 bg-cyan-500/10 text-cyan-400
-            {% elif item.tier == 'gold' %}border border-amber-500/30 bg-amber-500/10 text-amber-400
-            {% elif item.tier == 'silver' %}border border-slate-400/30 bg-slate-400/10 text-slate-300
-            {% else %}border border-orange-500/30 bg-orange-500/10 text-orange-400{% endif %}">
+    <c-table.cell class="py-3 px-4">
+        <c-badge
+            variant="outline"
+            class="text-xs font-semibold
+                {% if item.tier == 'platinum' %}border-cyan-500/30 bg-cyan-500/10 text-cyan-400
+                {% elif item.tier == 'gold' %}border-amber-500/30 bg-amber-500/10 text-amber-400
+                {% elif item.tier == 'silver' %}border-slate-400/30 bg-slate-400/10 text-slate-300
+                {% else %}border-orange-500/30 bg-orange-500/10 text-orange-400{% endif %}"
+        >
             {{ item.get_tier_display }}
-        </span>
-    </td>
+        </c-badge>
+    </c-table.cell>
 
     <!-- Amount -->
-    <td class="py-3 px-4 font-mono text-xs font-semibold text-foreground">
+    <c-table.cell class="py-3 px-4 font-mono text-xs font-semibold text-foreground">
         {{ item.amount|intcomma }} DT
-    </td>
+    </c-table.cell>
 
     <!-- Contribution Type -->
-    <td class="py-3 px-4 text-xs text-muted-foreground">
+    <c-table.cell class="py-3 px-4 text-xs text-muted-foreground">
         {{ item.get_contribution_type_display }}
-    </td>
+    </c-table.cell>
 
     <!-- Status with inline HTMX update -->
-    <td class="py-3 px-4">
+    <c-table.cell class="py-3 px-4">
         {% if user_can_manage_sponsorship %}
         <form hx-post="{% url 'sponsors:sponsorship_change_status' item.pk %}"
               hx-target="#sponsorship-row-{{ item.pk }}"
               hx-swap="outerHTML"
+              hx-trigger="change"
               class="inline-flex items-center">
             {% csrf_token %}
-            <select name="status" onchange="this.form.requestSubmit()"
-                    class="rounded-md border border-border/80 bg-background px-2.5 py-1 text-xs font-medium focus:ring-1 focus:ring-primary focus:outline-none cursor-pointer
-                    {% if item.status == 'confirmé' %}text-emerald-400 border-emerald-500/40 bg-emerald-500/10
-                    {% elif item.status == 'négociation' %}text-amber-400 border-amber-500/40 bg-amber-500/10
-                    {% elif item.status == 'contacté' %}text-blue-400 border-blue-500/40 bg-blue-500/10
-                    {% elif item.status == 'refusé' %}text-rose-400 border-rose-500/40 bg-rose-500/10
-                    {% else %}text-muted-foreground border-border bg-card/60{% endif %}">
+            <c-native_select
+                name="status"
+                aria-label="Sponsorship status"
+                class="h-8 w-auto py-0 text-xs"
+            >
                 {% for code, label in status_choices %}
                 <option value="{{ code }}" {% if item.status == code %}selected{% endif %}>
                     {{ label }}
                 </option>
                 {% endfor %}
-            </select>
+            </c-native_select>
         </form>
         {% else %}
-        {{ item.get_status_display }}
+        <c-badge
+            variant="outline"
+            class="text-xs font-semibold
+                {% if item.status == 'confirmé' %}border-emerald-500/30 bg-emerald-500/15 text-emerald-400
+                {% elif item.status == 'négociation' %}border-amber-500/30 bg-amber-500/15 text-amber-400
+                {% elif item.status == 'contacté' %}border-blue-500/30 bg-blue-500/15 text-blue-400
+                {% elif item.status == 'refusé' %}border-rose-500/30 bg-rose-500/15 text-rose-400
+                {% else %}border-border/60 bg-muted text-muted-foreground{% endif %}"
+        >
+            {{ item.get_status_display }}
+        </c-badge>
         {% endif %}
-    </td>
+    </c-table.cell>
 
     <!-- Actions -->
-    <td class="py-3 px-4 text-right">
+    <c-table.cell class="py-3 px-4 text-right">
         <div class="inline-flex items-center gap-1.5">
             {% if user_can_manage_sponsorship %}
-            <a href="{% url 'sponsors:sponsorship_update' item.pk %}" title="Edit"
-               class="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-            </a>
+            <c-button_link href="{% url 'sponsors:sponsorship_update' item.pk %}" variant="ghost" size="icon" aria-label="Edit sponsorship">
+                <c-lucideicon.edit class="size-4" />
+            </c-button_link>
             {% endif %}
             {% if user_can_delete %}
-            <a href="{% url 'sponsors:sponsorship_delete' item.pk %}" title="Delete"
-               class="p-1 rounded text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-colors">
-                <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-            </a>
+            <c-button_link href="{% url 'sponsors:sponsorship_delete' item.pk %}" variant="ghost" size="icon" class="text-rose-400 hover:text-rose-300" aria-label="Delete sponsorship">
+                <c-lucideicon.trash-2 class="size-4" />
+            </c-button_link>
             {% endif %}
         </div>
-    </td>
-</tr>
+    </c-table.cell>
+</c-table.row>

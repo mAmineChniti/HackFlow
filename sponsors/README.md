@@ -19,7 +19,7 @@ features.
   scikit-learn. The implementation excludes sponsors already linked to the
   selected hackathon and adds a score bonus for sponsors confirmed at another
   hackathon.
-- Staff users can request an AI-assisted email draft through the Anthropic API
+- Staff users can request an AI-assisted email draft through the Groq API
   when configured. The email generator uses a built-in template when no API
   key is configured or a request fails.
 - Partnership data can be exported as an Excel workbook. The export rejects
@@ -69,17 +69,26 @@ The public sponsor page is accessible without login.
 Set these optional variables in the project `.env` file:
 
 ```ini
-ANTHROPIC_API_KEY=
-AI_MODEL=claude-haiku-5-5
+GROQ_API_KEY=
+AI_MODEL=openai/gpt-oss-120b
 ```
 
-The default model name is also defined in
-`sponsors/ai/email_generator.py`. Email delivery uses Django's configured
-email backend; see the root `.env.example` for the project's SMTP settings.
+The shared Groq client and default model live in `core/groq.py`. Email delivery
+uses Django's configured email backend; see the root `.env.example` for the
+project's SMTP settings.
 
 ## Demo data
 
-Run the seed command in development:
+For the complete site demo (roles, hackathons, projects, sponsors, generated
+media), use the project-wide idempotent seeder:
+
+```bash
+python manage.py seed_demo
+```
+
+`seed_demo` is also what the web container runs at startup when
+`SEED_DEMO_DATA=True`. The sponsor-only command below remains useful for module
+tests and isolated sponsor demos:
 
 ```bash
 python manage.py seed_sponsors

@@ -1,4 +1,6 @@
 import csv
+import logging
+from time import perf_counter
 
 from django.conf import settings
 from django.contrib import messages
@@ -8,10 +10,15 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from . import ai_service, services
+from core.ai_metrics import record_ai_run, summarize_ai_runs
+from core.groq import get_model, is_configured
+
+from . import ai_service, services, tasks
+from .ai_benchmark import evaluate_category_classifier, evaluate_generative_quality
 from .forms import (
     ConseilMentorForm,
     ProjectForm,
@@ -21,9 +28,9 @@ from .forms import (
 )
 from .models import ConseilMentor, Project, ProjectMember
 
-AI_RATE_LIMIT_MESSAGE = (
-    "Too many AI requests. Please wait a moment before trying again."
-)
+logger = logging.getLogger(__name__)
+
+AI_RATE_LIMIT_MESSAGE = "Too many AI requests. Please wait a moment before trying again."
 
 
 def _ai_rate_limited(user) -> bool:
@@ -74,7 +81,9 @@ def project_list(request):
     user = request.user
     role = services.get_user_role(user)
 
-    projects = Project.objects.select_related("created_by", "reviewed_by").prefetch_related("members")
+    projects = Project.objects.select_related("created_by", "reviewed_by").prefetch_related(
+        "members"
+    )
 
     # Filtrage de visibilité selon les permissions
     if role in ("admin", "organizer"):
@@ -141,7 +150,9 @@ def project_detail(request, slug):
 
     member_form = ProjectMemberForm(project=project) if can_manage_members else None
     review_form = ProjectReviewDecisionForm() if can_review else None
-    mentor_advices = project.conseils_mentor.select_related("mentor").all() if can_view_mentor_advice else []
+    mentor_advices = (
+        project.conseils_mentor.select_related("mentor").all() if can_view_mentor_advice else []
+    )
     mentor_advice_form = ConseilMentorForm() if can_add_mentor_advice else None
 
     history = project.historique.select_related("acteur").order_by("date")
@@ -195,12 +206,12 @@ def project_create(request):
                 is_accepted=True,
             )
 
-            messages.success(request, f"Le projet « {project.title} » a été créé avec succès !")
+            messages.success(request, f"Project “{project.title}” was created successfully.")
             return redirect(project.get_absolute_url())
     else:
         form = ProjectForm(user=request.user)
 
-    return render(request, "projects/project_form.html", {"form": form, "action": "Créer"})
+    return render(request, "projects/project_form.html", {"form": form, "action": "Create"})
 
 
 @login_required
@@ -223,7 +234,7 @@ def project_update(request, slug):
                 updated_project.status = project.status
             updated_project.save()
             form.save_m2m()
-            messages.success(request, "Le projet a été mis à jour.")
+            messages.success(request, "Project updated.")
             return redirect(project.get_absolute_url())
     else:
         form = ProjectForm(instance=project, user=request.user)
@@ -231,7 +242,7 @@ def project_update(request, slug):
     return render(
         request,
         "projects/project_form.html",
-        {"form": form, "project": project, "action": "Modifier"},
+        {"form": form, "project": project, "action": "Edit"},
     )
 
 
@@ -241,12 +252,18 @@ def project_submit(request, slug):
     project = get_object_or_404(Project, slug=slug)
 
     if request.method == "POST":
-        is_resubmission = (project.status == Project.Status.REJECTED)
+        is_resubmission = project.status == Project.Status.REJECTED
         services.submit_project(project, request.user)  # validates + atomic save + history
         if is_resubmission:
-            messages.success(request, f"Your project \u00ab {project.title} \u00bb has been resubmitted for review!")
+            messages.success(
+                request,
+                f"Your project \u00ab {project.title} \u00bb has been resubmitted for review!",
+            )
         else:
-            messages.success(request, f"Your project \u00ab {project.title} \u00bb has been submitted for evaluation!")
+            messages.success(
+                request,
+                f"Your project \u00ab {project.title} \u00bb has been submitted for evaluation!",
+            )
 
     return redirect(project.get_absolute_url())
 
@@ -264,7 +281,7 @@ def project_delete(request, slug):
     if request.method == "POST":
         title = project.title
         project.delete()
-        messages.success(request, f"Le projet « {title} » a été supprimé.")
+        messages.success(request, f"Project “{title}” was deleted.")
         return redirect("projects:project_list")
 
     return render(request, "projects/project_confirm_delete.html", {"project": project})
@@ -282,12 +299,14 @@ def member_add(request, slug):
             member = form.save(commit=False)
             member.project = project
             if ProjectMember.objects.filter(project=project, user=member.user).exists():
-                messages.warning(request, f"{member.user.get_username()} est déjà membre de l'équipe.")
+                messages.warning(
+                    request, f"{member.user.get_username()} is already a member of this team."
+                )
             else:
                 member.save()
-                messages.success(request, f"{member.user.get_username()} a rejoint l'équipe !")
+                messages.success(request, f"{member.user.get_username()} joined the team.")
         else:
-            messages.error(request, "Données invalides pour l'ajout du membre.")
+            messages.error(request, "Invalid data. The team member could not be added.")
 
     return redirect(project.get_absolute_url())
 
@@ -303,7 +322,7 @@ def member_remove(request, slug, member_id):
     if request.method == "POST":
         user_name = membership.user.get_username()
         membership.delete()
-        messages.success(request, f"{user_name} a été retiré de l'équipe.")
+        messages.success(request, f"{user_name} was removed from the team.")
 
     return redirect(project.get_absolute_url())
 
@@ -320,9 +339,11 @@ def project_admin_dashboard(request):
     category_filter = request.GET.get("category", "").strip()
     status_filter = request.GET.get("status", "").strip()
 
-    projects_qs = Project.objects.select_related("created_by", "reviewed_by").prefetch_related(
-        "team_memberships__user", "members"
-    ).all()
+    projects_qs = (
+        Project.objects.select_related("created_by", "reviewed_by")
+        .prefetch_related("team_memberships__user", "members")
+        .all()
+    )
 
     total_projects = Project.objects.count()
     submitted_count = Project.objects.filter(status=Project.Status.SUBMITTED).count()
@@ -342,12 +363,14 @@ def project_admin_dashboard(request):
     for code, label in Project.Category.choices:
         cnt = category_counts.get(code, 0)
         pct = round((cnt / total_projects * 100), 1) if total_projects > 0 else 0.0
-        category_stats.append({
-            "code": code,
-            "label": label,
-            "count": cnt,
-            "percentage": pct,
-        })
+        category_stats.append(
+            {
+                "code": code,
+                "label": label,
+                "count": cnt,
+                "percentage": pct,
+            }
+        )
     category_stats.sort(key=lambda c: (-c["count"], c["label"]))
 
     if query:
@@ -369,9 +392,7 @@ def project_admin_dashboard(request):
         projects_qs = projects_qs.filter(status=status_filter)
 
     available_hackathons = (
-        Project.objects.exclude(hackathon="")
-        .values_list("hackathon", flat=True)
-        .distinct()
+        Project.objects.exclude(hackathon="").values_list("hackathon", flat=True).distinct()
     )
 
     review_form = ProjectReviewDecisionForm()
@@ -406,6 +427,39 @@ def project_admin_dashboard(request):
 
 
 @login_required
+def project_ai_metrics(request):
+    """Present the rubric's AI metrics: classifier quality, quality rubric,
+    measured latency and the async execution configuration.
+
+    Restricted to organizers/admins because it exposes operational AI details
+    (model name, broker state, live latency, recent call history).
+    """
+    if not services.is_organizer(request.user):
+        raise PermissionDenied("AI metrics are reserved for organizers and administrators.")
+
+    classification = evaluate_category_classifier()
+    generative = evaluate_generative_quality()
+    live = summarize_ai_runs()
+
+    context = {
+        "classification": classification,
+        "generative": generative,
+        "live": live,
+        "ai_config": {
+            "remote_configured": is_configured(),
+            "model": get_model(),
+            "async_enabled": bool(getattr(settings, "AI_ASYNC_ENABLED", False)),
+            "broker_configured": bool(getattr(settings, "REDIS_URL", "")),
+            "celery_eager": bool(getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False)),
+            "rate_limit_max": getattr(settings, "AI_RATE_LIMIT_MAX", 0),
+            "rate_limit_window": getattr(settings, "AI_RATE_LIMIT_WINDOW", 60),
+        },
+        "measured_at": timezone.now(),
+    }
+    return render(request, "projects/ai_metrics.html", context)
+
+
+@login_required
 def project_admin_review(request, slug):
     """Accept or reject a project — Organizer/Admin only."""
     project = get_object_or_404(Project, slug=slug)
@@ -425,9 +479,14 @@ def project_admin_review(request, slug):
                 return redirect("projects:admin_dashboard")
 
             if decision == "accept":
-                messages.success(request, f"Project \u00ab {project.title} \u00bb has been accepted!")
+                messages.success(
+                    request, f"Project \u00ab {project.title} \u00bb has been accepted!"
+                )
             else:
-                messages.warning(request, f"Project \u00ab {project.title} \u00bb has been rejected. Reason: {reason}")
+                messages.warning(
+                    request,
+                    f"Project \u00ab {project.title} \u00bb has been rejected. Reason: {reason}",
+                )
             return redirect(request.POST.get("next") or "projects:admin_dashboard")
         else:
             for error in form.errors.values():
@@ -452,8 +511,7 @@ def project_score(request, slug):
                 project.score = score_val
                 project.save(update_fields=["score", "updated_at"])
                 messages.success(
-                    request,
-                    f"Score {score_val}/10 awarded to project '{project.title}'."
+                    request, f"Score {score_val}/10 awarded to project '{project.title}'."
                 )
             else:
                 messages.error(request, "The score must be between 1 and 10.")
@@ -481,9 +539,7 @@ def export_projects_csv(request):
     if category_filter and category_filter in Project.Category.values:
         projects_qs = projects_qs.filter(category=category_filter)
     if query:
-        projects_qs = projects_qs.filter(
-            Q(title__icontains=query) | Q(tagline__icontains=query)
-        )
+        projects_qs = projects_qs.filter(Q(title__icontains=query) | Q(tagline__icontains=query))
 
     # Préparer la réponse HTTP CSV
     filename = f"hackflow_projects_{timezone.now().strftime('%Y%m%d_%H%M')}.csv"
@@ -491,44 +547,48 @@ def export_projects_csv(request):
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
 
     # BOM UTF-8 pour Excel
-    response.write('\ufeff')
+    response.write("\ufeff")
 
-    writer = csv.writer(response, delimiter=';')
+    writer = csv.writer(response, delimiter=";")
 
     # En-tête CSV
-    writer.writerow([
-        "Title",
-        "Tagline",
-        "Category",
-        "Hackathon",
-        "Status",
-        "Score (1-10)",
-        "Creator",
-        "Reviewed By",
-        "Review Date",
-        "Rejection Reason",
-        "GitHub",
-        "Demo",
-        "Created At",
-    ])
+    writer.writerow(
+        [
+            "Title",
+            "Tagline",
+            "Category",
+            "Hackathon",
+            "Status",
+            "Score (1-10)",
+            "Creator",
+            "Reviewed By",
+            "Review Date",
+            "Rejection Reason",
+            "GitHub",
+            "Demo",
+            "Created At",
+        ]
+    )
 
     # Lignes de données
     for p in projects_qs:
-        writer.writerow([
-            _csv_safe(p.title),
-            _csv_safe(p.tagline),
-            p.get_category_display(),
-            _csv_safe(p.hackathon or "HackFlow 2026"),
-            p.get_status_display(),
-            p.score if p.score else "",
-            _csv_safe(p.created_by.get_username() if p.created_by else ""),
-            _csv_safe(p.reviewed_by.get_username() if p.reviewed_by else ""),
-            p.reviewed_at.strftime("%d/%m/%Y %H:%M") if p.reviewed_at else "",
-            _csv_safe(p.rejection_reason or ""),
-            _csv_safe(p.repository_url or ""),
-            _csv_safe(p.demo_url or ""),
-            p.created_at.strftime("%d/%m/%Y %H:%M"),
-        ])
+        writer.writerow(
+            [
+                _csv_safe(p.title),
+                _csv_safe(p.tagline),
+                p.get_category_display(),
+                _csv_safe(p.hackathon or "HackFlow 2026"),
+                p.get_status_display(),
+                p.score if p.score else "",
+                _csv_safe(p.created_by.get_username() if p.created_by else ""),
+                _csv_safe(p.reviewed_by.get_username() if p.reviewed_by else ""),
+                p.reviewed_at.strftime("%b %d, %Y %H:%M") if p.reviewed_at else "",
+                _csv_safe(p.rejection_reason or ""),
+                _csv_safe(p.repository_url or ""),
+                _csv_safe(p.demo_url or ""),
+                p.created_at.strftime("%b %d, %Y %H:%M"),
+            ]
+        )
 
     return response
 
@@ -541,11 +601,15 @@ def export_projects_pdf(request):
 
     from reportlab.lib.pagesizes import A4, landscape
     from reportlab.lib import colors
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.styles import ParagraphStyle
     from reportlab.lib.units import cm
     from reportlab.platypus import (
-        SimpleDocTemplate, Table, TableStyle, Paragraph,
-        Spacer, HRFlowable
+        SimpleDocTemplate,
+        Table,
+        TableStyle,
+        Paragraph,
+        Spacer,
+        HRFlowable,
     )
     from reportlab.lib.enums import TA_CENTER
     import io
@@ -561,20 +625,17 @@ def export_projects_pdf(request):
     if category_filter and category_filter in Project.Category.values:
         projects_qs = projects_qs.filter(category=category_filter)
     if query:
-        projects_qs = projects_qs.filter(
-            Q(title__icontains=query) | Q(tagline__icontains=query)
-        )
+        projects_qs = projects_qs.filter(Q(title__icontains=query) | Q(tagline__icontains=query))
 
     # Couleurs HackFlow
-    COLOR_PRIMARY  = colors.HexColor("#6366f1")   # Indigo
-    COLOR_DARK     = colors.HexColor("#0f172a")   # Slate 900
-    COLOR_HEADER   = colors.HexColor("#1e293b")   # Slate 800
-    COLOR_ROW_ODD  = colors.HexColor("#f8fafc")
+    COLOR_PRIMARY = colors.HexColor("#6366f1")  # Indigo
+    COLOR_HEADER = colors.HexColor("#1e293b")  # Slate 800
+    COLOR_ROW_ODD = colors.HexColor("#f8fafc")
     COLOR_ROW_EVEN = colors.white
-    COLOR_ACCEPT   = colors.HexColor("#d1fae5")
-    COLOR_REJECT   = colors.HexColor("#fee2e2")
-    COLOR_SUBMIT   = colors.HexColor("#fef3c7")
-    COLOR_REVIEW   = colors.HexColor("#dbeafe")
+    COLOR_ACCEPT = colors.HexColor("#d1fae5")
+    COLOR_REJECT = colors.HexColor("#fee2e2")
+    COLOR_SUBMIT = colors.HexColor("#fef3c7")
+    COLOR_REVIEW = colors.HexColor("#dbeafe")
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -586,7 +647,6 @@ def export_projects_pdf(request):
         bottomMargin=1.5 * cm,
     )
 
-    styles = getSampleStyleSheet()
     story = []
 
     # ── En-tête du document ──────────────────────────────────
@@ -608,12 +668,14 @@ def export_projects_pdf(request):
     )
 
     story.append(Paragraph("HackFlow — Projects Report", title_style))
-    story.append(Paragraph(
-        f"Generated on {timezone.now().strftime('%Y-%m-%d at %H:%M')}  •  "
-        f"By {request.user.get_username()}  •  "
-        f"{projects_qs.count()} project(s)",
-        sub_style,
-    ))
+    story.append(
+        Paragraph(
+            f"Generated on {timezone.now().strftime('%Y-%m-%d at %H:%M')}  •  "
+            f"By {request.user.get_username()}  •  "
+            f"{projects_qs.count()} project(s)",
+            sub_style,
+        )
+    )
     story.append(HRFlowable(width="100%", thickness=1.5, color=COLOR_PRIMARY, spaceAfter=10))
 
     # ── Statistiques rapides ──────────────────────────────────
@@ -628,67 +690,89 @@ def export_projects_pdf(request):
         [str(total), str(accepted), str(rejected), str(submitted), str(scored)],
     ]
     stat_table = Table(stat_data, colWidths=[4 * cm] * 5)
-    stat_table.setStyle(TableStyle([
-        ("BACKGROUND",   (0, 0), (-1, 0), COLOR_HEADER),
-        ("TEXTCOLOR",    (0, 0), (-1, 0), colors.white),
-        ("FONTNAME",     (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE",     (0, 0), (-1, 0), 8),
-        ("FONTNAME",     (0, 1), (-1, 1), "Helvetica-Bold"),
-        ("FONTSIZE",     (0, 1), (-1, 1), 14),
-        ("ALIGN",        (0, 0), (-1, -1), "CENTER"),
-        ("VALIGN",       (0, 0), (-1, -1), "MIDDLE"),
-        ("ROWBACKGROUNDS", (0, 1), (-1, 1), [colors.HexColor("#f1f5f9")]),
-        ("GRID",         (0, 0), (-1, -1), 0.4, colors.HexColor("#cbd5e1")),
-        ("TOPPADDING",   (0, 0), (-1, -1), 6),
-        ("BOTTOMPADDING",(0, 0), (-1, -1), 6),
-        ("ROUNDEDCORNERS", [4]),
-    ]))
+    stat_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), COLOR_HEADER),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, 0), 8),
+                ("FONTNAME", (0, 1), (-1, 1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 1), (-1, 1), 14),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("ROWBACKGROUNDS", (0, 1), (-1, 1), [colors.HexColor("#f1f5f9")]),
+                ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#cbd5e1")),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("ROUNDEDCORNERS", [4]),
+            ]
+        )
+    )
     story.append(stat_table)
     story.append(Spacer(1, 0.5 * cm))
 
     # ── Tableau principal des projets ─────────────────────────
     col_headers = [
-        "Project Title", "Category", "Status", "Score",
-        "Creator", "Reviewed By", "Decision Date",
+        "Project Title",
+        "Category",
+        "Status",
+        "Score",
+        "Creator",
+        "Reviewed By",
+        "Decision Date",
     ]
-    col_widths = [6.5*cm, 3.5*cm, 2.8*cm, 1.8*cm, 3*cm, 3*cm, 3.5*cm]
+    col_widths = [6.5 * cm, 3.5 * cm, 2.8 * cm, 1.8 * cm, 3 * cm, 3 * cm, 3.5 * cm]
 
     cell_style = ParagraphStyle(
-        "Cell", fontSize=7, fontName="Helvetica", leading=9,
+        "Cell",
+        fontSize=7,
+        fontName="Helvetica",
+        leading=9,
     )
     bold_cell = ParagraphStyle(
-        "BoldCell", fontSize=7.5, fontName="Helvetica-Bold", leading=9,
+        "BoldCell",
+        fontSize=7.5,
+        fontName="Helvetica-Bold",
+        leading=9,
     )
 
     table_data = [col_headers]
 
     for p in projects_qs:
-        table_data.append([
-            Paragraph(f"<b>{p.title}</b><br/><font size='6' color='#64748b'>{p.tagline[:60]}{'…' if len(p.tagline) > 60 else ''}</font>", cell_style),
-            Paragraph(p.get_category_display(), cell_style),
-            Paragraph(p.get_status_display(), bold_cell),
-            Paragraph(f"{p.score}/10" if p.score else "—", bold_cell),
-            Paragraph(p.created_by.get_username() if p.created_by else "—", cell_style),
-            Paragraph(p.reviewed_by.get_username() if p.reviewed_by else "—", cell_style),
-            Paragraph(p.reviewed_at.strftime("%d/%m/%Y") if p.reviewed_at else "—", cell_style),
-        ])
+        table_data.append(
+            [
+                Paragraph(
+                    f"<b>{p.title}</b><br/><font size='6' color='#64748b'>{p.tagline[:60]}{'…' if len(p.tagline) > 60 else ''}</font>",
+                    cell_style,
+                ),
+                Paragraph(p.get_category_display(), cell_style),
+                Paragraph(p.get_status_display(), bold_cell),
+                Paragraph(f"{p.score}/10" if p.score else "—", bold_cell),
+                Paragraph(p.created_by.get_username() if p.created_by else "—", cell_style),
+                Paragraph(p.reviewed_by.get_username() if p.reviewed_by else "—", cell_style),
+                Paragraph(
+                    p.reviewed_at.strftime("%b %d, %Y") if p.reviewed_at else "—", cell_style
+                ),
+            ]
+        )
 
     main_table = Table(table_data, colWidths=col_widths, repeatRows=1)
 
     # Construire les styles de base du tableau
     table_style_cmds = [
         # En-tête
-        ("BACKGROUND",    (0, 0), (-1, 0), COLOR_HEADER),
-        ("TEXTCOLOR",     (0, 0), (-1, 0), colors.white),
-        ("FONTNAME",      (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE",      (0, 0), (-1, 0), 8),
-        ("ALIGN",         (0, 0), (-1, 0), "CENTER"),
-        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
-        ("TOPPADDING",    (0, 0), (-1, -1), 5),
+        ("BACKGROUND", (0, 0), (-1, 0), COLOR_HEADER),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 8),
+        ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-        ("LEFTPADDING",   (0, 0), (-1, -1), 5),
-        ("GRID",          (0, 0), (-1, -1), 0.3, colors.HexColor("#e2e8f0")),
-        ("LINEBELOW",     (0, 0), (-1, 0), 1.5, COLOR_PRIMARY),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#e2e8f0")),
+        ("LINEBELOW", (0, 0), (-1, 0), 1.5, COLOR_PRIMARY),
     ]
 
     # Coloration par statut
@@ -711,11 +795,18 @@ def export_projects_pdf(request):
     # ── Pied de page ─────────────────────────────────────────
     story.append(Spacer(1, 0.4 * cm))
     story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#cbd5e1")))
-    story.append(Paragraph(
-        "Confidential Document — HackFlow Platform — hackflow.com",
-        ParagraphStyle("Footer", fontSize=7, textColor=colors.HexColor("#94a3b8"),
-                       alignment=TA_CENTER, spaceBefore=4),
-    ))
+    story.append(
+        Paragraph(
+            "Confidential Document — HackFlow Platform — hackflow.com",
+            ParagraphStyle(
+                "Footer",
+                fontSize=7,
+                textColor=colors.HexColor("#94a3b8"),
+                alignment=TA_CENTER,
+                spaceBefore=4,
+            ),
+        )
+    )
 
     doc.build(story)
     buffer.seek(0)
@@ -729,10 +820,15 @@ def export_projects_pdf(request):
 @login_required
 def project_ai_analyze(request, slug):
     """
-    Évaluation IA du projet avec Gemini :
-    Génère un score prédictif /10, un avis d'expert jury, points forts et axes d'amélioration.
+    Évaluation IA du projet (score /10, avis d'expert, forces, axes d'amélioration).
     Vérifie côté serveur que l'utilisateur a l'autorisation (403 pour jurys et mentors).
-    Mise en cache intelligente (10 min) pour optimiser les performances et le temps de réponse (WCAG / BNF).
+    Mise en cache intelligente (10 min) pour optimiser les performances.
+
+    Asynchrone (AI_ASYNC_ENABLED + Redis/Celery) : l'appel Groq (jusqu'à 15s)
+    est délégué à un worker — la requête répond immédiatement en 202 avec un
+    task_id que le client fait poller sur ``ai_analyze_status``. Si le broker
+    est indisponible ou si l'async est désactivé, on retombe sur l'appel
+    synchrone actuel (aucune régression, aucun blocage de la démo).
     """
     project = get_object_or_404(Project, slug=slug)
     services.validate_ai_evaluation_permission(request.user, project)
@@ -744,21 +840,114 @@ def project_ai_analyze(request, slug):
     data = cache.get(cache_key)
 
     if data:
-        data = {**data, "source_key": "cache"}
-    else:
-        data = ai_service.analyse_project(
-            title=project.title,
-            tagline=project.tagline,
-            description=project.description,
-            category=project.get_category_display() or project.category,
+        record_ai_run("project_evaluation", "cache", 0.0, mode="cache")
+        return JsonResponse({**data, "source_key": "cache"})
+
+    category = project.get_category_display() or project.category
+
+    if getattr(settings, "AI_ASYNC_ENABLED", False):
+        enqueue_started = perf_counter()
+        task_id = tasks.new_task_id()
+        tasks.set_task_state(
+            task_id,
+            {
+                "status": tasks.STATUS_PENDING,
+                "user_id": request.user.pk,
+                "project_id": project.pk,
+            },
         )
-        # Never persist or return the raw exception text: it can leak
-        # endpoint/credential details to the client.
-        data.pop("error", None)
-        if not data.get("failed"):
-            cache.set(cache_key, data, timeout=600)
+        try:
+            tasks.run_ai_evaluation.apply_async(
+                kwargs={
+                    "task_id": task_id,
+                    "user_id": request.user.pk,
+                    "project_id": project.pk,
+                    "title": project.title,
+                    "tagline": project.tagline,
+                    "description": project.description,
+                    "category": category,
+                    "result_cache_key": cache_key,
+                },
+                task_id=task_id,
+            )
+        except Exception:
+            # Broker down: log, discard the stale state and fall back to the
+            # synchronous call so the endpoint keeps working (robustness).
+            logger.exception("Failed to enqueue AI evaluation for project %s", project.pk)
+            tasks.discard_task_state(task_id)
+            record_ai_run(
+                "evaluation_enqueue",
+                "broker_fallback",
+                (perf_counter() - enqueue_started) * 1000,
+                mode="sync",
+                success=False,
+            )
+        else:
+            record_ai_run(
+                "evaluation_enqueue",
+                "queued",
+                (perf_counter() - enqueue_started) * 1000,
+                mode="async",
+                success=True,
+            )
+            return JsonResponse(
+                {
+                    "status": "queued",
+                    "task_id": task_id,
+                    "status_url": reverse(
+                        "projects:ai_analyze_status", args=[project.slug, task_id]
+                    ),
+                },
+                status=202,
+            )
+
+    data = ai_service.analyse_project(
+        title=project.title,
+        tagline=project.tagline,
+        description=project.description,
+        category=category,
+    )
+    # Never persist or return the raw exception text: it can leak
+    # endpoint/credential details to the client.
+    data.pop("error", None)
+    if not data.get("failed"):
+        cache.set(cache_key, data, timeout=600)
 
     return JsonResponse(data)
+
+
+@login_required
+def project_ai_analyze_status(request, slug, task_id):
+    """Poll l'état d'une évaluation IA différée (mode asynchrone).
+
+    Répond 200 avec ``status`` ∈ pending/done/failed, ou 404 si la tâche est
+    inconnue ou expirée — y compris pour une tâche lancée par un autre
+    utilisateur : les task_id ne doivent pas être énumérables entre comptes.
+    """
+    project = get_object_or_404(Project, slug=slug)
+    services.validate_ai_evaluation_permission(request.user, project)
+
+    state = tasks.get_task_state(task_id)
+    if (
+        state is None
+        or state.get("project_id") != project.pk
+        or state.get("user_id") != request.user.pk
+    ):
+        return JsonResponse({"error": "Unknown or expired AI task."}, status=404)
+
+    status = state.get("status")
+    if status == tasks.STATUS_DONE:
+        payload = dict(state.get("payload") or {})
+        payload.pop("error", None)
+        return JsonResponse({"status": tasks.STATUS_DONE, **payload})
+    if status == tasks.STATUS_FAILED:
+        return JsonResponse(
+            {
+                "status": tasks.STATUS_FAILED,
+                "error": "The AI evaluation failed. Please try again.",
+            }
+        )
+    return JsonResponse({"status": tasks.STATUS_PENDING})
 
 
 @login_required

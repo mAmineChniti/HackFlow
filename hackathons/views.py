@@ -40,8 +40,10 @@ class HackathonListView(ListView):
     paginate_by = 9
 
     def get_queryset(self):
-        qs = Hackathon.objects.filter(is_published=True).select_related("organizer").annotate(
-            total_registered=Count("registrations")
+        qs = (
+            Hackathon.objects.filter(is_published=True)
+            .select_related("organizer")
+            .annotate(total_registered=Count("registrations"))
         )
 
         query = self.request.GET.get("q", "").strip()
@@ -80,6 +82,9 @@ class HackathonListView(ListView):
         context["selected_status"] = self.request.GET.get("status", "")
         context["selected_mode"] = self.request.GET.get("mode", "")
         context["selected_category"] = self.request.GET.get("category", "")
+        context["selected_ordering"] = self.request.GET.get("ordering", "start_date")
+        if context["selected_ordering"] not in {"start_date", "newest", "popular"}:
+            context["selected_ordering"] = "start_date"
         context["search_query"] = self.request.GET.get("q", "")
         context["status_choices"] = Hackathon.Status.choices
         context["mode_choices"] = Hackathon.Mode.choices
@@ -112,10 +117,7 @@ class HackathonDetailView(DetailView):
             return Hackathon.objects.all()
         if user.is_authenticated:
             return Hackathon.objects.filter(
-                Q(is_published=True)
-                | Q(organizer=user)
-                | Q(judges=user)
-                | Q(mentors=user)
+                Q(is_published=True) | Q(organizer=user) | Q(judges=user) | Q(mentors=user)
             ).distinct()
         return Hackathon.objects.filter(is_published=True)
 
@@ -146,9 +148,8 @@ class HackathonDetailView(DetailView):
         context["is_registered"] = is_registered
         context["user_registration"] = user_registration
         context["can_unregister"] = is_registered and not is_deadline_passed
-        context["is_organizer"] = (
-            self.request.user.is_authenticated
-            and (self.request.user == hackathon.organizer or self.request.user.is_superuser)
+        context["is_organizer"] = self.request.user.is_authenticated and (
+            self.request.user == hackathon.organizer or self.request.user.is_superuser
         )
         context["is_assigned_judge"] = (
             self.request.user.is_authenticated
@@ -160,9 +161,7 @@ class HackathonDetailView(DetailView):
         )
 
         # AI Feature: Project Ideas & Inspiration based on the Hackathon
-        ideas = generate_project_ideas(
-            hackathon.title, hackathon.category, hackathon.description
-        )
+        ideas = generate_project_ideas(hackathon.title, hackathon.category, hackathon.description)
         context["project_ideas"] = ideas
         context["project_ideas_json"] = json.dumps(ideas)
 
@@ -180,11 +179,12 @@ class HackathonDetailView(DetailView):
         context["pending_checkin_count"] = max(confirmed_count - checked_in_count, 0)
         context["attendance_rate"] = int((checked_in_count / max(confirmed_count, 1)) * 100)
 
-        if context["is_organizer"] or (self.request.user.is_authenticated and self.request.user.is_staff):
-            context["organizer_registrations"] = (
-                hackathon.registrations.select_related("participant")
-                .order_by("-status", "checked_in", "participant__username")
-            )
+        if context["is_organizer"] or (
+            self.request.user.is_authenticated and self.request.user.is_staff
+        ):
+            context["organizer_registrations"] = hackathon.registrations.select_related(
+                "participant"
+            ).order_by("-status", "checked_in", "participant__username")
         else:
             context["organizer_registrations"] = []
 
@@ -206,16 +206,13 @@ class HackathonCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def test_func(self):
         user = self.request.user
-        return (
-            user.is_superuser
-            or (hasattr(user, "profile") and user.profile.is_organizer_user)
-        )
+        return user.is_superuser or (hasattr(user, "profile") and user.profile.is_organizer_user)
 
     def handle_no_permission(self):
         messages.error(
             self.request,
             "Access restricted: Only Organizers and Administrators can host hackathons. "
-            f"You are currently signed in as a {getattr(self.request.user, 'profile', None) and self.request.user.profile.get_role_display() or 'Student'}."
+            f"You are currently signed in as a {getattr(self.request.user, 'profile', None) and self.request.user.profile.get_role_display() or 'Student'}.",
         )
         return redirect("hackathons:list")
 
@@ -248,7 +245,7 @@ class HackathonUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     def handle_no_permission(self):
         messages.error(
             self.request,
-            "You do not have permission to edit this hackathon. Only the organizer or an administrator can modify it."
+            "You do not have permission to edit this hackathon. Only the organizer or an administrator can modify it.",
         )
         return redirect("hackathons:list")
 
@@ -344,9 +341,7 @@ def register_participant(request, slug):
     # 5. Determine if registration is confirmed or waitlist
     is_full = hackathon.is_full
     target_status = (
-        HackathonRegistration.Status.WAITLIST
-        if is_full
-        else HackathonRegistration.Status.CONFIRMED
+        HackathonRegistration.Status.WAITLIST if is_full else HackathonRegistration.Status.CONFIRMED
     )
 
     if request.method == "POST":
@@ -414,9 +409,12 @@ def unregister_participant(request, slug):
         ).first()
 
         if reg:
-            was_confirmed = (reg.status == HackathonRegistration.Status.CONFIRMED)
+            was_confirmed = reg.status == HackathonRegistration.Status.CONFIRMED
             reg.delete()
-            messages.info(request, f"Your registration for '{hackathon.title}' has been successfully cancelled.")
+            messages.info(
+                request,
+                f"Your registration for '{hackathon.title}' has been successfully cancelled.",
+            )
 
             # If spot freed up, promote the first candidate on the waitlist
             if was_confirmed:
@@ -535,53 +533,60 @@ def export_participants_csv(request, slug):
     hackathon = get_object_or_404(Hackathon, slug=slug)
 
     # Permission check: only host organizer or superuser
-    if not (request.user == hackathon.organizer or request.user.is_superuser or request.user.is_staff):
-        messages.error(request, "Access restricted: Only the organizer can export participant lists.")
+    if not (
+        request.user == hackathon.organizer or request.user.is_superuser or request.user.is_staff
+    ):
+        messages.error(
+            request, "Access restricted: Only the organizer can export participant lists."
+        )
         return redirect("hackathons:detail", slug=slug)
 
-    registrations = (
-        hackathon.registrations.select_related("participant")
-        .order_by("-status", "registered_at")
+    registrations = hackathon.registrations.select_related("participant").order_by(
+        "-status", "registered_at"
     )
 
     response = HttpResponse(content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = f'attachment; filename="{hackathon.slug}-participants.csv"'
-    
+
     # Write UTF-8 BOM so Microsoft Excel opens special characters and accents seamlessly
     response.write("\ufeff")
 
     writer = csv.writer(response)
-    writer.writerow([
-        "Username",
-        "Full Name",
-        "Email",
-        "Status",
-        "University / School",
-        "Study Level",
-        "Experience Level",
-        "Skills",
-        "Looking for Team",
-        "Portfolio URL",
-        "Motivation",
-        "Registration Date",
-    ])
+    writer.writerow(
+        [
+            "Username",
+            "Full Name",
+            "Email",
+            "Status",
+            "University / School",
+            "Study Level",
+            "Experience Level",
+            "Skills",
+            "Looking for Team",
+            "Portfolio URL",
+            "Motivation",
+            "Registration Date",
+        ]
+    )
 
     for reg in registrations:
         p = reg.participant
-        writer.writerow([
-            p.username,
-            p.get_full_name() or p.username,
-            p.email,
-            reg.get_status_display(),
-            reg.university or "Not specified",
-            reg.get_study_level_display(),
-            reg.get_experience_level_display(),
-            reg.skills or "",
-            "Yes" if reg.seeking_team else "No",
-            reg.portfolio_url or "",
-            reg.motivation or "",
-            reg.registered_at.strftime("%Y-%m-%d %H:%M"),
-        ])
+        writer.writerow(
+            [
+                p.username,
+                p.get_full_name() or p.username,
+                p.email,
+                reg.get_status_display(),
+                reg.university or "Not specified",
+                reg.get_study_level_display(),
+                reg.get_experience_level_display(),
+                reg.skills or "",
+                "Yes" if reg.seeking_team else "No",
+                reg.portfolio_url or "",
+                reg.motivation or "",
+                reg.registered_at.strftime("%Y-%m-%d %H:%M"),
+            ]
+        )
 
     return response
 
@@ -604,9 +609,7 @@ def participant_badge(request, slug):
 
     ticket_code = request.GET.get("ticket", "").strip()
     is_organizer = (
-        request.user == hackathon.organizer
-        or request.user.is_staff
-        or request.user.is_superuser
+        request.user == hackathon.organizer or request.user.is_staff or request.user.is_superuser
     )
 
     if ticket_code and is_organizer:
@@ -712,8 +715,6 @@ def toggle_checkin(request, slug, ticket_code):
     status_str = "marked as present" if registration.checked_in else "marked as pending arrival"
     messages.success(
         request,
-        f"{registration.participant.get_full_name() or registration.participant.username} is now {status_str}."
+        f"{registration.participant.get_full_name() or registration.participant.username} is now {status_str}.",
     )
     return redirect(f"{hackathon.get_absolute_url()}#badge")
-
-

@@ -1,65 +1,96 @@
 """
-AI Services for HackFlow Hackathons Module.
-Supports direct Gemini API integration (if GEMINI_API_KEY is configured in .env)
-with a built-in domain-specific generative engine as zero-config fallback.
+AI services for the HackFlow hackathons module.
+
+Remote generation goes through the shared Groq client in ``core.groq`` so the
+whole application uses one provider and one API key. The local domain-specific
+generative engine below is used whenever Groq is not configured or returns an
+unusable response.
 """
-import os
+
 import json
 import logging
-from django.conf import settings
+
+from core.groq import call_groq, get_api_key
 
 logger = logging.getLogger(__name__)
 
 
+def _parse_json_response(text: str | None, expected_type: type) -> dict | list | None:
+    """Extract a JSON object/array from a model response."""
+    if not text:
+        return None
+
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        cleaned = cleaned.split("\n", 1)[-1]
+        if cleaned.rstrip().endswith("```"):
+            cleaned = cleaned.rstrip()[:-3]
+
+    candidates = [cleaned]
+    for opener, closer in (("{", "}"), ("[", "]")):
+        start = cleaned.find(opener)
+        end = cleaned.rfind(closer)
+        if start != -1 and end > start:
+            candidates.append(cleaned[start : end + 1])
+
+    for candidate in candidates:
+        try:
+            data = json.loads(candidate)
+        except (TypeError, ValueError):
+            continue
+        if isinstance(data, expected_type):
+            return data
+    return None
+
+
 def generate_hackathon_content(title: str, category: str = "", theme_hints: str = ""):
     """
-    Generate complete hackathon content (tagline, description, rules, sample milestones)
-    based on the title, category, and optional hints.
+    Generate complete hackathon content (tagline, description, rules, sample
+    milestones) based on the title, category, and optional hints.
     """
-    gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
-    
-    if gemini_key:
-        try:
-            import urllib.request
-            prompt = (
-                f"You are an expert hackathon organizer. Generate compelling content for a hackathon titled '{title}'. "
-                f"Category: '{category}'. Hints: '{theme_hints}'.\n"
-                "Respond ONLY with a valid JSON object with the following keys:\n"
-                "- 'tagline': A catchy, punchy one-liner (max 15 words)\n"
-                "- 'description': 3-4 structured paragraphs detailing the mission, challenge prompt, and expected impact.\n"
-                "- 'rules': Clear bullet points covering original code, submission checklist, fairness, and evaluation criteria.\n"
-                "- 'suggested_skills': A list of 4-6 recommended skills/technologies (e.g. ['Python', 'Django', 'React', 'OpenAI API']).\n"
-            )
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
-            payload = json.dumps({
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"response_mime_type": "application/json"}
-            }).encode("utf-8")
-            
-            req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                text_content = data["candidates"][0]["content"]["parts"][0]["text"]
-                return json.loads(text_content)
-        except Exception as exc:
-            logger.warning("Gemini API call failed, falling back to local generative engine: %s", exc)
+    if get_api_key():
+        prompt = (
+            f"You are an expert hackathon organizer. Generate compelling content for a hackathon titled '{title}'. "
+            f"Category: '{category}'. Hints: '{theme_hints}'.\n"
+            "Respond ONLY with a valid JSON object with the following keys:\n"
+            "- 'tagline': A catchy, punchy one-liner (max 15 words)\n"
+            "- 'description': 3-4 structured paragraphs detailing the mission, challenge prompt, and expected impact.\n"
+            "- 'rules': Clear bullet points covering original code, submission checklist, fairness, and evaluation criteria.\n"
+            "- 'suggested_skills': A list of 4-6 recommended skills/technologies (e.g. ['Python', 'Django', 'React', 'OpenAI API']).\n"
+        )
+        data = _parse_json_response(call_groq(prompt, max_tokens=900), dict)
+        if data and all(
+            key in data for key in ("tagline", "description", "rules", "suggested_skills")
+        ):
+            return data
+        logger.warning("Groq hackathon generation returned no usable JSON; using local engine")
 
     # ── Built-in High-Fidelity Domain Generative Engine ──
     title_lower = title.lower()
     cat_lower = (category or "").lower()
-    
+
     # Detect domain
     if any(k in title_lower or k in cat_lower for k in ["ai", "ia", "data", "ml", "intelligence"]):
         domain = "ai"
-    elif any(k in title_lower or k in cat_lower for k in ["cyber", "security", "shield", "hack", "defense"]):
+    elif any(
+        k in title_lower or k in cat_lower
+        for k in ["cyber", "security", "shield", "hack", "defense"]
+    ):
         domain = "cyber"
-    elif any(k in title_lower or k in cat_lower for k in ["green", "eco", "climate", "sustainab", "energy", "earth"]):
+    elif any(
+        k in title_lower or k in cat_lower
+        for k in ["green", "eco", "climate", "sustainab", "energy", "earth"]
+    ):
         domain = "green"
     elif any(k in title_lower or k in cat_lower for k in ["health", "med", "bio", "care"]):
         domain = "health"
-    elif any(k in title_lower or k in cat_lower for k in ["web3", "block", "crypto", "defi", "chain"]):
+    elif any(
+        k in title_lower or k in cat_lower for k in ["web3", "block", "crypto", "defi", "chain"]
+    ):
         domain = "web3"
-    elif any(k in title_lower or k in cat_lower for k in ["finance", "fintech", "bank", "pay", "trade"]):
+    elif any(
+        k in title_lower or k in cat_lower for k in ["finance", "fintech", "bank", "pay", "trade"]
+    ):
         domain = "fintech"
     else:
         domain = "general"
@@ -78,12 +109,19 @@ def generate_hackathon_content(title: str, category: str = "", theme_hints: str 
             ),
             "rules": (
                 "1. Original Code: All models, APIs, and interfaces must be developed during the official competition window.\n"
-                "2. Open APIs & Libraries: Pre-trained foundation models (OpenAI, Gemini, HuggingFace, Anthropic) and open datasets are permitted provided they are cited.\n"
+                "2. Open APIs & Libraries: Pre-trained foundation models (OpenAI, Hugging Face, Anthropic) and open datasets are permitted provided they are cited.\n"
                 "3. Deliverables: Public GitHub repository, interactive video demo or live URL, and architecture pitch deck.\n"
                 "4. Evaluation Matrix: Technical Execution (30%), Innovation (25%), Practical Impact (25%), Presentation Quality (20%).\n"
                 "5. Fair Play: Strict adherence to academic integrity and respectful collaboration."
             ),
-            "suggested_skills": ["Python", "FastAPI", "React", "PyTorch", "LangChain", "PostgreSQL"],
+            "suggested_skills": [
+                "Python",
+                "FastAPI",
+                "React",
+                "PyTorch",
+                "LangChain",
+                "PostgreSQL",
+            ],
         },
         "cyber": {
             "tagline": f"Fortify digital frontiers and engineer resilient defense systems at {title}.",
@@ -100,7 +138,14 @@ def generate_hackathon_content(title: str, category: str = "", theme_hints: str 
                 "3. Deliverables: Source code repo with Dockerfile/deployment instructions, threat model analysis, and live proof of concept.\n"
                 "4. Evaluation Rubric: Technical Sophistication (35%), Defense Impact (25%), Usability (20%), Pitch (20%)."
             ),
-            "suggested_skills": ["Python", "Rust", "Linux/Bash", "Docker", "Network Analysis", "Cryptography"],
+            "suggested_skills": [
+                "Python",
+                "Rust",
+                "Linux/Bash",
+                "Docker",
+                "Network Analysis",
+                "Cryptography",
+            ],
         },
         "green": {
             "tagline": f"Build sustainable technology and carbon-intelligent solutions at {title}.",
@@ -116,7 +161,14 @@ def generate_hackathon_content(title: str, category: str = "", theme_hints: str 
                 "3. Deliverables: Working code repository, carbon impact estimation methodology, and demo video.\n"
                 "4. Scoring Criteria: Environmental Impact (30%), Technical Feasibility (30%), Innovation (20%), User Experience (20%)."
             ),
-            "suggested_skills": ["Python", "GIS/Spatial Data", "TypeScript", "Next.js", "IoT/Sensors", "TailwindCSS"],
+            "suggested_skills": [
+                "Python",
+                "GIS/Spatial Data",
+                "TypeScript",
+                "Next.js",
+                "IoT/Sensors",
+                "TailwindCSS",
+            ],
         },
         "general": {
             "tagline": f"48 hours of rapid prototyping, collaboration and breakthrough innovation at {title}.",
@@ -134,7 +186,7 @@ def generate_hackathon_content(title: str, category: str = "", theme_hints: str 
                 "5. Code of Conduct: Mutual respect, zero tolerance for harassment, and inclusive team spirit."
             ),
             "suggested_skills": ["Python", "Django", "JavaScript", "React", "PostgreSQL", "Docker"],
-        }
+        },
     }
 
     selected = templates.get(domain, templates["general"])
@@ -145,32 +197,21 @@ def generate_project_ideas(hackathon_title: str, category: str, description: str
     """
     Generate 3-4 creative project ideas tailored for participants of this hackathon.
     """
-    gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
-    if gemini_key:
-        try:
-            import urllib.request
-            prompt = (
-                f"You are a hackathon mentor. Suggest 3 innovative project ideas for participants in '{hackathon_title}' "
-                f"(Category: '{category}'). Description snippet: '{description[:300]}'.\n"
-                "Respond ONLY with a valid JSON array of 3 objects, each having:\n"
-                "- 'title': Creative project name\n"
-                "- 'problem': The specific problem it solves (2 sentences)\n"
-                "- 'solution': How the application solves it (2 sentences)\n"
-                "- 'tech_stack': List of 3-4 technologies/frameworks\n"
-                "- 'difficulty': 'Beginner', 'Intermediate', or 'Advanced'\n"
-            )
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
-            payload = json.dumps({
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"response_mime_type": "application/json"}
-            }).encode("utf-8")
-            req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                text_content = data["candidates"][0]["content"]["parts"][0]["text"]
-                return json.loads(text_content)
-        except Exception as exc:
-            logger.warning("Gemini project idea generation failed, using local ideas: %s", exc)
+    if get_api_key():
+        prompt = (
+            f"You are a hackathon mentor. Suggest 3 innovative project ideas for participants in '{hackathon_title}' "
+            f"(Category: '{category}'). Description snippet: '{description[:300]}'.\n"
+            "Respond ONLY with a valid JSON array of 3 objects, each having:\n"
+            "- 'title': Creative project name\n"
+            "- 'problem': The specific problem it solves (2 sentences)\n"
+            "- 'solution': How the application solves it (2 sentences)\n"
+            "- 'tech_stack': List of 3-4 technologies/frameworks\n"
+            "- 'difficulty': 'Beginner', 'Intermediate', or 'Advanced'\n"
+        )
+        data = _parse_json_response(call_groq(prompt, max_tokens=900), list)
+        if data and all(isinstance(item, dict) for item in data):
+            return data
+        logger.warning("Groq project idea generation returned no usable JSON; using local ideas")
 
     # Built-in generator
     t_lower = (hackathon_title + " " + category).lower()
@@ -255,7 +296,7 @@ def calculate_team_match_score(student_skills: list, candidate_skills: list) -> 
     """
     s1 = set(s.strip().lower() for s in student_skills if s.strip())
     s2 = set(s.strip().lower() for s in candidate_skills if s.strip())
-    
+
     if not s1 or not s2:
         return {"score": 50, "overlap": [], "complementary": list(s2), "synergy": "Basic Match"}
 
@@ -264,11 +305,59 @@ def calculate_team_match_score(student_skills: list, candidate_skills: list) -> 
 
     # Categories
     categories = {
-        "frontend": {"react", "vue", "angular", "html", "css", "tailwind", "ui/ux", "frontend", "next.js", "figma"},
-        "backend": {"python", "django", "fastapi", "flask", "node", "express", "sql", "postgresql", "backend", "java", "go"},
-        "ai_data": {"ai", "machine learning", "deep learning", "pytorch", "tensorflow", "data science", "nlp", "computer vision"},
-        "mobile_devops": {"flutter", "react native", "swift", "kotlin", "docker", "kubernetes", "aws", "devops", "cloud"},
-        "security": {"cybersecurity", "security", "cryptography", "penetration testing", "ethical hacking"}
+        "frontend": {
+            "react",
+            "vue",
+            "angular",
+            "html",
+            "css",
+            "tailwind",
+            "ui/ux",
+            "frontend",
+            "next.js",
+            "figma",
+        },
+        "backend": {
+            "python",
+            "django",
+            "fastapi",
+            "flask",
+            "node",
+            "express",
+            "sql",
+            "postgresql",
+            "backend",
+            "java",
+            "go",
+        },
+        "ai_data": {
+            "ai",
+            "machine learning",
+            "deep learning",
+            "pytorch",
+            "tensorflow",
+            "data science",
+            "nlp",
+            "computer vision",
+        },
+        "mobile_devops": {
+            "flutter",
+            "react native",
+            "swift",
+            "kotlin",
+            "docker",
+            "kubernetes",
+            "aws",
+            "devops",
+            "cloud",
+        },
+        "security": {
+            "cybersecurity",
+            "security",
+            "cryptography",
+            "penetration testing",
+            "ethical hacking",
+        },
     }
 
     def get_user_cats(skills):
@@ -282,9 +371,11 @@ def calculate_team_match_score(student_skills: list, candidate_skills: list) -> 
     c2 = get_user_cats(s2)
 
     cat_diff = c2.difference(c1)
-    
+
     # Base calculation: complementarity adds 20 points per distinct domain, overlap adds 10 points
-    score = 45 + (len(cat_diff) * 18) + (min(len(overlap), 2) * 8) + (min(len(complementary), 3) * 4)
+    score = (
+        45 + (len(cat_diff) * 18) + (min(len(overlap), 2) * 8) + (min(len(complementary), 3) * 4)
+    )
     score = min(98, max(50, score))
 
     if score >= 85:
@@ -294,9 +385,4 @@ def calculate_team_match_score(student_skills: list, candidate_skills: list) -> 
     else:
         synergy = "👍 Good Match"
 
-    return {
-        "score": score,
-        "overlap": overlap,
-        "complementary": complementary,
-        "synergy": synergy
-    }
+    return {"score": score, "overlap": overlap, "complementary": complementary, "synergy": synergy}

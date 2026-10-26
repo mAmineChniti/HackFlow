@@ -52,11 +52,11 @@ def get_hackathon_text(hackathon) -> str:
     if not hackathon:
         return ""
 
-    parts = [getattr(hackathon, "name", "") or ""]
-    if hasattr(hackathon, "theme") and hackathon.theme:
-        parts.append(hackathon.theme)
-    if hasattr(hackathon, "description") and hackathon.description:
-        parts.append(hackathon.description)
+    parts = [getattr(hackathon, "title", "") or ""]
+    for field in ("tagline", "category", "description"):
+        value = getattr(hackathon, field, "")
+        if value:
+            parts.append(value)
 
     return " ".join(filter(None, parts)).strip()
 
@@ -148,7 +148,7 @@ def recommend_sponsors_for_hackathon(
     if not hackathon_text.strip():
         return {
             "recommendations": [],
-            "message": "The hackathon details (name and theme) are insufficient to calculate matches.",
+            "message": "The hackathon details (title, tagline and description) are insufficient to calculate matches.",
         }
 
     # 1. Exclure les sponsors déjà liés à ce hackathon (en cours, refusés, ou confirmés)

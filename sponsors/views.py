@@ -9,7 +9,7 @@ Contient :
 """
 
 from django.contrib import messages
-from django.db.models import Count, Sum, Q
+from django.db.models import Count, Q, QuerySet, Sum
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
@@ -54,6 +54,7 @@ except ImportError:
 # Public sponsor pages
 # ==============================================================================
 
+
 class PublicSponsorListView(TemplateView):
     """
     Public showcase of confirmed HackFlow sponsors, grouped by sponsorship tier.
@@ -73,9 +74,11 @@ class PublicSponsorListView(TemplateView):
         # role-scoped queryset below in staff-facing views.
         visible_sponsorships = sponsorships_visible_to(self.request.user)
         public_confirmed = Sponsorship.objects.filter(status=StatusChoices.CONFIRME)
-        confirmed_sponsorships = (visible_sponsorships | public_confirmed).filter(
-            status=StatusChoices.CONFIRME
-        ).select_related("sponsor", "hackathon")
+        confirmed_sponsorships = (
+            (visible_sponsorships | public_confirmed)
+            .filter(status=StatusChoices.CONFIRME)
+            .select_related("sponsor", "hackathon")
+        )
 
         selected_hackathon = None
         if selected_hackathon_id and Hackathon:
@@ -101,6 +104,7 @@ class PublicSponsorListView(TemplateView):
 # ==============================================================================
 # Staff dashboard
 # ==============================================================================
+
 
 class SponsorDashboardView(SponsorPermissionRequiredMixin, TemplateView):
     """
@@ -130,9 +134,9 @@ class SponsorDashboardView(SponsorPermissionRequiredMixin, TemplateView):
                 pass
 
         # KPIs financiers et quantitatifs
-        total_sponsors_count = Sponsor.objects.filter(
-            sponsorships__in=sponsorships
-        ).distinct().count()
+        total_sponsors_count = (
+            Sponsor.objects.filter(sponsorships__in=sponsorships).distinct().count()
+        )
         total_partnerships_count = sponsorships.count()
 
         confirmed_qs = sponsorships.filter(status=StatusChoices.CONFIRME)
@@ -140,9 +144,16 @@ class SponsorDashboardView(SponsorPermissionRequiredMixin, TemplateView):
         total_funds_confirmed = confirmed_qs.aggregate(total=Sum("amount"))["total"] or 0
 
         negotiating_count = sponsorships.filter(status=StatusChoices.NEGOCIATION).count()
-        potential_funds = sponsorships.filter(
-            status__in=[StatusChoices.PROSPECT, StatusChoices.CONTACTE, StatusChoices.NEGOCIATION]
-        ).aggregate(total=Sum("amount"))["total"] or 0
+        potential_funds = (
+            sponsorships.filter(
+                status__in=[
+                    StatusChoices.PROSPECT,
+                    StatusChoices.CONTACTE,
+                    StatusChoices.NEGOCIATION,
+                ]
+            ).aggregate(total=Sum("amount"))["total"]
+            or 0
+        )
 
         # Répartition par statut dans le pipeline
         pipeline_stats = {}
@@ -156,9 +167,13 @@ class SponsorDashboardView(SponsorPermissionRequiredMixin, TemplateView):
 
         # Derniers partenariats et historiques récents
         recent_sponsorships = sponsorships.order_by("-updated_at")[:12]
-        recent_history = StatusHistory.objects.select_related(
-            "sponsorship__sponsor", "sponsorship__hackathon", "changed_by"
-        ).filter(sponsorship__in=sponsorships).order_by("-changed_at")[:10]
+        recent_history = (
+            StatusHistory.objects.select_related(
+                "sponsorship__sponsor", "sponsorship__hackathon", "changed_by"
+            )
+            .filter(sponsorship__in=sponsorships)
+            .order_by("-changed_at")[:10]
+        )
 
         # Recommandations vectorielles IA (TF-IDF + Cosine Similarity) pour le hackathon actif
         target_hackathon = selected_hackathon or (hackathons[0] if hackathons else None)
@@ -169,32 +184,38 @@ class SponsorDashboardView(SponsorPermissionRequiredMixin, TemplateView):
                 user=self.request.user,
             )
             if target_hackathon
-            else {"recommendations": [], "message": "No hackathons are available to calculate matches."}
+            else {
+                "recommendations": [],
+                "message": "No hackathons are available to calculate matches.",
+            }
         )
 
-        context.update({
-            "hackathons": hackathons,
-            "selected_hackathon": selected_hackathon,
-            "target_hackathon": target_hackathon,
-            "ai_recommendations": ai_recs_data.get("recommendations", []),
-            "ai_recommendations_message": ai_recs_data.get("message", ""),
-            "total_sponsors_count": total_sponsors_count,
-            "total_partnerships_count": total_partnerships_count,
-            "confirmed_count": confirmed_count,
-            "total_funds_confirmed": total_funds_confirmed,
-            "negotiating_count": negotiating_count,
-            "potential_funds": potential_funds,
-            "pipeline_stats": pipeline_stats,
-            "recent_sponsorships": recent_sponsorships,
-            "recent_history": recent_history,
-            "status_choices": StatusChoices.choices,
-        })
+        context.update(
+            {
+                "hackathons": hackathons,
+                "selected_hackathon": selected_hackathon,
+                "target_hackathon": target_hackathon,
+                "ai_recommendations": ai_recs_data.get("recommendations", []),
+                "ai_recommendations_message": ai_recs_data.get("message", ""),
+                "total_sponsors_count": total_sponsors_count,
+                "total_partnerships_count": total_partnerships_count,
+                "confirmed_count": confirmed_count,
+                "total_funds_confirmed": total_funds_confirmed,
+                "negotiating_count": negotiating_count,
+                "potential_funds": potential_funds,
+                "pipeline_stats": pipeline_stats,
+                "recent_sponsorships": recent_sponsorships,
+                "recent_history": recent_history,
+                "status_choices": StatusChoices.choices,
+            }
+        )
         return context
 
 
 # ==============================================================================
 # GESTION DES ENTREPRISES SPONSORS (Directory CRUD)
 # ==============================================================================
+
 
 def filter_sponsorships_queryset(params, user=None) -> "QuerySet[Sponsorship]":
     """
@@ -260,9 +281,7 @@ class SponsorDirectoryView(SponsorPermissionRequiredMixin, ListView):
         context["sectors"] = SECTOR_CHOICES
         context["tiers"] = TierChoices.choices
         context["statuses"] = StatusChoices.choices
-        context["hackathons"] = (
-            Hackathon.objects.all().order_by("-start_date") if Hackathon else []
-        )
+        context["hackathons"] = Hackathon.objects.all().order_by("-start_date") if Hackathon else []
         context["query"] = self.request.GET.get("q", "")
         context["selected_sector"] = self.request.GET.get("sector", "")
         context["selected_tier"] = self.request.GET.get("tier", "")
@@ -291,9 +310,9 @@ class SponsorDetailView(SponsorPermissionRequiredMixin, DetailView):
             .prefetch_related("history")
             .order_by("-created_at")
         )
-        context["email_logs"] = (
-            self.object.email_logs.select_related("sent_by").order_by("-sent_at")[:10]
-        )
+        context["email_logs"] = self.object.email_logs.select_related("sent_by").order_by(
+            "-sent_at"
+        )[:10]
         return context
 
 
@@ -346,9 +365,7 @@ class SponsorDeleteView(SponsorPermissionRequiredMixin, DeleteView):
     def get_object(self, queryset=None):
         sponsor = super().get_object(queryset)
         all_sponsorships = sponsor.sponsorships.all()
-        visible_sponsorships = sponsorships_visible_to(self.request.user).filter(
-            sponsor=sponsor
-        )
+        visible_sponsorships = sponsorships_visible_to(self.request.user).filter(sponsor=sponsor)
         if all_sponsorships.count() != visible_sponsorships.count():
             raise Http404
         if any(
@@ -366,6 +383,7 @@ class SponsorDeleteView(SponsorPermissionRequiredMixin, DeleteView):
 # ==============================================================================
 # GESTION DES PARTENARIATS / SPONSORSHIPS CRUD
 # ==============================================================================
+
 
 class SponsorshipCreateView(SponsorPermissionRequiredMixin, CreateView):
     """Création d'un accord de partenariat pour un hackathon."""
@@ -396,7 +414,7 @@ class SponsorshipCreateView(SponsorPermissionRequiredMixin, CreateView):
         )
         messages.success(
             self.request,
-            f'Sponsorship for "{self.object.sponsor.name}" was linked to hackathon "{self.object.hackathon.name}".'
+            f'Sponsorship for "{self.object.sponsor.name}" was linked to hackathon "{self.object.hackathon.title}".',
         )
         return response
 
@@ -456,11 +474,13 @@ class SponsorshipDeleteView(SponsorPermissionRequiredMixin, DeleteView):
 # ACTION RAPIDE DE CHANGEMENT DE STATUT (Support HTMX)
 # ==============================================================================
 
+
 class SponsorshipChangeStatusView(SponsorPermissionRequiredMixin, View):
     """
     Met à jour le statut d'un partenariat et trace l'opération dans StatusHistory.
     Compatible avec requêtes standards et HTMX.
     """
+
     required_permission = "manage"
 
     def post(self, request, pk):
@@ -476,7 +496,7 @@ class SponsorshipChangeStatusView(SponsorPermissionRequiredMixin, View):
             sponsorship.change_status(new_status=new_status, changed_by=request.user)
             messages.success(
                 request,
-                f'Status updated: {sponsorship.sponsor.name} is now "{sponsorship.get_status_display()}".'
+                f'Status updated: {sponsorship.sponsor.name} is now "{sponsorship.get_status_display()}".',
             )
 
         # Si requête HTMX, on renvoie le snippet mis à jour
@@ -499,6 +519,7 @@ class SponsorshipChangeStatusView(SponsorPermissionRequiredMixin, View):
 # ENVOI D'EMAIL AU CONTACT D'UN SPONSOR (Étape 7 - Staff Only)
 # ==============================================================================
 
+
 class SponsorContactView(SponsorPermissionRequiredMixin, View):
     """
     Vue d'envoi d'email au contact du sponsor (Staff only).
@@ -519,11 +540,13 @@ class SponsorContactView(SponsorPermissionRequiredMixin, View):
             hackathon = Hackathon.objects.filter(pk=hackathon_id).first()
 
         composed = compose_email(sponsor=sponsor, hackathon=hackathon, template_key=template_key)
-        form = SponsorContactForm(initial={
-            "template_key": template_key,
-            "subject": composed["subject"],
-            "message": composed["body"],
-        })
+        form = SponsorContactForm(
+            initial={
+                "template_key": template_key,
+                "subject": composed["subject"],
+                "message": composed["body"],
+            }
+        )
 
         if getattr(request, "htmx", False) or request.headers.get("HX-Request"):
             return render(
@@ -566,14 +589,11 @@ class SponsorContactView(SponsorPermissionRequiredMixin, View):
             if success:
                 messages.success(
                     request,
-                    f'Email sent successfully to "{sponsor.name}" ({sponsor.contact_email}).'
+                    f'Email sent successfully to "{sponsor.name}" ({sponsor.contact_email}).',
                 )
                 return redirect("sponsors:sponsor_detail", pk=sponsor.pk)
             else:
-                messages.error(
-                    request,
-                    f"Unable to send email: {log.error_message}"
-                )
+                messages.error(request, f"Unable to send email: {log.error_message}")
 
         return render(
             request,
@@ -588,6 +608,7 @@ class SponsorContactView(SponsorPermissionRequiredMixin, View):
 # ==============================================================================
 # FONCTIONNALITÉS IA SPONSORS (Étape 8 - Staff Only)
 # ==============================================================================
+
 
 class SponsorAIGenerateEmailView(SponsorPermissionRequiredMixin, View):
     """
@@ -614,13 +635,15 @@ class SponsorAIGenerateEmailView(SponsorPermissionRequiredMixin, View):
             user=request.user,
         )
 
-        form = SponsorContactForm(initial={
-            "template_key": template_key,
-            "tone": tone,
-            "subject": result["subject"],
-            "message": result["body"],
-            "ai_generated": result.get("ai_generated", False),
-        })
+        form = SponsorContactForm(
+            initial={
+                "template_key": template_key,
+                "tone": tone,
+                "subject": result["subject"],
+                "message": result["body"],
+                "ai_generated": result.get("ai_generated", False),
+            }
+        )
 
         return render(
             request,
@@ -662,6 +685,7 @@ class SponsorRecommendationsView(SponsorPermissionRequiredMixin, View):
 # ==============================================================================
 # EXPORT EXCEL DES PARTENARIATS (Étape 6 - Staff Only, openpyxl)
 # ==============================================================================
+
 
 class SponsorshipExportExcelView(SponsorPermissionRequiredMixin, View):
     """

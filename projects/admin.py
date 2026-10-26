@@ -18,6 +18,7 @@ STATUS_TO_HISTORY_ACTION = {
 
 class HistoriqueProjetInline(admin.TabularInline):
     """Read-only inline showing project history inside the Project admin page."""
+
     model = HistoriqueProjet
     extra = 0
     can_delete = False
@@ -31,7 +32,6 @@ class HistoriqueProjetInline(admin.TabularInline):
 
     def has_change_permission(self, request, obj=None):
         return False
-
 
 
 class ProjectMemberInline(admin.TabularInline):
@@ -79,7 +79,7 @@ class ProjectAdmin(admin.ModelAdmin):
 
     fieldsets = (
         (
-            "Informations Générales",
+            "General Information",
             {
                 "fields": (
                     "title",
@@ -94,7 +94,7 @@ class ProjectAdmin(admin.ModelAdmin):
             },
         ),
         (
-            "Évaluation & Décision Admin",
+            "Evaluation & Admin Decision",
             {
                 "fields": (
                     "score",
@@ -105,7 +105,7 @@ class ProjectAdmin(admin.ModelAdmin):
             },
         ),
         (
-            "Ressources & Liens",
+            "Resources & Links",
             {
                 "fields": (
                     "repository_url",
@@ -115,14 +115,14 @@ class ProjectAdmin(admin.ModelAdmin):
             },
         ),
         (
-            "Responsable",
+            "Owner",
             {
                 "fields": ("created_by",),
             },
         ),
     )
 
-    @admin.action(description="✅ Valider / Accepter les projets sélectionnés")
+    @admin.action(description="✅ Approve selected projects")
     def accept_selected_projects(self, request, queryset):
         # Goes through services.review_project so each decision is written to
         # HistoriqueProjet and invalid statuses are skipped instead of forced.
@@ -134,11 +134,9 @@ class ProjectAdmin(admin.ModelAdmin):
                 skipped += 1
                 continue
             accepted += 1
-        self._report_action(
-            request, accepted, skipped, "accepté(s) avec succès"
-        )
+        self._report_action(request, accepted, skipped, "approved successfully")
 
-    @admin.action(description="❌ Refuser les projets sélectionnés")
+    @admin.action(description="❌ Reject selected projects")
     def reject_selected_projects(self, request, queryset):
         rejected = skipped = 0
         for project in queryset:
@@ -147,36 +145,30 @@ class ProjectAdmin(admin.ModelAdmin):
                     project,
                     request.user,
                     "reject",
-                    "Refusé depuis l'administration Django.",
+                    "Rejected from Django admin.",
                 )
             except (PermissionDenied, ValueError):
                 skipped += 1
                 continue
             rejected += 1
-        self._report_action(request, rejected, skipped, "refusé(s)")
+        self._report_action(request, rejected, skipped, "rejected")
 
-    @admin.action(description="⏳ Marquer en cours d'évaluation (Under Review)")
+    @admin.action(description="⏳ Mark selected projects as Under Review")
     def mark_under_review(self, request, queryset):
         updated = skipped = 0
         for project in queryset:
             try:
-                services.change_project_status(
-                    project, request.user, Project.Status.UNDER_REVIEW
-                )
+                services.change_project_status(project, request.user, Project.Status.UNDER_REVIEW)
             except (PermissionDenied, ValueError):
                 skipped += 1
                 continue
             updated += 1
-        self._report_action(
-            request, updated, skipped, "passé(s) en cours d'évaluation"
-        )
+        self._report_action(request, updated, skipped, "marked as under review")
 
     def _report_action(self, request, done: int, skipped: int, label: str):
-        message = f"{done} projet(s) {label}."
+        message = f"{done} project(s) {label}."
         if skipped:
-            message += (
-                f" {skipped} ignoré(s) : statut non évaluable ou décision déjà appliquée."
-            )
+            message += f" {skipped} skipped: status not reviewable or decision already applied."
         self.message_user(request, message)
 
     def save_model(self, request, obj, form, change):
@@ -184,9 +176,7 @@ class ProjectAdmin(admin.ModelAdmin):
         previous_status = None
         if change and obj.pk:
             previous_status = (
-                Project.objects.filter(pk=obj.pk)
-                .values_list("status", flat=True)
-                .first()
+                Project.objects.filter(pk=obj.pk).values_list("status", flat=True).first()
             )
 
         super().save_model(request, obj, form, change)
@@ -203,7 +193,7 @@ class ProjectAdmin(admin.ModelAdmin):
                     else "",
                 )
 
-    @admin.display(description="Nb Membres")
+    @admin.display(description="Members")
     def members_count(self, obj):
         return obj.members.count()
 
@@ -224,7 +214,7 @@ class ConseilMentorAdmin(admin.ModelAdmin):
     search_fields = ("project__title", "mentor__username", "texte")
     autocomplete_fields = ["project", "mentor"]
 
-    @admin.display(description="Conseil")
+    @admin.display(description="Advice")
     def texte_short(self, obj):
         return obj.texte[:80] + "..." if len(obj.texte) > 80 else obj.texte
 
@@ -235,6 +225,7 @@ class HistoriqueProjetAdmin(admin.ModelAdmin):
     Audit log admin — fully read-only to preserve traceability.
     No record can be manually added, modified or deleted.
     """
+
     list_display = ("project", "action", "acteur", "date", "commentaire_short")
     list_filter = ("action", "date", "project__status")
     search_fields = ("project__title", "acteur__username")
@@ -267,7 +258,8 @@ class HistoriqueProjetAdmin(admin.ModelAdmin):
         from django.contrib import messages as dj_messages
         from django.http import HttpResponseRedirect
         from django.urls import reverse
-        dj_messages.warning(request, "Project history entries are read-only and cannot be modified.")
-        return HttpResponseRedirect(
-            reverse("admin:projects_historiqueprojet_changelist")
+
+        dj_messages.warning(
+            request, "Project history entries are read-only and cannot be modified."
         )
+        return HttpResponseRedirect(reverse("admin:projects_historiqueprojet_changelist"))

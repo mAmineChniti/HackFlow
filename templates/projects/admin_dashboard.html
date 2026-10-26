@@ -33,6 +33,9 @@
                class="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3.5 py-2 text-xs font-medium text-rose-600 hover:bg-rose-500/20 transition">
                 📄 Export PDF
             </a>
+            <a href="{% url 'projects:ai_metrics' %}" class="inline-flex items-center gap-1.5 rounded-lg border border-purple-500/40 bg-purple-500/10 px-3.5 py-2 text-xs font-medium text-purple-600 hover:bg-purple-500/20 transition dark:text-purple-300">
+                📈 AI Metrics
+            </a>
             <a href="{% url 'admin:projects_project_changelist' %}" target="_blank" class="inline-flex items-center gap-1.5 rounded-lg border border-border bg-secondary px-3.5 py-2 text-xs font-medium text-secondary-foreground hover:bg-secondary/80 transition">
                 ⚙️ Django Admin
             </a>
@@ -88,7 +91,7 @@
         <div class="mt-4 rounded-xl border border-border/70 bg-card p-4 shadow-xs">
             <div class="flex items-center justify-between mb-3">
                 <p class="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                    <span class="sr-only">Répartition des projets par catégorie</span>📁 Project Distribution by Category
+                    <span class="sr-only">Project distribution by category</span>📁 Project Distribution by Category
                 </p>
                 <span class="text-[11px] text-muted-foreground font-mono">
                     {{ stats.total }} project{{ stats.total|pluralize }} total
@@ -142,39 +145,42 @@
         <form method="get" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <!-- Search Title / Keyword -->
             <div>
-                <label class="block text-[11px] font-medium text-muted-foreground mb-1">Title or keyword</label>
-                <input
+                <c-label for="admin-project-search" class="block text-[11px] font-medium text-muted-foreground mb-1">Title or keyword</c-label>
+                <c-input
                     type="text"
+                    id="admin-project-search"
                     name="q"
                     value="{{ query }}"
                     placeholder="e.g. AI, SmartCity, Eco..."
-                    class="h-9 w-full rounded-md border border-input bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                >
+                    class="px-3 text-xs"
+                />
             </div>
 
             <!-- Filter Team or Member -->
             <div>
-                <label class="block text-[11px] font-medium text-muted-foreground mb-1">Team or Member</label>
-                <input
+                <c-label for="admin-project-team" class="block text-[11px] font-medium text-muted-foreground mb-1">Team or member</c-label>
+                <c-input
                     type="text"
+                    id="admin-project-team"
                     name="team"
                     value="{{ team_query }}"
                     placeholder="Lead or member name..."
-                    class="h-9 w-full rounded-md border border-input bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                >
+                    class="px-3 text-xs"
+                />
             </div>
 
             <!-- Filter Hackathon -->
             <div>
-                <label class="block text-[11px] font-medium text-muted-foreground mb-1">Hackathon</label>
-                <input
+                <c-label for="admin-project-hackathon" class="block text-[11px] font-medium text-muted-foreground mb-1">Hackathon</c-label>
+                <c-input
                     type="text"
+                    id="admin-project-hackathon"
                     name="hackathon"
                     value="{{ hackathon_filter }}"
                     placeholder="e.g. HackFlow 2026..."
                     list="hackathons-datalist"
-                    class="h-9 w-full rounded-md border border-input bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                >
+                    class="px-3 text-xs"
+                />
                 <datalist id="hackathons-datalist">
                     {% for h in available_hackathons %}
                     <option value="{{ h }}"></option>
@@ -184,42 +190,36 @@
 
             <!-- Filter Category -->
             <div>
-                <label class="block text-[11px] font-medium text-muted-foreground mb-1">Category</label>
-                <select
-                    name="category"
-                    class="h-9 w-full rounded-md border border-input bg-background px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                >
+                <c-label for="admin-project-category" class="block text-[11px] font-medium text-muted-foreground mb-1">Category</c-label>
+                <c-native_select id="admin-project-category" name="category" class="px-2.5 text-xs">
                     <option value="">All categories</option>
                     {% for cat_val, cat_label in categories %}
                     <option value="{{ cat_val }}" {% if category_filter == cat_val %}selected{% endif %}>{{ cat_label }}</option>
                     {% endfor %}
-                </select>
+                </c-native_select>
             </div>
 
             <!-- Filter Status -->
             <div>
-                <label class="block text-[11px] font-medium text-muted-foreground mb-1">Status</label>
-                <select
-                    name="status"
-                    class="h-9 w-full rounded-md border border-input bg-background px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                >
+                <c-label for="admin-project-status" class="block text-[11px] font-medium text-muted-foreground mb-1">Status</c-label>
+                <c-native_select id="admin-project-status" name="status" class="px-2.5 text-xs">
                     <option value="">All statuses</option>
                     {% for st_val, st_label in statuses %}
                     <option value="{{ st_val }}" {% if status_filter == st_val %}selected{% endif %}>{{ st_label }}</option>
                     {% endfor %}
-                </select>
+                </c-native_select>
             </div>
 
             <!-- Filter Buttons -->
             <div class="sm:col-span-2 lg:col-span-5 flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-border/40">
                 {% if query or team_query or hackathon_filter or category_filter or status_filter %}
-                <a href="{% url 'projects:admin_dashboard' %}" class="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition">
+                <c-button_link href="{% url 'projects:admin_dashboard' %}" variant="ghost" size="sm">
                     ✕ Reset filters
-                </a>
+                </c-button_link>
                 {% endif %}
-                <button type="submit" class="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition">
+                <c-button type="submit" size="sm">
                     Filter projects
-                </button>
+                </c-button>
             </div>
         </form>
     </div>
@@ -234,24 +234,24 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
-                <thead class="bg-muted/40 border-b border-border text-muted-foreground uppercase text-[10px] tracking-wider">
-                    <tr>
-                        <th class="py-3 px-4">Project & Hackathon</th>
-                        <th class="py-3 px-4">Team & Creator</th>
-                        <th class="py-3 px-4">Category</th>
-                        <th class="py-3 px-4">Current Status</th>
-                        <th class="py-3 px-4">Score</th>
-                        <th class="py-3 px-4">External Links</th>
-                        <th class="py-3 px-4">Decision & Reason</th>
-                        <th class="py-3 px-4 text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-border/60 text-foreground">
+            <c-table class="w-full text-left text-xs">
+                <c-table.header class="bg-muted/40 border-b border-border text-muted-foreground uppercase text-[10px] tracking-wider">
+                    <c-table.row>
+                        <c-table.head class="py-3 px-4">Project & Hackathon</c-table.head>
+                        <c-table.head class="py-3 px-4">Team & Creator</c-table.head>
+                        <c-table.head class="py-3 px-4">Category</c-table.head>
+                        <c-table.head class="py-3 px-4">Current Status</c-table.head>
+                        <c-table.head class="py-3 px-4">Score</c-table.head>
+                        <c-table.head class="py-3 px-4">External Links</c-table.head>
+                        <c-table.head class="py-3 px-4">Decision & Reason</c-table.head>
+                        <c-table.head class="py-3 px-4 text-right">Actions</c-table.head>
+                    </c-table.row>
+                </c-table.header>
+                <c-table.body class="divide-y divide-border/60 text-foreground">
                     {% for p in projects %}
-                    <tr class="hover:bg-muted/20 transition-colors">
+                    <c-table.row class="hover:bg-muted/20 transition-colors">
                         <!-- Project & Hackathon -->
-                        <td class="py-3.5 px-4">
+                        <c-table.cell class="py-3.5 px-4">
                             <a href="{% url 'projects:project_detail' p.slug %}" class="font-semibold text-primary hover:underline text-sm block">
                                 {{ p.title }}
                             </a>
@@ -261,10 +261,10 @@
                             <span class="inline-block mt-1 font-mono text-[10px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">
                                 🏆 {{ p.hackathon|default:"HackFlow 2026" }}
                             </span>
-                        </td>
+                        </c-table.cell>
 
                         <!-- Team & Roles -->
-                        <td class="py-3.5 px-4">
+                        <c-table.cell class="py-3.5 px-4">
                             <div class="flex items-center gap-1.5">
                                 <span class="size-5 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-[10px]">
                                     {{ p.created_by.get_username|slice:":1"|upper }}
@@ -280,17 +280,17 @@
                                 <span class="text-[10px] text-muted-foreground">Solo (Lead)</span>
                                 {% endfor %}
                             </div>
-                        </td>
+                        </c-table.cell>
 
                         <!-- Category -->
-                        <td class="py-3.5 px-4 whitespace-nowrap">
+                        <c-table.cell class="py-3.5 px-4 whitespace-nowrap">
                             <span class="rounded bg-secondary/80 px-2 py-0.5 text-[11px] font-medium text-secondary-foreground">
                                 {{ p.get_category_display }}
                             </span>
-                        </td>
+                        </c-table.cell>
 
                         <!-- Status -->
-                        <td class="py-3.5 px-4 whitespace-nowrap">
+                        <c-table.cell class="py-3.5 px-4 whitespace-nowrap">
                             {% if p.status == 'accepted' %}
                                 <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-500">
                                     <span class="size-1.5 rounded-full bg-emerald-500"></span> Accepted
@@ -320,35 +320,35 @@
                                     {{ p.get_status_display }}
                                 </span>
                             {% endif %}
-                        </td>
+                        </c-table.cell>
 
                         <!-- Score -->
-                        <td class="py-3.5 px-4 whitespace-nowrap">
+                        <c-table.cell class="py-3.5 px-4 whitespace-nowrap">
                             <form method="post" action="{% url 'projects:project_score' p.slug %}" class="flex items-center gap-1.5">
                                 {% csrf_token %}
                                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                <select name="score"
-                                    class="h-8 rounded border border-input bg-background px-1.5 text-[11px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                                >
+                                <c-native_select name="score" aria-label="Project score" class="h-8 w-auto px-1.5 text-[11px]">
                                     <option value="">--</option>
                                     {% for i in score_range %}
                                     <option value="{{ i }}" {% if p.score == i %}selected{% endif %}>{{ i }}/10</option>
                                     {% endfor %}
-                                </select>
-                                <button type="submit"
-                                    class="rounded bg-primary/20 border border-primary/30 px-1.5 py-1 text-[10px] font-semibold text-primary hover:bg-primary/30 transition"
+                                </c-native_select>
+                                <c-button type="submit"
+                                    variant="outline"
+                                    size="xs"
+                                    class="border-primary/30 bg-primary/20 px-1.5 text-[10px] text-primary hover:bg-primary/30"
                                     title="Save score"
-                                >
+                                    aria-label="Save score">
                                     ✓
-                                </button>
+                                </c-button>
                             </form>
                             {% if p.score %}
                             <p class="mt-1 text-[10px] font-bold text-primary">{{ p.score }}/10</p>
                             {% endif %}
-                        </td>
+                        </c-table.cell>
 
                         <!-- External Links -->
-                        <td class="py-3.5 px-4 whitespace-nowrap">
+                        <c-table.cell class="py-3.5 px-4 whitespace-nowrap">
                             <div class="flex items-center gap-1.5">
                                 {% if p.repository_url %}
                                 <a href="{{ p.repository_url }}" target="_blank" rel="noopener noreferrer" class="rounded p-1 bg-background border border-border text-foreground hover:text-primary" title="GitHub Code">
@@ -369,13 +369,13 @@
                                 <span class="text-[10px] text-muted-foreground">No links</span>
                                 {% endif %}
                             </div>
-                        </td>
+                        </c-table.cell>
 
                         <!-- Decision & Reason -->
-                        <td class="py-3.5 px-4 max-w-xs">
+                        <c-table.cell class="py-3.5 px-4 max-w-xs">
                             {% if p.status == 'rejected' and p.rejection_reason %}
                                 <div class="rounded-md border border-destructive/20 bg-destructive/10 p-2 text-[11px] text-destructive">
-                                    <p class="font-semibold flex items-center gap-1">⚠️ Reason :</p>
+                                    <p class="font-semibold flex items-center gap-1">⚠️ Reason:</p>
                                     <p class="mt-0.5 leading-snug">{{ p.rejection_reason }}</p>
                                 </div>
                             {% elif p.status == 'accepted' %}
@@ -383,121 +383,117 @@
                             {% endif %}
                             {% if p.reviewed_by %}
                                 <p class="mt-1 text-[10px] text-muted-foreground">
-                                    By {{ p.reviewed_by.get_username }} on {{ p.reviewed_at|date:"d M Y H:i" }}
+                                    By {{ p.reviewed_by.get_username }} on {{ p.reviewed_at|date:"M d, Y H:i" }}
                                 </p>
                             {% endif %}
-                        </td>
+                        </c-table.cell>
 
                         <!-- Actions -->
-                        <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                        <c-table.cell class="py-3.5 px-4 text-right whitespace-nowrap">
                             <div class="flex items-center justify-end gap-1.5">
-                                <a href="{% url 'projects:project_detail' p.slug %}" class="rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground hover:bg-accent transition" title="View details">
+                                <c-button_link href="{% url 'projects:project_detail' p.slug %}" variant="outline" size="xs" title="View details">
                                     👁️ Details
-                                </a>
+                                </c-button_link>
 
-                                <!-- Review buttons : ONLY for submitted or under_review -->
+                                <!-- Review buttons: ONLY for submitted or under_review -->
                                 {% if p.status == 'submitted' or p.status == 'under_review' %}
                                 <!-- Direct Accept -->
                                 <form method="post" action="{% url 'projects:admin_review' p.slug %}" class="inline">
                                     {% csrf_token %}
                                     <input type="hidden" name="decision" value="accept">
-                                    <button
+                                    <c-button
                                         type="submit"
-                                        class="rounded-md bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-emerald-500 transition shadow-xs"
+                                        size="xs"
+                                        class="bg-emerald-600 text-white hover:bg-emerald-500"
                                         title="Accept project"
                                     >
                                         ✓ Accept
-                                    </button>
+                                    </c-button>
                                 </form>
 
                                 <!-- Reject Modal -->
-                                <button
+                                <c-button
                                     type="button"
+                                    variant="destructive"
+                                    size="xs"
                                     onclick="openRejectModal('{{ p.slug }}', '{{ p.title|escapejs }}')"
-                                    class="rounded-md bg-destructive/90 px-2.5 py-1 text-xs font-medium text-destructive-foreground hover:bg-destructive transition shadow-xs"
                                     title="Reject project with reason"
                                 >
                                     ✕ Reject
-                                </button>
+                                </c-button>
                                 {% endif %}
                             </div>
-                        </td>
-                    </tr>
+                        </c-table.cell>
+                    </c-table.row>
                     {% empty %}
-                    <tr>
-                        <td colspan="8" class="py-12 text-center text-sm text-muted-foreground">
+                    <c-table.row>
+                        <c-table.cell colspan="8" class="py-12 text-center text-sm text-muted-foreground">
                             No projects match your search criteria.
-                        </td>
-                    </tr>
+                        </c-table.cell>
+                    </c-table.row>
                     {% endfor %}
-                </tbody>
-            </table>
+                </c-table.body>
+            </c-table>
         </div>
     </div>
 </div>
 
 <!-- REJECTION MODAL -->
-<div id="reject-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+<div id="reject-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="reject-modal-title">
     <div class="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl">
         <div class="flex items-start justify-between mb-4">
             <div>
-                <h3 class="text-lg font-bold text-foreground">Reject Project</h3>
+                <h3 id="reject-modal-title" class="text-lg font-bold text-foreground">Reject Project</h3>
                 <p id="modal-project-title" class="text-xs text-muted-foreground mt-0.5 font-medium"></p>
             </div>
-            <button type="button" onclick="closeRejectModal()" class="text-muted-foreground hover:text-foreground text-lg leading-none">
+            <c-button type="button" variant="ghost" size="icon" onclick="closeRejectModal()" aria-label="Close reject modal">
                 ✕
-            </button>
+            </c-button>
         </div>
 
         <form id="reject-form" method="post" action="" class="space-y-4">
             {% csrf_token %}
             <input type="hidden" name="decision" value="reject">
 
-            <div>
-                <label for="rejection-reason-input" class="block text-xs font-semibold text-foreground mb-1.5">
+            <c-form.field>
+                <c-form.label for="rejection-reason-input" class="block text-xs font-semibold text-foreground mb-1.5">
                     Mandatory rejection reason *
-                </label>
-                <textarea
+                </c-form.label>
+                <c-textarea
                     id="rejection-reason-input"
                     name="rejection_reason"
                     rows="4"
-                    required
                     placeholder="Clearly explain the reason for rejection (e.g. incomplete solution, off-topic, requirements not met)..."
-                    class="w-full rounded-md border border-input bg-background p-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-destructive"
-                ></textarea>
-                <p class="mt-1 text-[11px] text-muted-foreground">
+                    class="p-2.5 text-xs focus-visible:ring-destructive"
+                ></c-textarea>
+                <c-form.description>
                     This reason will be stored and displayed to the project team.
-                </p>
-            </div>
+                </c-form.description>
+            </c-form.field>
 
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/50">
-                <button
-                    type="button"
-                    onclick="closeRejectModal()"
-                    class="rounded-md border border-border px-3.5 py-2 text-xs font-medium text-muted-foreground hover:text-foreground"
-                >
+                <c-button type="button" variant="outline" size="sm" onclick="closeRejectModal()">
                     Cancel
-                </button>
-                <button
-                    type="submit"
-                    class="rounded-md bg-destructive px-4 py-2 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90 transition shadow-sm"
-                >
+                </c-button>
+                <c-button type="submit" variant="destructive" size="sm">
                     Confirm Rejection
-                </button>
+                </c-button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
+    const rejectUrlTemplate = "{% url 'projects:admin_review' '__slug__' %}";
+
     function openRejectModal(slug, title) {
         var modal = document.getElementById('reject-modal');
         var form = document.getElementById('reject-form');
         var titleElem = document.getElementById('modal-project-title');
         var textarea = document.getElementById('rejection-reason-input');
 
-        form.action = '/projects/admin-dashboard/' + slug + '/review/';
-        titleElem.textContent = 'Project : « ' + title + ' »';
+        form.action = rejectUrlTemplate.replace('__slug__', encodeURIComponent(slug));
+        titleElem.textContent = 'Project: “' + title + '”';
         textarea.value = '';
         modal.classList.remove('hidden');
         textarea.focus();

@@ -60,29 +60,24 @@
             <!-- Actions -->
             <div class="flex flex-wrap items-center gap-2">
                 {% if user_can_contact_sponsors %}
-                <a href="{% url 'sponsors:sponsor_contact' sponsor.pk %}"
-                   class="rounded-lg border border-primary/40 bg-primary/10 px-3.5 py-2 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors inline-flex items-center gap-1.5">
-                    <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
+                <c-button_link href="{% url 'sponsors:sponsor_contact' sponsor.pk %}" variant="outline" size="sm" class="border-primary/40 bg-primary/10 text-primary hover:bg-primary/20">
+                    <c-lucideicon.mail class="size-3.5" />
                     Contact by email
-                </a>
+                </c-button_link>
                 {% endif %}
                 {% if user_can_manage_sponsors %}
-                <a href="{% url 'sponsors:sponsorship_create' %}?sponsor_id={{ sponsor.pk }}"
-                   class="rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors">
-                    + Link to a hackathon
-                </a>
-                <a href="{% url 'sponsors:sponsor_update' sponsor.pk %}"
-                   class="rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-accent transition-colors">
+                <c-button_link href="{% url 'sponsors:sponsorship_create' %}?sponsor_id={{ sponsor.pk }}" size="sm">
+                    <c-lucideicon.plus class="size-3.5" />
+                    Link to a hackathon
+                </c-button_link>
+                <c-button_link href="{% url 'sponsors:sponsor_update' sponsor.pk %}" variant="outline" size="sm">
                     Edit
-                </a>
+                </c-button_link>
                 {% endif %}
                 {% if user_can_delete %}
-                <a href="{% url 'sponsors:sponsor_delete' sponsor.pk %}"
-                   class="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs font-medium text-rose-400 hover:bg-rose-500/20 transition-colors">
+                <c-button_link href="{% url 'sponsors:sponsor_delete' sponsor.pk %}" variant="outline" size="sm" class="border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20">
                     Delete
-                </a>
+                </c-button_link>
                 {% endif %}
             </div>
         </div>
@@ -115,149 +110,146 @@
         <div class="border-b border-border/70 px-6 py-4 flex items-center justify-between">
             <h2 class="text-base font-semibold text-foreground">Sponsorship agreements</h2>
             <span class="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground font-mono">
-                {{ sponsorships|length }} sponsorship(s)
+                {{ sponsorships|length }} agreement{{ sponsorships|length|pluralize }}
             </span>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
-                <thead class="border-b border-border/70 bg-muted/40 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                    <tr>
-                        <th class="py-3 px-6">Hackathon</th>
-                        <th class="py-3 px-6">Tier</th>
-                        <th class="py-3 px-6">Amount</th>
-                        <th class="py-3 px-6">Type</th>
-                        <th class="py-3 px-6">Current status</th>
-                        <th class="py-3 px-6 text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-border/60">
-                    {% for sp in sponsorships %}
-                    <tr class="hover:bg-muted/20">
-                        <td class="py-3.5 px-6 font-semibold text-foreground">
-                            {{ sp.hackathon.name }}
-                        </td>
-                        <td class="py-3.5 px-6">
-                            <span class="rounded-md border border-border/80 bg-muted/40 px-2 py-0.5 text-xs font-semibold">
-                                {{ sp.get_tier_display }}
-                            </span>
-                        </td>
-                        <td class="py-3.5 px-6 font-mono font-semibold text-foreground">
-                            {{ sp.amount|intcomma }} DT
-                        </td>
-                        <td class="py-3.5 px-6 text-xs text-muted-foreground">
-                            {{ sp.get_contribution_type_display }}
-                        </td>
-                        <td class="py-3.5 px-6">
-                            <span class="rounded px-2.5 py-1 text-xs font-semibold
-                                {% if sp.status == 'confirmé' %}bg-emerald-500/15 text-emerald-400 border border-emerald-500/30
-                                {% elif sp.status == 'négociation' %}bg-amber-500/15 text-amber-400 border border-amber-500/30
-                                {% elif sp.status == 'contacté' %}bg-blue-500/15 text-blue-400 border border-blue-500/30
-                                {% elif sp.status == 'refusé' %}bg-rose-500/15 text-rose-400 border border-rose-500/30
-                                {% else %}bg-muted text-muted-foreground{% endif %}">
-                                {{ sp.get_status_display }}
-                            </span>
-                        </td>
-                        <td class="py-3.5 px-6 text-right">
-                            <div class="inline-flex items-center gap-2">
-                                {% can_manage_sponsorship user sp as user_can_manage_sp %}
-                                {% if user_can_manage_sp %}
-                                <a href="{% url 'sponsors:sponsorship_update' sp.pk %}" class="text-xs text-primary hover:underline">
-                                    Edit
-                                </a>
-                                {% endif %}
-                                {% if user_can_manage_sp and user_can_delete %}
-                                <span class="text-border">|</span>
-                                <a href="{% url 'sponsors:sponsorship_delete' sp.pk %}" class="text-xs text-rose-400 hover:underline">
-                                    Remove
-                                </a>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="py-8 text-center text-sm text-muted-foreground">
-                            This sponsor has not been linked to a hackathon yet.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        <c-table class="w-full text-left text-sm">
+            <c-table.caption class="sr-only">Sponsorship agreements</c-table.caption>
+            <c-table.header class="border-b border-border/70 bg-muted/40 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                <c-table.row>
+                    <c-table.head class="py-3 px-6">Hackathon</c-table.head>
+                    <c-table.head class="py-3 px-6">Tier</c-table.head>
+                    <c-table.head class="py-3 px-6">Amount</c-table.head>
+                    <c-table.head class="py-3 px-6">Type</c-table.head>
+                    <c-table.head class="py-3 px-6">Current status</c-table.head>
+                    <c-table.head class="py-3 px-6 text-right">Actions</c-table.head>
+                </c-table.row>
+            </c-table.header>
+            <c-table.body class="divide-y divide-border/60">
+                {% for sp in sponsorships %}
+                <c-table.row class="hover:bg-muted/20">
+                    <c-table.cell class="py-3.5 px-6 font-semibold text-foreground">
+                        {{ sp.hackathon.title }}
+                    </c-table.cell>
+                    <c-table.cell class="py-3.5 px-6">
+                        <c-badge variant="outline" class="text-xs font-semibold">{{ sp.get_tier_display }}</c-badge>
+                    </c-table.cell>
+                    <c-table.cell class="py-3.5 px-6 font-mono font-semibold text-foreground">
+                        {{ sp.amount|intcomma }} DT
+                    </c-table.cell>
+                    <c-table.cell class="py-3.5 px-6 text-xs text-muted-foreground">
+                        {{ sp.get_contribution_type_display }}
+                    </c-table.cell>
+                    <c-table.cell class="py-3.5 px-6">
+                        <c-badge
+                            variant="outline"
+                            class="text-xs font-semibold
+                                {% if sp.status == 'confirmé' %}border-emerald-500/30 bg-emerald-500/15 text-emerald-400
+                                {% elif sp.status == 'négociation' %}border-amber-500/30 bg-amber-500/15 text-amber-400
+                                {% elif sp.status == 'contacté' %}border-blue-500/30 bg-blue-500/15 text-blue-400
+                                {% elif sp.status == 'refusé' %}border-rose-500/30 bg-rose-500/15 text-rose-400
+                                {% else %}border-border/60 bg-muted text-muted-foreground{% endif %}"
+                        >
+                            {{ sp.get_status_display }}
+                        </c-badge>
+                    </c-table.cell>
+                    <c-table.cell class="py-3.5 px-6 text-right">
+                        <div class="inline-flex items-center gap-2">
+                            {% can_manage_sponsorship user sp as user_can_manage_sp %}
+                            {% if user_can_manage_sp %}
+                            <c-button_link href="{% url 'sponsors:sponsorship_update' sp.pk %}" variant="ghost" size="sm" class="text-xs">
+                                <c-lucideicon.edit class="size-3" />
+                                Edit
+                            </c-button_link>
+                            {% endif %}
+                            {% if user_can_manage_sp and user_can_delete %}
+                            <c-button_link href="{% url 'sponsors:sponsorship_delete' sp.pk %}" variant="ghost" size="sm" class="text-xs text-rose-400 hover:text-rose-300">
+                                <c-lucideicon.trash-2 class="size-3" />
+                                Remove
+                            </c-button_link>
+                            {% endif %}
+                        </div>
+                    </c-table.cell>
+                </c-table.row>
+                {% empty %}
+                <c-table.row>
+                    <c-table.cell colspan="6" class="py-8 text-center text-sm text-muted-foreground">
+                        This sponsor has not been linked to a hackathon yet.
+                    </c-table.cell>
+                </c-table.row>
+                {% endfor %}
+            </c-table.body>
+        </c-table>
     </div>
 
     <!-- Email communication audit log -->
     <div class="mt-8 rounded-xl border border-border/80 bg-card overflow-hidden shadow-sm">
         <div class="border-b border-border/70 px-6 py-4 flex items-center justify-between">
             <div class="flex items-center gap-2.5">
-                <svg class="size-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
+                <c-lucideicon.mail class="size-4 text-primary" />
                 <h2 class="text-base font-semibold text-foreground">Email communication history</h2>
             </div>
             <span class="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground font-mono">
-                {{ email_logs|length }} email(s)
+                {{ email_logs|length }} email{{ email_logs|length|pluralize }}
             </span>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
-                <thead class="border-b border-border/70 bg-muted/40 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                    <tr>
-                        <th class="py-3 px-6">Date & time</th>
-                        <th class="py-3 px-6">Sender</th>
-                        <th class="py-3 px-6">Subject</th>
-                        <th class="py-3 px-6">Delivery status</th>
-                        <th class="py-3 px-6 text-right">Details</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-border/60">
-                    {% for log in email_logs %}
-                    <tr class="hover:bg-muted/20">
-                        <td class="py-3.5 px-6 font-mono text-xs text-muted-foreground">
-                            {{ log.sent_at|date:"d/m/Y H:i" }}
-                        </td>
-                        <td class="py-3.5 px-6 font-medium text-foreground text-xs">
-                            {{ log.sent_by.username|default:"System" }}
-                        </td>
-                        <td class="py-3.5 px-6 text-foreground text-xs font-semibold max-w-xs truncate">
-                            {{ log.subject }}
-                        </td>
-                        <td class="py-3.5 px-6">
-                            {% if log.success %}
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-400 border border-emerald-500/30">
-                                <span class="size-1.5 rounded-full bg-emerald-400"></span>
-                                Sent
-                            </span>
-                            {% else %}
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-rose-400 border border-rose-500/30"
-                                  title="{{ log.error_message }}">
-                                <span class="size-1.5 rounded-full bg-rose-400"></span>
-                                Failed
-                            </span>
-                            {% endif %}
-                        </td>
-                        <td class="py-3.5 px-6 text-right">
-                            {% if log.error_message %}
-                            <span class="text-xs text-rose-400 font-mono max-w-xs truncate inline-block" title="{{ log.error_message }}">
-                                {{ log.error_message|truncatechars:35 }}
-                            </span>
-                            {% else %}
-                            <span class="text-xs text-muted-foreground font-mono">Delivered</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="py-8 text-center text-sm text-muted-foreground">
-                            No emails have been sent to this sponsor through HackFlow yet.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        <c-table class="w-full text-left text-sm">
+            <c-table.caption class="sr-only">Email communication history</c-table.caption>
+            <c-table.header class="border-b border-border/70 bg-muted/40 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                <c-table.row>
+                    <c-table.head class="py-3 px-6">Date &amp; time</c-table.head>
+                    <c-table.head class="py-3 px-6">Sender</c-table.head>
+                    <c-table.head class="py-3 px-6">Subject</c-table.head>
+                    <c-table.head class="py-3 px-6">Delivery status</c-table.head>
+                    <c-table.head class="py-3 px-6 text-right">Details</c-table.head>
+                </c-table.row>
+            </c-table.header>
+            <c-table.body class="divide-y divide-border/60">
+                {% for log in email_logs %}
+                <c-table.row class="hover:bg-muted/20">
+                    <c-table.cell class="py-3.5 px-6 font-mono text-xs text-muted-foreground">
+                        {{ log.sent_at|date:"M d, Y H:i" }}
+                    </c-table.cell>
+                    <c-table.cell class="py-3.5 px-6 font-medium text-foreground text-xs">
+                        {{ log.sent_by.username|default:"System" }}
+                    </c-table.cell>
+                    <c-table.cell class="py-3.5 px-6 text-foreground text-xs font-semibold max-w-xs truncate">
+                        {{ log.subject }}
+                    </c-table.cell>
+                    <c-table.cell class="py-3.5 px-6">
+                        {% if log.success %}
+                        <c-badge variant="outline" class="gap-1.5 border-emerald-500/30 bg-emerald-500/15 text-[11px] font-semibold text-emerald-400">
+                            <span class="size-1.5 rounded-full bg-emerald-400"></span>
+                            Sent
+                        </c-badge>
+                        {% else %}
+                        <c-badge variant="outline" class="gap-1.5 border-rose-500/30 bg-rose-500/15 text-[11px] font-semibold text-rose-400" title="{{ log.error_message }}">
+                            <span class="size-1.5 rounded-full bg-rose-400"></span>
+                            Failed
+                        </c-badge>
+                        {% endif %}
+                    </c-table.cell>
+                    <c-table.cell class="py-3.5 px-6 text-right">
+                        {% if log.error_message %}
+                        <span class="text-xs text-rose-400 font-mono max-w-xs truncate inline-block" title="{{ log.error_message }}">
+                            {{ log.error_message|truncatechars:35 }}
+                        </span>
+                        {% else %}
+                        <span class="text-xs text-muted-foreground font-mono">Delivered</span>
+                        {% endif %}
+                    </c-table.cell>
+                </c-table.row>
+                {% empty %}
+                <c-table.row>
+                    <c-table.cell colspan="5" class="py-8 text-center text-sm text-muted-foreground">
+                        No emails have been sent to this sponsor through HackFlow yet.
+                    </c-table.cell>
+                </c-table.row>
+                {% endfor %}
+            </c-table.body>
+        </c-table>
     </div>
 </div>
 {% endblock %}

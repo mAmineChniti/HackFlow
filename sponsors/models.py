@@ -13,13 +13,17 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from core.fields import HTTPSURLField
+
 
 # ---------------------------------------------------------------------------
 # Constantes de choix (réutilisées dans forms.py et views.py)
 # ---------------------------------------------------------------------------
 
+
 class TierChoices(models.TextChoices):
     """Niveau de partenariat d'un sponsor pour un hackathon donné."""
+
     PLATINUM = "platinum", _("Platinum")
     GOLD = "gold", _("Gold")
     SILVER = "silver", _("Silver")
@@ -28,6 +32,7 @@ class TierChoices(models.TextChoices):
 
 class StatusChoices(models.TextChoices):
     """Étapes du pipeline de prospection d'un sponsor."""
+
     PROSPECT = "prospect", _("Prospect")
     CONTACTE = "contacté", _("Contacted")
     NEGOCIATION = "négociation", _("Negotiating")
@@ -37,6 +42,7 @@ class StatusChoices(models.TextChoices):
 
 class ContributionTypeChoices(models.TextChoices):
     """Nature de la contribution apportée par le sponsor."""
+
     FINANCIER = "financier", _("Financial")
     MATERIEL = "matériel", _("Equipment")
     PRIX = "prix", _("Prizes / Rewards")
@@ -64,9 +70,11 @@ SECTOR_CHOICES = [
 # Modèle Sponsor
 # ---------------------------------------------------------------------------
 
+
 def logo_upload_path(instance, filename):
     """Chemin d'upload du logo : media/sponsors/logos/<nom_slug>/<fichier>."""
     import re
+
     slug = re.sub(r"[^\w-]", "_", instance.name.lower())
     return f"sponsors/logos/{slug}/{filename}"
 
@@ -90,7 +98,7 @@ class Sponsor(models.Model):
         verbose_name=_("Logo"),
         help_text=_("Recommended format: PNG or SVG with a transparent background, max 2 MB."),
     )
-    website = models.URLField(
+    website = HTTPSURLField(
         blank=True,
         verbose_name=_("Website"),
     )
@@ -135,6 +143,7 @@ class Sponsor(models.Model):
 # Modèle Sponsorship (relation Sponsor <-> Hackathon)
 # ---------------------------------------------------------------------------
 
+
 class Sponsorship(models.Model):
     """
     Représente la relation entre un Sponsor et un Hackathon.
@@ -168,7 +177,9 @@ class Sponsorship(models.Model):
         default=0,
         validators=[MinValueValidator(0)],
         verbose_name=_("Amount (DT)"),
-        help_text=_("Financial contribution amount in DT (e.g. 2500.000 DT). Use 0 for non-financial contributions."),
+        help_text=_(
+            "Financial contribution amount in DT (e.g. 2500.000 DT). Use 0 for non-financial contributions."
+        ),
     )
     status = models.CharField(
         max_length=20,
@@ -198,19 +209,21 @@ class Sponsorship(models.Model):
         unique_together = [("sponsor", "hackathon")]
 
     def __str__(self):
-        return f"{self.sponsor.name} → {self.hackathon.name} [{self.get_tier_display()}]"
+        return f"{self.sponsor.name} → {self.hackathon.title} [{self.get_tier_display()}]"
 
     def change_status(self, new_status: str, changed_by: User) -> "StatusHistory | None":
         """
         Délègue exclusivement à l'unique implémentation métier change_sponsorship_status (services.py).
         """
         from .services import change_sponsorship_status
+
         return change_sponsorship_status(self, new_status, changed_by)
 
 
 # ---------------------------------------------------------------------------
 # Modèle StatusHistory (historique des changements de statut)
 # ---------------------------------------------------------------------------
+
 
 class StatusHistory(models.Model):
     """
@@ -255,15 +268,16 @@ class StatusHistory(models.Model):
 
     def __str__(self):
         return (
-            f"{self.sponsorship} : "
+            f"{self.sponsorship}: "
             f"{self.get_old_status_display()} → {self.get_new_status_display()} "
-            f"({self.changed_at:%d/%m/%Y %H:%M})"
+            f"({self.changed_at:%b %d, %Y %H:%M})"
         )
 
 
 # ---------------------------------------------------------------------------
 # Modèle SponsorEmailLog (journal d'audit des emails envoyés aux sponsors)
 # ---------------------------------------------------------------------------
+
 
 class SponsorEmailLog(models.Model):
     """
@@ -315,4 +329,6 @@ class SponsorEmailLog(models.Model):
 
     def __str__(self):
         status_str = "Sent" if self.success else "Failed"
-        return f"[{status_str}] {self.sponsor.name} : {self.subject} ({self.sent_at:%d/%m/%Y %H:%M})"
+        return (
+            f"[{status_str}] {self.sponsor.name} : {self.subject} ({self.sent_at:%b %d, %Y %H:%M})"
+        )

@@ -39,7 +39,6 @@
                         id="{{ form.login.id_for_label }}"
                         placeholder="Enter your email"
                         value="{{ form.login.value|default:'' }}"
-                        {{ form.login.field.required|yesno:'required,' }}
                         class="{{ form.login.errors|yesno:'border-destructive,' }}"
                     />
                     {% if form.login.errors %}
@@ -58,7 +57,6 @@
                         name="{{ form.password.name }}"
                         id="{{ form.password.id_for_label }}"
                         placeholder="Enter your password"
-                        {{ form.password.field.required|yesno:'required,' }}
                         class="{{ form.password.errors|yesno:'border-destructive,' }}"
                     />
                     {% if form.password.errors %}

@@ -68,51 +68,43 @@
                 <!-- Search input -->
                 <div class="relative sm:col-span-2 lg:col-span-1">
                     <c-lucideicon.search class="absolute left-3 top-2.5 size-4 text-muted-foreground pointer-events-none" />
-                    <input
+                    <c-input
                         type="text"
                         name="q"
                         value="{{ search_query }}"
                         placeholder="Search by keywords, tags, tech..."
-                        class="flex h-9 w-full rounded-md border border-input bg-background/60 pl-9 pr-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                        aria-label="Search hackathons"
+                        class="bg-background/60 pl-9 pr-3"
                     />
                 </div>
 
                 <!-- Status Select -->
                 <div>
-                    <select
-                        name="status"
-                        class="flex h-9 w-full rounded-md border border-input bg-background/60 px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
-                    >
+                    <c-native_select name="status" aria-label="Filter by status">
                         <option value="">All statuses</option>
                         {% for val, label in status_choices %}
                         <option value="{{ val }}" {% if selected_status == val %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
-                    </select>
+                    </c-native_select>
                 </div>
 
                 <!-- Mode Select -->
                 <div>
-                    <select
-                        name="mode"
-                        class="flex h-9 w-full rounded-md border border-input bg-background/60 px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
-                    >
+                    <c-native_select name="mode" aria-label="Filter by event mode">
                         <option value="">All modes</option>
                         {% for val, label in mode_choices %}
                         <option value="{{ val }}" {% if selected_mode == val %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
-                    </select>
+                    </c-native_select>
                 </div>
 
                 <!-- Ordering Select -->
                 <div>
-                    <select
-                        name="ordering"
-                        class="flex h-9 w-full rounded-md border border-input bg-background/60 px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
-                    >
-                        <option value="start_date">Upcoming dates</option>
-                        <option value="newest">Recently added</option>
-                        <option value="popular">Most popular</option>
-                    </select>
+                    <c-native_select name="ordering" aria-label="Sort hackathons">
+                        <option value="start_date" {% if selected_ordering == 'start_date' %}selected{% endif %}>Upcoming dates</option>
+                        <option value="newest" {% if selected_ordering == 'newest' %}selected{% endif %}>Recently added</option>
+                        <option value="popular" {% if selected_ordering == 'popular' %}selected{% endif %}>Most popular</option>
+                    </c-native_select>
                 </div>
             </form>
         </div>

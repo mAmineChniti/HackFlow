@@ -44,6 +44,32 @@ from sponsors.permissions import (
 from sponsors.templatetags.sponsor_tags import get_confirmed_sponsors
 
 
+def make_hackathon(
+    organizer,
+    *,
+    title="Test Hackathon",
+    tagline="Test theme",
+    **overrides,
+):
+    """Create a valid Hackathon with only the fields a test cares about."""
+    now = timezone.now()
+    defaults = {
+        "title": title,
+        "tagline": tagline,
+        "description": "A test hackathon.",
+        "category": tagline or "General",
+        "registration_start": now - timezone.timedelta(days=1),
+        "registration_deadline": now + timezone.timedelta(days=1),
+        "start_date": now,
+        "end_date": now + timezone.timedelta(days=2),
+        "organizer": organizer,
+        "status": Hackathon.Status.REGISTRATION_OPEN,
+        "is_published": True,
+    }
+    defaults.update(overrides)
+    return Hackathon.objects.create(**defaults)
+
+
 class SponsorAdminInterfaceTests(TestCase):
     def setUp(self):
         self.admin_user = User.objects.create_superuser(
@@ -53,9 +79,10 @@ class SponsorAdminInterfaceTests(TestCase):
         )
         self.client.force_login(self.admin_user)
         self.sponsor = Sponsor.objects.create(name='Admin Template Sponsor')
-        self.hackathon = Hackathon.objects.create(
-            name='Admin Template Hackathon',
-            theme='Technology',
+        self.hackathon = make_hackathon(
+            self.admin_user,
+            title='Admin Template Hackathon',
+            tagline='Technology',
             start_date=timezone.now(),
             end_date=timezone.now() + timezone.timedelta(days=1),
         )
@@ -162,9 +189,10 @@ class SponsorModelAndViewsTest(TestCase):
         )
 
         # Hackathon de test
-        self.hackathon = Hackathon.objects.create(
-            name="ESPRIT Hack 2026",
-            theme="AI & Cloud Innovation",
+        self.hackathon = make_hackathon(
+            self.staff_user,
+            title="ESPRIT Hack 2026",
+            tagline="AI & Cloud Innovation",
             start_date=timezone.now(),
             end_date=timezone.now() + timezone.timedelta(days=2),
         )
@@ -416,9 +444,10 @@ class SponsorModelAndViewsTest(TestCase):
     def test_get_confirmed_sponsors_deduplication(self):
         """Un sponsor confirmé sur 2 hackathons différents n'apparaît qu'une seule fois via get_confirmed_sponsors."""
         # Deuxième hackathon
-        hackathon_2 = Hackathon.objects.create(
-            name="ESPRIT AI Summit 2026",
-            theme="Generative AI",
+        hackathon_2 = make_hackathon(
+            self.staff_user,
+            title="ESPRIT AI Summit 2026",
+            tagline="Generative AI",
             start_date=timezone.now() + timezone.timedelta(days=30),
             end_date=timezone.now() + timezone.timedelta(days=32),
         )
@@ -606,9 +635,10 @@ class SponsorModelAndViewsTest(TestCase):
         cache.clear()
 
         # Hackathon centré sur la fintech et la blockchain
-        fintech_hackathon = Hackathon.objects.create(
-            name="FinTech Innovate ESPRIT",
-            theme="Finance digitale, paiements mobiles et blockchain bancaire",
+        fintech_hackathon = make_hackathon(
+            self.staff_user,
+            title="FinTech Innovate ESPRIT",
+            tagline="Finance digitale, paiements mobiles et blockchain bancaire",
             start_date=timezone.now(),
             end_date=timezone.now() + timezone.timedelta(days=2),
         )
@@ -666,7 +696,13 @@ class SponsorModelAndViewsTest(TestCase):
     def test_ai_recommendation_insufficient_data_handled_gracefully(self):
         """Le cas 'pas assez de données' (moins de 2 sponsors ou texte vide) est géré proprement sans erreur."""
         cache.clear()
-        empty_hackathon = Hackathon.objects.create(name="", theme="")
+        empty_hackathon = make_hackathon(
+            self.staff_user,
+            title="",
+            tagline="",
+            description="",
+            category="",
+        )
 
         data = recommend_sponsors_for_hackathon(empty_hackathon, use_cache=False)
         self.assertEqual(data["recommendations"], [])
@@ -945,11 +981,12 @@ class SeedSponsorsCommandTest(TestCase):
             sector="tech",
             description="Existing record that must remain untouched.",
         )
-        self.legacy_hackathon = Hackathon.objects.create(
-            name="Existing Hackathon",
-            theme="Existing event",
-            start_date=timezone.now().date(),
-            end_date=(timezone.now() + timezone.timedelta(days=2)).date(),
+        self.legacy_hackathon = make_hackathon(
+            self.staff_user,
+            title="Existing Hackathon",
+            tagline="Existing event",
+            start_date=timezone.now(),
+            end_date=timezone.now() + timezone.timedelta(days=2),
         )
         self.legacy_sponsorship = Sponsorship.objects.create(
             sponsor=self.legacy_sponsor,
@@ -974,7 +1011,7 @@ class SeedSponsorsCommandTest(TestCase):
 
     def test_reset_preserves_non_demo_records_and_recreates_demo_data(self):
         call_command("seed_sponsors", force=True, stdout=io.StringIO())
-        demo_hackathon = Hackathon.objects.get(name="HackFlow Challenge (demo)")
+        demo_hackathon = Hackathon.objects.get(title="HackFlow Challenge (demo)")
         legacy_demo_event_partnership = Sponsorship.objects.create(
             sponsor=self.legacy_sponsor,
             hackathon=demo_hackathon,
@@ -1033,11 +1070,12 @@ class SponsorRolePermissionTest(TestCase):
             sector="tech",
             description="AI and cloud",
         )
-        self.hackathon = Hackathon.objects.create(
-            name="Role Matrix Hackathon",
-            theme="AI and cloud",
-            start_date=timezone.now().date(),
-            end_date=(timezone.now() + timezone.timedelta(days=2)).date(),
+        self.hackathon = make_hackathon(
+            self.staff_user,
+            title="Role Matrix Hackathon",
+            tagline="AI and cloud",
+            start_date=timezone.now(),
+            end_date=timezone.now() + timezone.timedelta(days=2),
         )
         self.sponsorship = Sponsorship.objects.create(
             sponsor=self.sponsor,

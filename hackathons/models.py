@@ -7,6 +7,8 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 
+from core.fields import HTTPSURLField
+
 
 class Hackathon(models.Model):
     """
@@ -132,7 +134,7 @@ class Hackathon(models.Model):
         verbose_name="Rules & Guidelines",
         help_text="Eligibility, judging criteria, code of conduct.",
     )
-    resources_link = models.URLField(
+    resources_link = HTTPSURLField(
         blank=True,
         default="",
         verbose_name="Resources Link",
@@ -391,7 +393,7 @@ class HackathonRegistration(models.Model):
         default="",
         verbose_name="T-shirt size & dietary restrictions",
     )
-    portfolio_url = models.URLField(
+    portfolio_url = HTTPSURLField(
         blank=True,
         default="",
         verbose_name="GitHub / LinkedIn Link",

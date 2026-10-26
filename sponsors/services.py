@@ -132,7 +132,7 @@ def compose_email(
     Génère un objet et un corps de message préremplis selon le modèle choisi.
     Cette fonction est conçue pour être branchée sur le service IA ultérieurement.
     """
-    hackathon_name = hackathon.name if hackathon else "our next hackathon"
+    hackathon_name = hackathon.title if hackathon else "our next hackathon"
     contact_salutation = sponsor.contact_name or sponsor.name
 
     template_data = EMAIL_TEMPLATES.get(template_key, EMAIL_TEMPLATES["invitation"])

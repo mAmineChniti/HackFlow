@@ -190,7 +190,7 @@ class SponsorshipAdmin(SponsorAdminBase):
         "updated_at",
     )
     list_filter = ("status", TierListFilter, "hackathon", "contribution_type")
-    search_fields = ("sponsor__name", "hackathon__name")
+    search_fields = ("sponsor__name", "hackathon__title")
     date_hierarchy = "updated_at"
     ordering = ("-updated_at", "sponsor__name")
     list_per_page = 25

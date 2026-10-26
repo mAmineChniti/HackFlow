@@ -6,13 +6,13 @@
 <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
     <!-- Breadcrumb & Back -->
     <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <a href="{% url 'projects:project_list' %}" class="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+        <c-button_link href="{% url 'projects:project_list' %}" variant="ghost" size="sm" class="text-xs">
             ← Back to Projects List
-        </a>
+        </c-button_link>
         {% if can_review %}
-        <a href="{% url 'projects:admin_dashboard' %}" class="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline">
+        <c-button_link href="{% url 'projects:admin_dashboard' %}" variant="link" size="sm" class="text-xs">
             🛡️ Projects Admin Dashboard →
-        </a>
+        </c-button_link>
         {% endif %}
     </div>
 
@@ -22,9 +22,9 @@
         <div class="flex items-start gap-3">
             <span class="text-xl">⚠️</span>
             <div>
-                <h3 class="text-sm font-bold"><span class="sr-only">Projet Refusé</span>Project Rejected</h3>
+                <h3 class="text-sm font-bold">Project Rejected</h3>
                 <p class="mt-1 text-xs leading-relaxed text-destructive/90">
-                    <strong>Rejection reason :</strong> {{ project.rejection_reason }}
+                    <strong>Rejection reason:</strong> {{ project.rejection_reason }}
                 </p>
                 {% if project.reviewed_by %}
                 <p class="mt-2 text-[11px] text-muted-foreground">
@@ -48,28 +48,28 @@
         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div class="space-y-2">
                 <div class="flex flex-wrap items-center gap-2">
-                    <span class="rounded-md bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                    <c-badge variant="outline" class="border-primary/30 bg-primary/10 text-primary">
                         {{ project.get_category_display }}
-                    </span>
-                    <span class="rounded-md bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">
+                    </c-badge>
+                    <c-badge variant="secondary">
                         🏆 {{ project.hackathon|default:"HackFlow 2026" }}
-                    </span>
+                    </c-badge>
                     {% if project.status == 'accepted' %}
-                        <span class="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-xs font-semibold text-emerald-500">
+                        <c-badge variant="outline" class="border-emerald-500/30 bg-emerald-500/15 text-emerald-500">
                             ✓ Accepted
-                        </span>
+                        </c-badge>
                     {% elif project.status == 'rejected' %}
-                        <span class="rounded-full bg-destructive/15 border border-destructive/30 px-2.5 py-0.5 text-xs font-semibold text-destructive">
+                        <c-badge variant="outline" class="border-destructive/30 bg-destructive/15 text-destructive">
                             ✕ Rejected
-                        </span>
+                        </c-badge>
                     {% elif project.status == 'submitted' %}
-                        <span class="rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-xs font-semibold text-amber-500">
+                        <c-badge variant="outline" class="border-amber-500/30 bg-amber-500/15 text-amber-500">
                             ⏳ Submitted (pending review)
-                        </span>
+                        </c-badge>
                     {% else %}
-                        <span class="rounded-full border border-border px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                            Status : {{ project.get_status_display }}
-                        </span>
+                        <c-badge variant="outline" class="text-muted-foreground">
+                            Status: {{ project.get_status_display }}
+                        </c-badge>
                     {% endif %}
                 </div>
                 <h1 class="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
@@ -97,56 +97,58 @@
                         {% csrf_token %}
                         <input type="hidden" name="decision" value="accept">
                         <input type="hidden" name="next" value="{{ request.path }}">
-                        <button type="submit" class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 transition shadow-xs">
+                        <c-button type="submit" size="sm" class="bg-emerald-600 text-white hover:bg-emerald-500">
                             ✓ Accept Project
-                        </button>
+                        </c-button>
                     </form>
                     <!-- Action Organizer/Admin : Reject with reason -->
-                    <button
+                    <c-button
                         type="button"
+                        variant="destructive"
+                        size="sm"
                         onclick="document.getElementById('reject-detail-box').classList.toggle('hidden')"
-                        class="rounded-lg bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90 transition shadow-xs"
-                    >
+                        aria-label="Reject project with reason">
                         ✕ Reject Project
-                    </button>
+                    </c-button>
                 {% endif %}
 
                 {% if can_submit %}
                     <!-- Action Team Member : Submit or Resubmit project -->
                     <form method="post" action="{% url 'projects:project_submit' project.slug %}" class="inline" onsubmit='return confirm("{% if project.status == "rejected" %}Resubmit your project for review by the organizers?{% else %}Submit your project for review by the organizers?{% endif %}");'>
                         {% csrf_token %}
-                        <button type="submit" class="rounded-lg bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition shadow-xs" aria-label="{% if project.status == 'rejected' %}Resubmit / Soumettre à nouveau{% else %}Submit / Soumettre{% endif %}">
+                        <c-button type="submit" size="sm" aria-label="{% if project.status == 'rejected' %}Resubmit project{% else %}Submit project{% endif %}">
                             {% if project.status == 'rejected' %}
-                                <span class="sr-only">Soumettre à nouveau</span>🚀 Resubmit Project
+                                🚀 Resubmit Project
                             {% else %}
-                                <span class="sr-only">Soumettre</span>🚀 Submit Project
+                                🚀 Submit Project
                             {% endif %}
-                        </button>
+                        </c-button>
                     </form>
                 {% endif %}
 
                 {% if can_edit %}
-                    <a href="{% url 'projects:project_update' project.slug %}" class="rounded-lg border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground hover:bg-secondary/80" aria-label="Edit / Modifier">
-                        <span class="sr-only">Modifier</span>✏️ Edit
-                    </a>
+                    <c-button_link href="{% url 'projects:project_update' project.slug %}" variant="secondary" size="sm">
+                        ✏️ Edit
+                    </c-button_link>
                 {% endif %}
 
                 {% if can_run_ai %}
-                <!-- Action AI : Evaluate with Gemini -->
-                <button
+                <!-- Action AI : Evaluate with Groq -->
+                <c-button
                     type="button"
                     onclick="runAIEvaluation()"
                     id="btn-run-ai"
-                    class="rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:from-purple-500 hover:to-indigo-500 transition shadow-sm inline-flex items-center gap-1.5"
+                    size="sm"
+                    class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-500 hover:to-indigo-500"
                 >
-                    <span id="ai-eval-icon">✨</span> <span class="sr-only">Évaluer avec l'IA</span>Evaluate with AI
-                </button>
+                    <span id="ai-eval-icon">✨</span> Evaluate with AI
+                </c-button>
                 {% endif %}
 
                 {% if can_delete %}
-                    <a href="{% url 'projects:project_delete' project.slug %}" class="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20" aria-label="Delete / Supprimer">
-                        <span class="sr-only">Supprimer</span>🗑️ Delete
-                    </a>
+                    <c-button_link href="{% url 'projects:project_delete' project.slug %}" variant="outline" size="sm" class="border-destructive/20 bg-destructive/10 text-destructive hover:bg-destructive/20">
+                        🗑️ Delete
+                    </c-button_link>
                 {% endif %}
             </div>
         </div>
@@ -162,20 +164,19 @@
                     {% csrf_token %}
                     <input type="hidden" name="decision" value="reject">
                     <input type="hidden" name="next" value="{{ request.path }}">
-                    <textarea
+                    <c-textarea
                         name="rejection_reason"
                         rows="3"
-                        required
                         placeholder="Clearly state the reason for rejection..."
-                        class="w-full rounded-md border border-input bg-background p-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-destructive"
-                    ></textarea>
+                        class="p-2.5 text-xs focus-visible:ring-destructive"
+                    ></c-textarea>
                     <div class="flex justify-end gap-2">
-                        <button type="button" onclick="document.getElementById('reject-detail-box').classList.add('hidden')" class="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground">
+                        <c-button type="button" variant="outline" size="sm" onclick="document.getElementById('reject-detail-box').classList.add('hidden')" aria-label="Cancel rejection">
                             Cancel
-                        </button>
-                        <button type="submit" class="rounded-md bg-destructive px-3.5 py-1.5 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90">
+                        </c-button>
+                        <c-button type="submit" variant="destructive" size="sm">
                             Confirm Rejection
-                        </button>
+                        </c-button>
                     </div>
                 </form>
             </div>
@@ -185,35 +186,35 @@
         <!-- Links: Demo / GitHub / Video -->
         <div class="mt-6 flex flex-wrap items-center gap-3 border-t border-border/50 pt-4">
             {% if project.repository_url %}
-                <a href="{{ project.repository_url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition">
+                <c-button_link href="{{ project.repository_url }}" target="_blank" rel="noopener noreferrer" variant="outline" size="sm">
                     💻 GitHub Repo
-                </a>
+                </c-button_link>
             {% endif %}
             {% if project.demo_url %}
-                <a href="{{ project.demo_url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition">
+                <c-button_link href="{{ project.demo_url }}" target="_blank" rel="noopener noreferrer" size="sm">
                     🚀 Live Demo
-                </a>
+                </c-button_link>
             {% endif %}
             {% if project.video_url %}
-                <a href="{{ project.video_url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition">
+                <c-button_link href="{{ project.video_url }}" target="_blank" rel="noopener noreferrer" variant="outline" size="sm">
                     🎥 Pitch Video
-                </a>
+                </c-button_link>
             {% endif %}
         </div>
     </div>
 
     <!-- Content: Description & Team -->
     <div class="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <!-- Left Column: Description, Mentor Advice, AI, History -->
+        <!-- Left Column: Description, Mentor Guidance, AI, History -->
         <div class="lg:col-span-2 space-y-6">
             {% if can_run_ai %}
-            <!-- AI Evaluation Widget (Gemini) -->
+            <!-- AI Evaluation Widget (Groq) -->
             <div id="ai-evaluation-container" class="hidden rounded-xl border border-purple-500/30 bg-purple-950/10 backdrop-blur-xs p-6 shadow-md transition-all">
                 <div class="flex items-center justify-between border-b border-purple-500/20 pb-3">
                     <div class="flex items-center gap-2">
                         <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-500/20 text-base">✨</span>
                         <div>
-                            <h3 class="text-sm font-bold text-foreground"><span class="sr-only">Évaluation IA du Projet</span>AI Project Evaluation</h3>
+                            <h3 class="text-sm font-bold text-foreground">AI Project Evaluation</h3>
                             <p class="text-[11px] text-muted-foreground" id="ai-eval-source">Intelligent analysis</p>
                         </div>
                     </div>
@@ -224,7 +225,7 @@
                 <div id="ai-loading-state" class="py-8 text-center">
                     <div class="inline-flex items-center gap-2 text-xs text-purple-600 dark:text-purple-400 font-medium">
                         <svg class="animate-spin h-4 w-4 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
-                        AI analysis in progress with Gemini...
+                        AI analysis in progress with Groq...
                     </div>
                 </div>
 
@@ -259,20 +260,20 @@
                 </div>
             </div>
 
-            <!-- Mentor Advice Section -->
+            <!-- Mentor Guidance Section -->
             {% if can_view_mentor_advice %}
             <div id="mentor-advices-section" class="rounded-xl border border-indigo-500/30 bg-card p-6 shadow-sm space-y-4">
                 <div class="flex items-center justify-between border-b border-border/50 pb-3">
                     <div class="flex items-center gap-2">
                         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-500 font-bold text-base">💡</span>
                         <div>
-                            <h3 class="text-sm font-bold text-foreground"><span class="sr-only">Conseils du mentor</span>Mentor Advice</h3>
+                            <h3 class="text-sm font-bold text-foreground">Mentor Advice</h3>
                             <p class="text-[11px] text-muted-foreground">Mentorship & educational recommendations space</p>
                         </div>
                     </div>
-                    <span class="rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-xs font-semibold text-indigo-500">
+                    <c-badge variant="outline" class="border-indigo-500/20 bg-indigo-500/10 text-indigo-500">
                         {{ mentor_advices|length }} advice{{ mentor_advices|length|pluralize }}
-                    </span>
+                    </c-badge>
                 </div>
 
                 {% if can_add_mentor_advice %}
@@ -280,26 +281,26 @@
                 <form method="post" action="{% url 'projects:project_add_mentor_advice' project.slug %}" class="space-y-3 pt-1">
                     {% csrf_token %}
                     <div>
-                        <label for="id_texte" class="block text-xs font-medium text-foreground mb-1.5">
+                        <c-form.label for="id_texte" class="block text-xs font-medium text-foreground mb-1.5">
                             Write advice for the team:
-                        </label>
-                        <textarea
+                        </c-form.label>
+                        <c-textarea
                             id="id_texte"
                             name="texte"
                             rows="3"
-                            required
                             placeholder="Share your feedback, technical recommendations, or improvement areas for the team..."
-                            class="flex min-h-[90px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
-                        ></textarea>
+                            class="min-h-[90px] focus-visible:ring-indigo-500"
+                        ></c-textarea>
                     </div>
                     <div class="flex justify-end">
-                        <button
+                        <c-button
                             type="submit"
                             id="btn-submit-mentor-advice"
-                            class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500 transition shadow-sm"
+                            size="sm"
+                            class="bg-indigo-600 text-white hover:bg-indigo-500"
                         >
-                            <span>💬</span> <span class="sr-only">Envoyer le conseil</span>Send Advice
-                        </button>
+                            <span>💬</span> Send Advice
+                        </c-button>
                     </div>
                 </form>
                 {% endif %}
@@ -312,7 +313,7 @@
                             <div class="flex items-center justify-between text-muted-foreground">
                                 <span class="font-semibold text-foreground flex items-center gap-1.5">
                                     <span class="text-indigo-400">👤</span>
-                                    Mentor : <strong>{{ conseil.mentor.get_full_name|default:conseil.mentor.username }}</strong>
+                                    Mentor: <strong>{{ conseil.mentor.get_full_name|default:conseil.mentor.username }}</strong>
                                 </span>
                                 <span class="text-[11px] font-mono text-muted-foreground whitespace-nowrap">
                                     {{ conseil.date|date:"d M Y at H:i" }}
@@ -336,7 +337,7 @@
             {% if history %}
             <div class="rounded-xl border border-border bg-card p-6 shadow-sm">
                 <h3 class="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
-                    <span class="sr-only">Historique des décisions et soumissions</span>&#128220; Decision &amp; Submission History
+                    &#128220; Decision &amp; Submission History
                 </h3>
                 <div class="space-y-3">
                     {% for entry in history %}
@@ -346,7 +347,7 @@
                                 {% if entry.action == "submitted" %}
                                     <span class="text-primary">&#128640;</span> Project submitted by <strong>{{ entry.acteur.get_username }}</strong>
                                 {% elif entry.action == "soumis_a_nouveau" %}
-                                    <span class="text-amber-500">&#128640;</span> <span class="sr-only">Projet soumis à nouveau par</span>Project resubmitted by <strong>{{ entry.acteur.get_username }}</strong>
+                                    <span class="text-amber-500">&#128640;</span> Project resubmitted by <strong>{{ entry.acteur.get_username }}</strong>
                                 {% elif entry.action == "accepte" %}
                                     <span class="text-emerald-500">&#10003;</span> Accepted by <strong>{{ entry.acteur.get_username }}</strong>
                                 {% elif entry.action == "refuse" %}
@@ -362,12 +363,12 @@
                                 {% endif %}
                             </span>
                             <span class="text-[11px] font-mono text-muted-foreground whitespace-nowrap">
-                                {{ entry.date|date:"d/m/Y H:i" }}
+                                {{ entry.date|date:"M d, Y H:i" }}
                             </span>
                         </div>
                         {% if entry.commentaire %}
                         <div class="mt-2 rounded bg-destructive/10 border border-destructive/20 p-2 text-destructive">
-                            <strong class="font-semibold">Reason :</strong> {{ entry.commentaire }}
+                            <strong class="font-semibold">Reason:</strong> {{ entry.commentaire }}
                         </div>
                         {% endif %}
                     </div>
@@ -383,9 +384,9 @@
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-base font-semibold text-foreground">Team ({{ memberships|length }})</h2>
                     {% if can_manage_members %}
-                        <span class="rounded bg-secondary px-2 py-0.5 text-[11px] text-muted-foreground">Collaborators</span>
+                        <c-badge variant="secondary" class="text-[11px] text-muted-foreground">Collaborators</c-badge>
                     {% else %}
-                        <span class="rounded bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[11px] text-amber-500 font-medium"><span class="sr-only">🔒 Équipe verrouillée</span>🔒 Team locked</span>
+                        <c-badge variant="outline" class="border-amber-500/20 bg-amber-500/10 text-[11px] font-medium text-amber-500">🔒 Team locked</c-badge>
                     {% endif %}
                 </div>
 
@@ -405,16 +406,14 @@
                             {% if can_manage_members and m.user != project.created_by %}
                                 <form method="post" action="{% url 'projects:member_remove' project.slug m.id %}" onsubmit="return confirm('Remove this member?');">
                                     {% csrf_token %}
-                                    <button type="submit" class="text-xs text-destructive hover:underline" aria-label="Remove / Retirer">
-                                        <span class="sr-only">Retirer</span>Remove
-                                    </button>
+                                    <c-button type="submit" variant="link" size="xs" class="text-destructive">Remove</c-button>
                                 </form>
                             {% elif can_manage_members and m.user == request.user and m.user != project.created_by %}
                                 <form method="post" action="{% url 'projects:member_remove' project.slug m.id %}" onsubmit="return confirm('Leave the project?');">
                                     {% csrf_token %}
-                                    <button type="submit" class="text-xs text-muted-foreground hover:text-destructive">
+                                    <c-button type="submit" variant="ghost" size="xs" class="text-muted-foreground hover:text-destructive">
                                         Leave
-                                    </button>
+                                    </c-button>
                                 </form>
                             {% endif %}
                         </div>
@@ -426,23 +425,23 @@
                 <!-- Add Member Form (Visible only by Project Lead when draft/rejected) -->
                 {% if can_manage_members and member_form %}
                     <div class="mt-6 border-t border-border/50 pt-4">
-                        <h3 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3" aria-label="Add Student / Ajouter un étudiant">
-                            <span class="sr-only">Ajouter un étudiant</span>Add Student
+                        <h3 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3" aria-label="Add student">
+                            Add Student
                         </h3>
                         {% if member_form.fields.user.queryset.exists %}
                             <form method="post" action="{% url 'projects:member_add' project.slug %}" class="space-y-3">
                                 {% csrf_token %}
                                 <div>
-                                    <label class="block text-xs text-muted-foreground mb-1">Student</label>
+                                    <c-form.label for="{{ member_form.user.id_for_label }}" class="block text-xs text-muted-foreground mb-1">Student</c-form.label>
                                     {{ member_form.user }}
                                 </div>
                                 <div>
-                                    <label class="block text-xs text-muted-foreground mb-1">Role</label>
+                                    <c-form.label for="{{ member_form.role.id_for_label }}" class="block text-xs text-muted-foreground mb-1">Role</c-form.label>
                                     {{ member_form.role }}
                                 </div>
-                                <button type="submit" class="w-full rounded-md bg-secondary py-1.5 text-xs font-medium text-secondary-foreground hover:bg-secondary/80">
+                                <c-button type="submit" variant="secondary" size="sm" class="w-full">
                                     + Add to Team
-                                </button>
+                                </c-button>
                             </form>
                         {% else %}
                             <p class="text-xs text-muted-foreground py-1">
@@ -494,6 +493,11 @@ function runAIEvaluation() {
     const btn = document.getElementById("btn-run-ai");
     const icon = document.getElementById("ai-eval-icon");
 
+    // Async mode (Celery/Redis): the endpoint answers 202 immediately and we
+    // poll the task status. Sync mode returns the payload directly.
+    const POLL_INTERVAL_MS = 1000;
+    const MAX_POLLS = 60;
+
     container.classList.remove("hidden");
     container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     loadingState.classList.remove("hidden");
@@ -502,20 +506,22 @@ function runAIEvaluation() {
     btn.disabled = true;
     icon.textContent = "⏳";
 
-    fetch("{% url 'projects:ai_analyze' project.slug %}", {
-        method: "POST",
-        headers: {
-            "X-CSRFToken": "{{ csrf_token }}",
-            "Content-Type": "application/json"
-        }
-    })
-    .then(response => response.json().catch(() => ({})).then(payload => {
-        if (!response.ok) {
-            throw new Error(payload.error || ("HTTP error " + response.status));
-        }
-        return payload;
-    }))
-    .then(data => {
+    function resetButton() {
+        btn.disabled = false;
+        icon.textContent = "✨";
+    }
+
+    function showError(message) {
+        loadingState.classList.add("hidden");
+        contentState.classList.remove("hidden");
+        scoreBadge.textContent = "⚠️ Error";
+        commentEl.textContent = message || "Unable to evaluate this project at the moment. Please try again later.";
+        strengthsEl.textContent = "";
+        weaknessesEl.textContent = "";
+        resetButton();
+    }
+
+    function showResult(data) {
         loadingState.classList.add("hidden");
         contentState.classList.remove("hidden");
 
@@ -539,19 +545,63 @@ function runAIEvaluation() {
         renderAiList(strengthsEl, data.strengths, "text-emerald-500", "None specified.");
         renderAiList(weaknessesEl, data.weaknesses, "text-amber-500", "None specified.");
 
-        btn.disabled = false;
-        icon.textContent = "✨";
+        resetButton();
+    }
+
+    function pollAiTask(statusUrl, remaining) {
+        fetch(statusUrl, { headers: { "Accept": "application/json" } })
+            .then(response => response.json().catch(() => ({})).then(payload => {
+                if (response.status === 404) {
+                    // Unknown/expired id: retry briefly in case of write lag,
+                    // then surface the error.
+                    if (remaining > MAX_POLLS - 3) {
+                        setTimeout(() => pollAiTask(statusUrl, remaining - 1), POLL_INTERVAL_MS);
+                        return;
+                    }
+                    throw new Error(payload.error || "The AI evaluation expired. Please try again.");
+                }
+                if (!response.ok) {
+                    throw new Error(payload.error || ("HTTP error " + response.status));
+                }
+                if (payload.status === "done") {
+                    showResult(payload);
+                    return;
+                }
+                if (payload.status === "failed") {
+                    throw new Error(payload.error || "The AI evaluation failed. Please try again.");
+                }
+                if (remaining <= 1) {
+                    throw new Error("The AI evaluation is taking too long. Please try again.");
+                }
+                setTimeout(() => pollAiTask(statusUrl, remaining - 1), POLL_INTERVAL_MS);
+            }))
+            .catch(error => {
+                console.error("AI Error:", error);
+                showError(error.message);
+            });
+    }
+
+    fetch("{% url 'projects:ai_analyze' project.slug %}", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": "{{ csrf_token }}",
+            "Content-Type": "application/json"
+        }
     })
+    .then(response => response.json().catch(() => ({})).then(payload => {
+        if (!response.ok && response.status !== 202) {
+            throw new Error(payload.error || ("HTTP error " + response.status));
+        }
+        if (response.status === 202 && payload.status_url) {
+            // Queued on the Celery worker — poll until the task completes.
+            pollAiTask(payload.status_url, MAX_POLLS);
+            return;
+        }
+        showResult(payload);
+    }))
     .catch(error => {
         console.error("AI Error:", error);
-        loadingState.classList.add("hidden");
-        contentState.classList.remove("hidden");
-        scoreBadge.textContent = "⚠️ Error";
-        commentEl.textContent = error.message || "Unable to evaluate this project at the moment. Please try again later.";
-        strengthsEl.textContent = "";
-        weaknessesEl.textContent = "";
-        btn.disabled = false;
-        icon.textContent = "✨";
+        showError(error.message);
     });
 }
 </script>

@@ -33,7 +33,6 @@
                         name="{{ form.password.name }}"
                         id="{{ form.password.id_for_label }}"
                         placeholder="Enter your password"
-                        {{ form.password.field.required|yesno:'required,' }}
                         class="{{ form.password.errors|yesno:'border-destructive,' }}"
                     />
                     {% if form.password.errors %}
