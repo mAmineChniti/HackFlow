@@ -25,7 +25,7 @@ class Team(models.Model):
     )
     leader = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
-        related_name="led_teams", verbose_name="Chef d'équipe",
+        related_name="led_teams", verbose_name="Team leader",
     )
     max_members = models.PositiveSmallIntegerField(
         "Nombre max de membres", default=4,
@@ -62,7 +62,7 @@ class TeamMember(models.Model):
     )
     role = models.CharField("Rôle", max_length=10, choices=Role.choices, default=Role.OTHER)
     skills = models.CharField("Compétences", max_length=200, blank=True,
-                              help_text="Séparées par des virgules : python, django, figma")
+                              help_text="Comma-separated: python, django, figma")
     joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -87,7 +87,7 @@ class SkillProfile(models.Model):
     )
     skills = models.CharField(
         "Compétences", max_length=200, blank=True,
-        help_text="Séparées par des virgules : python, django, figma",
+        help_text="Comma-separated: python, django, figma",
     )
     bio = models.TextField("Présentation", blank=True)
     looking_for_team = models.BooleanField("Je cherche une équipe", default=True)

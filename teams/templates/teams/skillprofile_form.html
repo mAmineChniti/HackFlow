@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Mon profil de compétences — HackFlow{% endblock %}
+{% block title %}My skills profile — HackFlow{% endblock %}
 
 {% block content %}
 <section class="container-page py-10" aria-labelledby="skills-title">
-    <a href="{% url 'teams:list' %}" class="text-sm text-muted-foreground hover:underline">← Toutes les équipes</a>
-    <h1 id="skills-title" class="mt-3 text-3xl font-semibold tracking-tight">Mon profil de compétences</h1>
+    <a href="{% url 'teams:list' %}" class="text-sm text-muted-foreground hover:underline">← All teams</a>
+    <h1 id="skills-title" class="mt-3 text-3xl font-semibold tracking-tight">My skills profile</h1>
     <p class="mt-2 max-w-xl text-sm text-muted-foreground">
-        Ces informations alimentent l'assistant IA : un profil complet vous rend visible dans les suggestions des chefs d'équipe.
+        This information powers the AI assistant: a complete profile makes you visible in team leaders' suggestions.
     </p>
 
     <form method="post" class="mt-6 max-w-xl space-y-4" novalidate>
@@ -21,8 +21,8 @@
         </div>
         {% endfor %}
         <div class="flex gap-2">
-            <c-button type="submit">Enregistrer</c-button>
-            <a href="{% url 'teams:list' %}" class="inline-flex h-9 items-center rounded-md border border-input px-4 text-sm font-medium hover:bg-accent">Annuler</a>
+            <c-button type="submit">Save</c-button>
+            <a href="{% url 'teams:list' %}" class="inline-flex h-9 items-center rounded-md border border-input px-4 text-sm font-medium hover:bg-accent">Cancel</a>
         </div>
     </form>
 </section>

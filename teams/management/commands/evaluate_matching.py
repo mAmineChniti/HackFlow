@@ -125,11 +125,11 @@ def evaluate():
 
 
 class Command(BaseCommand):
-    help = "Évalue le matching (Precision@3, Recall@3, F1) sur des scénarios annotés."
+    help = "Evaluate matching (Precision@3, Recall@3, F1) on annotated scenarios."
 
     def handle(self, *args, **options):
         result = evaluate()
-        self.stdout.write("Scénario".ljust(38) + "P@3    R@3    F1     Hasard")
+        self.stdout.write("Scenario".ljust(38) + "P@3    R@3    F1     Random")
         for r in result["rows"]:
             self.stdout.write(
                 r["name"].ljust(38)

@@ -11,7 +11,7 @@ INVENTED_SKILLS = ["java", "kubernetes", "docker", "photoshop", "c++", "angular"
 
 
 class Command(BaseCommand):
-    help = "Mesure le temps de réponse réel de Gemini et contrôle la qualité du texte."
+    help = "Measure real response time of Groq and check text quality."
 
     def add_arguments(self, parser):
         parser.add_argument("--runs", type=int, default=5)
@@ -39,7 +39,7 @@ class Command(BaseCommand):
                 text = ai.generate_text(prompt)
             except ai.AIUnavailable as exc:
                 failures += 1
-                self.stdout.write(f"run {i}: ÉCHEC ({exc})")
+                self.stdout.write(f"run {i}: FAILED ({exc})")
                 continue
             elapsed = time.perf_counter() - start
             durations.append(elapsed)
@@ -57,12 +57,12 @@ class Command(BaseCommand):
         self.stdout.write("-" * 60)
         if durations:
             self.stdout.write(
-                f"Temps de réponse Gemini : moyenne={statistics.mean(durations):.2f}s  "
-                f"médiane={statistics.median(durations):.2f}s  min={min(durations):.2f}s  max={max(durations):.2f}s"
+                f"Groq response time: mean={statistics.mean(durations):.2f}s  "
+                f"median={statistics.median(durations):.2f}s  min={min(durations):.2f}s  max={max(durations):.2f}s"
             )
             ok = len(durations)
             self.stdout.write(
                 f"Qualité sur {ok} réponses : candidats cités {mentions_ok}/{ok}, "
                 f"longueur respectée {length_ok}/{ok}, compétences inventées {invented}/{ok}"
             )
-        self.stdout.write(f"Échecs : {failures}/{runs}")
+        self.stdout.write(f"Failures: {failures}/{runs}")

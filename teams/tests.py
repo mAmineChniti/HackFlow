@@ -413,7 +413,7 @@ class AISuggestionTests(BaseTeamTestCase):
             response = self.client.post(self.url)
         data = response.json()
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(data["source"], "gemini")
+        self.assertEqual(data["source"], "groq")
         self.assertEqual(data["explanation"], "Texte IA")
         self.assertEqual(data["suggestions"][0]["username"], "designer")
 
@@ -429,7 +429,7 @@ class AISuggestionTests(BaseTeamTestCase):
 
     def test_missing_api_key_uses_fallback(self):
         self.login(self.leader)
-        with override_settings(GEMINI_API_KEY=""):
+        with override_settings(GROQ_API_KEY=""):
             data = self.client.post(self.url).json()
         self.assertEqual(data["source"], "fallback")
 
@@ -751,10 +751,10 @@ class SeedDemoTests(TestCase):
 
         from django.core.management import call_command
 
-        call_command("seed_demo", stdout=StringIO())
+        call_command("seed_teams_demo", stdout=StringIO())
         teams_count = Team.objects.count()
         invitations_count = Invitation.objects.count()
-        call_command("seed_demo", stdout=StringIO())
+        call_command("seed_teams_demo", stdout=StringIO())
         self.assertEqual(Team.objects.count(), teams_count)
         self.assertEqual(Invitation.objects.count(), invitations_count)
         self.assertEqual(Team.objects.get(name="Alpha Team").members.count(), 2)

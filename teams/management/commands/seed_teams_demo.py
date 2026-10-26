@@ -22,7 +22,7 @@ DEMO_USERS = [
 
 
 class Command(BaseCommand):
-    help = "Crée des données de démonstration (comptes demo_*, équipe, invitation)."
+    help = "Create demo data (demo_* accounts, team, invitation)."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -38,7 +38,7 @@ class Command(BaseCommand):
         if options["reset"]:
             User.objects.filter(username__startswith="demo_").delete()
             Hackathon.objects.filter(title=HACKATHON_TITLE).delete()
-            self.stdout.write("Données de démo supprimées.")
+            self.stdout.write("Demo data removed.")
 
         today = timezone.localdate()
         hackathon, _ = Hackathon.objects.get_or_create(
@@ -96,7 +96,7 @@ class Command(BaseCommand):
         except services.TeamError:
             pass  # déjà invité ou déjà membre : rien à refaire
 
-        self.stdout.write(self.style.SUCCESS("Données de démo prêtes."))
-        self.stdout.write(f"Mot de passe de tous les comptes : {PASSWORD}")
-        self.stdout.write("Chef d'équipe : demo_chef  |  Invité en attente : demo_design")
-        self.stdout.write(f"Équipe : {TEAM_NAME} ({hackathon.title})")
+        self.stdout.write(self.style.SUCCESS("Demo data ready."))
+        self.stdout.write(f"Password for all accounts: {PASSWORD}")
+        self.stdout.write("Team leader: demo_chef  |  Pending invitee: demo_design")
+        self.stdout.write(f"Team: {TEAM_NAME} ({hackathon.title})")
