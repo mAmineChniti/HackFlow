@@ -744,3 +744,17 @@ class SuggestionInviteFlowTests(BaseTeamTestCase):
             )
             self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(Invitation.objects.filter(status="pending").count(), len(usernames))
+
+class SeedDemoTests(TestCase):
+    def test_seed_demo_is_idempotent(self):
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        call_command("seed_demo", stdout=StringIO())
+        teams_count = Team.objects.count()
+        invitations_count = Invitation.objects.count()
+        call_command("seed_demo", stdout=StringIO())
+        self.assertEqual(Team.objects.count(), teams_count)
+        self.assertEqual(Invitation.objects.count(), invitations_count)
+        self.assertEqual(Team.objects.get(name="Alpha Team").members.count(), 2)

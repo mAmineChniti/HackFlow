@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
-from django.http import HttpResponseRedirect, JsonResponse, Http404
+from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views.decorators.http import require_POST
@@ -12,7 +12,7 @@ from django.views.generic import CreateView, DeleteView, DetailView, ListView, U
 
 from . import ai, services
 from .forms import JoinTeamForm, SkillProfileForm, TeamForm
-from .models import Hackathon, SkillProfile, Team, Invitation
+from .models import Hackathon, Invitation, SkillProfile, Team
 
 
 class LeaderRequiredMixin(UserPassesTestMixin):
@@ -197,7 +197,7 @@ def send_invitation(request, pk):
         if ajax:
             return JsonResponse({"ok": True, "message": text})
         messages.success(request, text)
-    return redirect(f"/teams/{team.pk}/")
+    return redirect("teams:detail", pk=team.pk)
 
 
 @login_required
@@ -235,9 +235,11 @@ def respond_invitation(request, pk, action):
         raise Http404
     handler, success = handlers[action]
     try:
-        handler(invitation=invitation, user=request.user)
+        invitation = handler(invitation=invitation, user=request.user)
     except services.TeamError as exc:
         messages.error(request, str(exc))
     else:
         messages.success(request, success)
+        if action == "accept":
+            return redirect("teams:detail", pk=invitation.team_id)
     return redirect("teams:my_invitations")
