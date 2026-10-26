@@ -53,11 +53,18 @@ for attempt in range(1, 61):
         time.sleep(1)
 PY
 
-# Migrations/static collection belong to the web process. Workers set
-# RUN_MIGRATIONS=0 and RUN_COLLECTSTATIC=0 so several containers never race
-# over the same schema or static volume during startup.
-if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then
-    python manage.py migrate --noinput
+# Optional: reset database schema (use on first deploy after migration changes)
+if [ "${RESET_DB:-0}" = "1" ]; then
+    echo "Resetting database schema..."
+    python manage.py flush --noinput
+    python manage.py migrate --noinput --fake-initial
+else
+    # Migrations/static collection belong to the web process. Workers set
+    # RUN_MIGRATIONS=0 and RUN_COLLECTSTATIC=0 so several containers never race
+    # over the same schema or static volume during startup.
+    if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then
+        python manage.py migrate --noinput
+    fi
 fi
 
 if [ "${RUN_COLLECTSTATIC:-1}" = "1" ]; then
@@ -66,9 +73,7 @@ fi
 
 # Demo data is on by default because this is a demo project. It runs only in
 # the web container (workers set RUN_MIGRATIONS=0) and is idempotent, so it is
-# safe on every restart. The command requires DEMO_ADMIN_PASSWORD and
-# DEMO_PASSWORD; without them startup fails loudly instead of creating accounts
-# with unknown passwords. Set SEED_DEMO_DATA=False for an empty database.
+# safe on every restart. Set SEED_DEMO_DATA=False for an empty database.
 if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then
     case "${SEED_DEMO_DATA:-1}" in
         1|true|True|TRUE|yes|Yes|YES|on|On|ON)

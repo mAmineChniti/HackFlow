@@ -86,6 +86,10 @@ services:
       # seeder runs after migrate/collectstatic in the web container. This
       # project is a demo, so production seeding stays on by default.
       # All demo users share password: hackflow2026
+      # RESET_DB=1 forces schema reset on first deploy after migration changes.
+      # Remove after first successful deploy.
+      - key: RESET_DB
+        value: "1"
       - key: SPONSORS_USE_PROFILE_ROLE
         value: "True"
       - key: SEED_DEMO_DATA
