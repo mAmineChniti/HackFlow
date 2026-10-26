@@ -35,10 +35,11 @@
                 <div>
                     <h3 class="font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">Platform</h3>
                     <ul class="mt-4 space-y-3 text-sm">
-                        <li><a href="#hackathons" class="text-muted-foreground hover:text-foreground">Hackathons</a></li>
-                        <li><a href="#challenges" class="text-muted-foreground hover:text-foreground">Challenges</a></li>
-                        <li><a href="#leaderboard" class="text-muted-foreground hover:text-foreground">Leaderboard</a></li>
-                        <li><a href="#faq" class="text-muted-foreground hover:text-foreground">FAQ</a></li>
+                        <li><a href="{% url 'hackathons:list' %}" class="text-muted-foreground hover:text-foreground">Hackathons</a></li>
+                        <li><a href="{% url 'projects:project_list' %}" class="text-muted-foreground hover:text-foreground">Projects</a></li>
+                        <li><a href="{% url 'sponsors:public_list' %}" class="text-muted-foreground hover:text-foreground">Sponsors</a></li>
+                        <li><a href="{% url 'core:home' %}#challenges" class="text-muted-foreground hover:text-foreground">Challenges</a></li>
+                        <li><a href="{% url 'core:home' %}#leaderboard" class="text-muted-foreground hover:text-foreground">Leaderboard</a></li>
                     </ul>
                 </div>
                 <div>

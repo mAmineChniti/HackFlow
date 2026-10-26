@@ -33,14 +33,16 @@ def get_user_roles(user) -> set[str]:
     if not getattr(user, "is_authenticated", False):
         return {"visitor"}
 
-    # Use profile role when SPONSORS_USE_PROFILE_ROLE is enabled.
-    if getattr(settings, "SPONSORS_USE_PROFILE_ROLE", False):
-        profile = getattr(user, "profile", None)
-        profile_role = getattr(profile, "role", None)
-        if profile_role:
-            normalized_role = str(profile_role).strip().lower()
-            if normalized_role:
-                return {normalized_role}
+    if getattr(user, "is_superuser", False):
+        return {"admin"}
+
+    # Use profile role if available
+    profile = getattr(user, "profile", None)
+    profile_role = getattr(profile, "role", None)
+    if profile_role:
+        normalized_role = str(profile_role).strip().lower()
+        if normalized_role in ROLE_PERMISSIONS:
+            return {normalized_role}
 
     # Enable SPONSORS_USE_GROUP_ROLES when Django groups become the role source.
     if getattr(settings, "SPONSORS_USE_GROUP_ROLES", False):
@@ -55,8 +57,6 @@ def get_user_roles(user) -> set[str]:
         if normalized_roles:
             return normalized_roles
 
-    if getattr(user, "is_superuser", False):
-        return {"admin"}
     if getattr(user, "is_staff", False):
         return {"organizer"}
     return {"student"}

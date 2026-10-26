@@ -28,7 +28,13 @@
                 <!-- Sponsor & Hackathon Selection -->
                 <c-form.fieldset class="grid gap-4 sm:grid-cols-2">
                     <c-form.field>
-                        <c-form.label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Sponsor company <span class="text-destructive">*</span></c-form.label>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <c-form.label class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sponsor company <span class="text-destructive">*</span></c-form.label>
+                            <a href="{% url 'sponsors:sponsor_create' %}" class="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline" title="Register a company that doesn't exist yet">
+                                <c-lucideicon.plus class="size-3" />
+                                Add new sponsor
+                            </a>
+                        </div>
                         <c-native_select name="{{ form.sponsor.html_name }}" id="{{ form.sponsor.id_for_label }}" class="w-full">
                             {% for value, label in form.sponsor.field.choices %}
                             <option value="{{ value }}" {% if form.sponsor.value == value %}selected{% endif %}>{{ label }}</option>
@@ -37,6 +43,7 @@
                         {% if form.sponsor.errors %}
                         <c-form.error>{{ form.sponsor.errors.0 }}</c-form.error>
                         {% endif %}
+                        <c-form.description>Company not in list? Click "Add new sponsor" above.</c-form.description>
                     </c-form.field>
 
                     <c-form.field>
