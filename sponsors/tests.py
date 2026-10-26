@@ -17,6 +17,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
+from accounts.models import Profile
 from hackathons.models import Hackathon
 from sponsors.ai import (
     generate_prospecting_email,
@@ -179,6 +180,7 @@ class SponsorModelAndViewsTest(TestCase):
             password="password123",
             email="student@esprit.tn",
         )
+        Profile.objects.get_or_create(user=self.regular_user)
         # Utilisateur staff / organisateur
         self.staff_user = User.objects.create_user(
             username="staff_user",
@@ -186,6 +188,9 @@ class SponsorModelAndViewsTest(TestCase):
             email="staff@esprit.tn",
             is_staff=True,
         )
+        profile, _ = Profile.objects.get_or_create(user=self.staff_user)
+        profile.role = Profile.Role.ORGANIZER
+        profile.save()
 
         # Hackathon de test
         self.hackathon = make_hackathon(
