@@ -82,9 +82,7 @@ class SecurityConfigurationTests(TestCase):
         self.assertIn("django.middleware.csrf.CsrfViewMiddleware", settings.MIDDLEWARE)
 
     def test_security_middleware_runs_first(self):
-        self.assertEqual(
-            settings.MIDDLEWARE[0], "django.middleware.security.SecurityMiddleware"
-        )
+        self.assertEqual(settings.MIDDLEWARE[0], "django.middleware.security.SecurityMiddleware")
 
     def test_clickjacking_protection_is_enabled(self):
         self.assertIn(
@@ -114,8 +112,7 @@ class SecurityConfigurationTests(TestCase):
             validator_names,
         )
         self.assertIn(
-            "django.contrib.auth.password_validation."
-            "UserAttributeSimilarityValidator",
+            "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
             validator_names,
         )
 
@@ -211,7 +208,9 @@ class AccessControlMatrixTests(TestCase):
         self.student.profile.save()
 
         self.organizer = User.objects.create_user(
-            username="organizer", email="organizer@example.com", password=PASSWORD,
+            username="organizer",
+            email="organizer@example.com",
+            password=PASSWORD,
             is_staff=True,
         )
         self.organizer.profile.role = Profile.Role.ORGANIZER
@@ -288,9 +287,7 @@ class AccessControlMatrixTests(TestCase):
             status=Project.Status.SUBMITTED,
         )
         self.client.login(username="student", password=PASSWORD)
-        response = self.client.get(
-            reverse("projects:ai_analyze", args=[project.slug])
-        )
+        response = self.client.get(reverse("projects:ai_analyze", args=[project.slug]))
         self.assertEqual(response.status_code, 403)
 
     def test_student_gets_redirected_on_sponsor_management_urls(self):

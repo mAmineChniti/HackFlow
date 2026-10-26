@@ -32,34 +32,19 @@ class SponsorAdminBase(admin.ModelAdmin):
     """Shared sponsor-role and Django-permission gates for these four models."""
 
     def has_module_permission(self, request):
-        return (
-            can_view_confidential(request.user)
-            and super().has_module_permission(request)
-        )
+        return can_view_confidential(request.user) and super().has_module_permission(request)
 
     def has_view_permission(self, request, obj=None):
-        return (
-            can_view_confidential(request.user)
-            and super().has_view_permission(request, obj)
-        )
+        return can_view_confidential(request.user) and super().has_view_permission(request, obj)
 
     def has_add_permission(self, request):
-        return (
-            can_manage_sponsors(request.user)
-            and super().has_add_permission(request)
-        )
+        return can_manage_sponsors(request.user) and super().has_add_permission(request)
 
     def has_change_permission(self, request, obj=None):
-        return (
-            can_manage_sponsors(request.user)
-            and super().has_change_permission(request, obj)
-        )
+        return can_manage_sponsors(request.user) and super().has_change_permission(request, obj)
 
     def has_delete_permission(self, request, obj=None):
-        return (
-            can_delete(request.user)
-            and super().has_delete_permission(request, obj)
-        )
+        return can_delete(request.user) and super().has_delete_permission(request, obj)
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
@@ -80,12 +65,9 @@ class StatusHistoryInline(admin.TabularInline):
         return False
 
     def has_view_permission(self, request, obj=None):
-        return (
-            can_view_confidential(request.user)
-            and (
-                request.user.has_perm("sponsors.view_sponsorship")
-                or request.user.has_perm("sponsors.change_sponsorship")
-            )
+        return can_view_confidential(request.user) and (
+            request.user.has_perm("sponsors.view_sponsorship")
+            or request.user.has_perm("sponsors.change_sponsorship")
         )
 
     def has_change_permission(self, request, obj=None):
@@ -134,18 +116,27 @@ class SponsorAdmin(SponsorAdminBase):
     inlines = (SponsorshipInline,)
 
     fieldsets = (
-        (_("Identity"), {
-            "fields": ("name", "logo", "website", "sector", "description"),
-            "description": _("Public information about the sponsor."),
-        }),
-        (_("Contact"), {
-            "fields": ("contact_name", "contact_email"),
-            "description": _("Confidential contact details for authorized roles only."),
-        }),
-        (_("Metadata"), {
-            "fields": ("created_at", "updated_at"),
-            "classes": ("collapse",),
-        }),
+        (
+            _("Identity"),
+            {
+                "fields": ("name", "logo", "website", "sector", "description"),
+                "description": _("Public information about the sponsor."),
+            },
+        ),
+        (
+            _("Contact"),
+            {
+                "fields": ("contact_name", "contact_email"),
+                "description": _("Confidential contact details for authorized roles only."),
+            },
+        ),
+        (
+            _("Metadata"),
+            {
+                "fields": ("created_at", "updated_at"),
+                "classes": ("collapse",),
+            },
+        ),
     )
 
     @admin.display(description=_("Partnerships"), ordering="sponsorship_count")
@@ -165,16 +156,20 @@ class SponsorAdmin(SponsorAdminBase):
         )
 
     def get_queryset(self, request):
-        return super().get_queryset(request).annotate(
-            sponsorship_count=Count("sponsorships"),
-            confirmed_amount=Coalesce(
-                Sum(
-                    "sponsorships__amount",
-                    filter=Q(sponsorships__status=StatusChoices.CONFIRME),
+        return (
+            super()
+            .get_queryset(request)
+            .annotate(
+                sponsorship_count=Count("sponsorships"),
+                confirmed_amount=Coalesce(
+                    Sum(
+                        "sponsorships__amount",
+                        filter=Q(sponsorships__status=StatusChoices.CONFIRME),
+                    ),
+                    Value(Decimal("0.000")),
+                    output_field=DecimalField(max_digits=15, decimal_places=3),
                 ),
-                Value(Decimal("0.000")),
-                output_field=DecimalField(max_digits=15, decimal_places=3),
-            ),
+            )
         )
 
 
@@ -204,22 +199,34 @@ class SponsorshipAdmin(SponsorAdminBase):
     )
 
     fieldsets = (
-        (_("Identity"), {
-            "fields": ("sponsor", "hackathon"),
-            "description": _("Choose the sponsor and the relevant hackathon."),
-        }),
-        (_("Contract"), {
-            "fields": ("tier", "contribution_type", "amount", "current_status"),
-            "description": _("Change the status using the actions on the list."),
-        }),
-        (_("Internal notes"), {
-            "fields": ("notes",),
-            "description": _("Confidential notes visible only to authorized roles."),
-        }),
-        (_("Metadata"), {
-            "fields": ("created_at", "updated_at"),
-            "classes": ("collapse",),
-        }),
+        (
+            _("Identity"),
+            {
+                "fields": ("sponsor", "hackathon"),
+                "description": _("Choose the sponsor and the relevant hackathon."),
+            },
+        ),
+        (
+            _("Contract"),
+            {
+                "fields": ("tier", "contribution_type", "amount", "current_status"),
+                "description": _("Change the status using the actions on the list."),
+            },
+        ),
+        (
+            _("Internal notes"),
+            {
+                "fields": ("notes",),
+                "description": _("Confidential notes visible only to authorized roles."),
+            },
+        ),
+        (
+            _("Metadata"),
+            {
+                "fields": ("created_at", "updated_at"),
+                "classes": ("collapse",),
+            },
+        ),
     )
 
     def get_queryset(self, request):
@@ -289,11 +296,14 @@ class SponsorshipAdmin(SponsorAdminBase):
     def _apply_status(self, request, queryset, new_status, label):
         changed = 0
         for sponsorship_id in queryset.values_list("pk", flat=True):
-            if change_sponsorship_status(
-                sponsorship_id,
-                new_status,
-                request.user,
-            ) is not None:
+            if (
+                change_sponsorship_status(
+                    sponsorship_id,
+                    new_status,
+                    request.user,
+                )
+                is not None
+            ):
                 changed += 1
         self.message_user(
             request,
@@ -303,9 +313,7 @@ class SponsorshipAdmin(SponsorAdminBase):
 
     @admin.action(description=_("Mark as contacted"))
     def mark_contacted(self, request, queryset):
-        self._apply_status(
-            request, queryset, StatusChoices.CONTACTE, StatusChoices.CONTACTE.label
-        )
+        self._apply_status(request, queryset, StatusChoices.CONTACTE, StatusChoices.CONTACTE.label)
 
     @admin.action(description=_("Mark as negotiating"))
     def mark_negotiation(self, request, queryset):
@@ -318,15 +326,11 @@ class SponsorshipAdmin(SponsorAdminBase):
 
     @admin.action(description=_("Mark as confirmed"))
     def mark_confirmed(self, request, queryset):
-        self._apply_status(
-            request, queryset, StatusChoices.CONFIRME, StatusChoices.CONFIRME.label
-        )
+        self._apply_status(request, queryset, StatusChoices.CONFIRME, StatusChoices.CONFIRME.label)
 
     @admin.action(description=_("Mark as declined"))
     def mark_refused(self, request, queryset):
-        self._apply_status(
-            request, queryset, StatusChoices.REFUSE, StatusChoices.REFUSE.label
-        )
+        self._apply_status(request, queryset, StatusChoices.REFUSE, StatusChoices.REFUSE.label)
 
 
 @admin.register(StatusHistory)
@@ -347,10 +351,14 @@ class StatusHistoryAdmin(SponsorAdminBase):
     )
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related(
-            "sponsorship__sponsor",
-            "sponsorship__hackathon",
-            "changed_by",
+        return (
+            super()
+            .get_queryset(request)
+            .select_related(
+                "sponsorship__sponsor",
+                "sponsorship__hackathon",
+                "changed_by",
+            )
         )
 
     @admin.display(description=_("Status change"))

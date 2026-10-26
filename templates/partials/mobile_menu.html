@@ -35,7 +35,9 @@
         {% endif %}
 
         <nav class="mt-6 flex flex-col gap-1" aria-label="Mobile navigation">
+            <a href="{% url 'teams:list' %}" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Teams</a>
             <a href="{% url 'projects:project_list' %}" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Projects</a>
+
             <a href="{% url 'core:home' %}#hackathons" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Hackathons</a>
             <a href="{% url 'core:home' %}#challenges" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Challenges</a>
             <a href="{% url 'core:home' %}#leaderboard" @click="hideSheet()" class="rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent">Leaderboard</a>
@@ -55,6 +57,12 @@
             <c-button_link href="{% url 'core:home' %}#hackathons" variant="outline" class="w-full" @click="hideSheet()">
                 Start hacking
                 <c-lucideicon.arrow-right />
+            </c-button_link>
+            <c-button_link href="{% url 'teams:skills' %}" variant="outline" class="w-full" @click="hideSheet()">
+                My skills profile
+            </c-button_link>
+            <c-button_link href="{% url 'teams:my_invitations' %}" variant="outline" class="w-full" @click="hideSheet()">
+                My invitations{% if pending_invitations_count %} ({{ pending_invitations_count }}){% endif %}
             </c-button_link>
             <c-button_link href="{% url 'accounts:profile' %}" variant="outline" class="w-full" @click="hideSheet()">
                 Account settings

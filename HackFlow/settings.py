@@ -92,6 +92,7 @@ INSTALLED_APPS = [
     # Local apps
     "accounts",
     "core",
+    "teams",
     "hackathons",
     "sponsors",
     "projects",
@@ -127,6 +128,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "teams.context_processors.pending_invitations",
             ],
         },
     },

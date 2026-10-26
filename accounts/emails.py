@@ -39,9 +39,7 @@ def send_verification_email(request, user):
         "verification_url": verification_url,
         "expires_days": max(1, settings.PASSWORD_RESET_TIMEOUT // (60 * 60 * 24)),
     }
-    subject = render_to_string(
-        "accounts/emails/verify_email_subject.txt", context
-    ).strip()
+    subject = render_to_string("accounts/emails/verify_email_subject.txt", context).strip()
     text_body = render_to_string("accounts/emails/verify_email.txt", context)
     html_body = render_to_string("accounts/emails/verify_email.html", context)
 

@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block title %}{{ team.name }} — HackFlow{% endblock %}
+
+{% block content %}
+<section class="container-page py-10" aria-labelledby="team-title">
+    <a href="{% url 'teams:list' %}" class="text-sm text-muted-foreground hover:underline">← All teams</a>
+    <div class="mt-3 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+            <h1 id="team-title" class="text-3xl font-semibold tracking-tight">{{ team.name }}</h1>
+            <p class="mt-1 text-sm text-muted-foreground">{{ team.hackathon.title }} · Leader: {{ team.leader.username }}</p>
+        </div>
+        {% if is_leader %}
+        <div class="flex gap-2">
+            <a href="{% url 'teams:update' team.pk %}" class="inline-flex h-9 items-center rounded-md border border-input px-4 text-sm font-medium hover:bg-accent">Edit</a>
+            <a href="{% url 'teams:delete' team.pk %}" class="inline-flex h-9 items-center rounded-md bg-destructive px-4 text-sm font-medium text-destructive-foreground hover:bg-destructive/90">Delete</a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if team.description %}<p class="mt-6 max-w-2xl text-sm leading-relaxed">{{ team.description }}</p>{% endif %}
+
+    <h2 class="mt-10 text-xl font-semibold">Members ({{ members|length }} / {{ team.max_members }})</h2>
+    <ul class="mt-4 divide-y divide-border rounded-xl border border-border/70">
+        {% for m in members %}
+        <li class="flex flex-col gap-1 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <span class="font-medium">{{ m.user.username }}</span>
+            <span class="text-sm text-muted-foreground">{{ m.get_role_display }}{% if m.skills %} · {{ m.skills }}{% endif %}</span>
+        </li>
+        {% endfor %}
+    </ul>
+
+    {% if is_leader and not team.is_full %}
+    <section class="mt-10 max-w-2xl rounded-xl border border-border/70 p-5" aria-labelledby="invite-title">
+        <h2 id="invite-title" class="text-xl font-semibold">Invite a student</h2>
+        <p class="mt-1 text-sm text-muted-foreground">
+            Enter the username of the person to invite. They will see the invitation in “My invitations”.
+        </p>
+        <form method="post" action="{% url 'teams:send_invitation' team.pk %}" class="mt-4 space-y-3">
+            {% csrf_token %}
+            <div class="space-y-1.5">
+                <label for="invite-username" class="text-sm font-medium">Username</label>
+                <input id="invite-username" type="text" name="username" required autocomplete="off"
+                       class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+            </div>
+            <div class="space-y-1.5">
+                <label for="invite-message" class="text-sm font-medium">Message (optional)</label>
+                <input id="invite-message" type="text" name="message" maxlength="200"
+                       class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+            </div>
+            <c-button type="submit">Send invitation</c-button>
+        </form>
+    </section>
+
+    <section class="mt-6 max-w-2xl rounded-xl border border-border/70 p-5" aria-labelledby="ai-title">
+        <h2 id="ai-title" class="text-xl font-semibold">AI assistant: find teammates</h2>
+        <p class="mt-1 text-sm text-muted-foreground">
+            Analyzes missing roles and skills, then suggests the most complementary profiles.
+        </p>
+        <button type="button" id="ai-suggest-btn"
+                class="mt-4 inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+            Suggest teammates
+        </button>
+        <p id="ai-status" class="mt-3 text-sm text-muted-foreground" role="status" aria-live="polite"></p>
+        <div id="ai-result" class="mt-4 space-y-3"></div>
+    </section>
+    <script>
+    (function () {
+        const btn = document.getElementById("ai-suggest-btn");
+        const status = document.getElementById("ai-status");
+        const result = document.getElementById("ai-result");
+        const inviteUrl = "{% url 'teams:send_invitation' team.pk %}";
+
+        function el(tag, text, className) {
+            const node = document.createElement(tag);
+            node.textContent = text;
+            if (className) node.className = className;
+            return node;
+        }
+
+        function badge(text, className) {
+            return el("span", text, "inline-flex rounded-full border px-2 py-0.5 text-xs " + className);
+        }
+
+        function inviteButton(s) {
+            const wrapper = el("div", "", "flex flex-wrap items-center gap-3");
+            const button = el("button", "Invite", "inline-flex h-8 items-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60");
+            button.type = "button";
+            button.setAttribute("aria-label", "Invite " + s.username + " to the team");
+            const feedback = el("span", "", "text-xs text-muted-foreground");
+            feedback.setAttribute("role", "status");
+            feedback.setAttribute("aria-live", "polite");
+
+            button.addEventListener("click", async function () {
+                button.disabled = true;
+                feedback.textContent = "Sending…";
+                try {
+                    const body = new URLSearchParams({username: s.username});
+                    const response = await fetch(inviteUrl, {
+                        method: "POST",
+                        headers: {
+                            "X-CSRFToken": "{{ csrf_token }}",
+                            "X-Requested-With": "XMLHttpRequest",
+                        },
+                        body: body,
+                    });
+                    const data = await response.json();
+                    if (response.ok) {
+                        button.textContent = "Invitation sent";
+                        feedback.textContent = "";
+                    } else {
+                        feedback.textContent = data.error || "Invitation failed.";
+                        button.disabled = false;
+                    }
+                } catch (e) {
+                    feedback.textContent = "Network error: please retry.";
+                    button.disabled = false;
+                }
+            });
+
+            wrapper.appendChild(button);
+            wrapper.appendChild(feedback);
+            return wrapper;
+        }
+
+        function render(data) {
+            result.replaceChildren();
+            if (!data.suggestions.length) {
+                status.textContent = "No suitable candidates at the moment.";
+                return;
+            }
+            status.textContent = "Response in " + data.duration_ms + " ms"
+                + (data.cached ? " (cache)" : "")
+                + (data.source === "groq" ? " · generated by AI" : "");
+            if (data.error) {
+                result.appendChild(el("p", data.error + " Standard explanation shown.", "text-sm text-amber-600"));
+            }
+            const list = el("ul", "", "divide-y divide-border rounded-md border border-border/70");
+            data.suggestions.forEach(function (s) {
+                const item = el("li", "", "space-y-2 p-3 text-sm");
+                const head = el("div", "", "flex flex-wrap items-center gap-2");
+                head.appendChild(el("span", s.username, "font-medium"));
+                head.appendChild(el("span", "· " + s.role, "text-muted-foreground"));
+                head.appendChild(badge("Synergy " + s.synergy + " %", "border-primary/40 bg-primary/10 text-primary"));
+                item.appendChild(head);
+                const skills = el("div", "", "flex flex-wrap gap-1.5");
+                s.new_skills.forEach(function (k) {
+                    skills.appendChild(badge("+ " + k + " (complementary)", "border-emerald-600/40 text-emerald-700 dark:text-emerald-300"));
+                });
+                s.shared_skills.forEach(function (k) {
+                    skills.appendChild(badge(k + " (shared)", "border-border text-muted-foreground"));
+                });
+                item.appendChild(skills);
+                item.appendChild(el("p", s.reasons.join(" ; "), "text-muted-foreground"));
+                item.appendChild(inviteButton(s));
+                list.appendChild(item);
+            });
+            result.appendChild(list);
+            result.appendChild(el("p", data.explanation, "whitespace-pre-line text-sm leading-relaxed"));
+        }
+        btn.addEventListener("click", async function () {
+            btn.disabled = true;
+            result.replaceChildren();
+            status.textContent = "Analyzing…";
+            try {
+                const response = await fetch("{% url 'teams:suggest' team.pk %}", {
+                    method: "POST",
+                    headers: {"X-CSRFToken": "{{ csrf_token }}"},
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    status.textContent = data.error || "An error occurred.";
+                } else {
+                    render(data);
+                }
+            } catch (e) {
+                status.textContent = "Network error: please retry in a moment.";
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    })();
+    </script>
+    {% endif %}
+
+    {% if user.is_authenticated %}
+        {% if is_member and not is_leader %}
+        <form method="post" action="{% url 'teams:leave' team.pk %}" class="mt-6">
+            {% csrf_token %}
+            <c-button type="submit" variant="outline">Leave team</c-button>
+        </form>
+        {% elif not is_member %}
+            {% if team.is_full %}
+            <p class="mt-6 text-sm text-muted-foreground">This team is full.</p>
+            {% else %}
+            <form method="post" action="{% url 'teams:join' team.pk %}" class="mt-8 max-w-md space-y-4" aria-label="Join team">
+                {% csrf_token %}
+                <h2 class="text-xl font-semibold">Join team</h2>
+                {% for field in join_form %}
+                <div class="space-y-1.5">
+                    <label for="{{ field.id_for_label }}" class="text-sm font-medium">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<p class="text-xs text-muted-foreground">{{ field.help_text }}</p>{% endif %}
+                </div>
+                {% endfor %}
+                <c-button type="submit">Join</c-button>
+            </form>
+            {% endif %}
+        {% endif %}
+    {% else %}
+    <p class="mt-6 text-sm"><a href="{% url 'accounts:login' %}?next={{ request.path }}" class="underline">Sign in</a> to join this team.</p>
+    {% endif %}
+</section>
+{% endblock %}

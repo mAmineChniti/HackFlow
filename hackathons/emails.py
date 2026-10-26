@@ -23,7 +23,7 @@ def send_student_registration_email(registration):
         subject = f"Waitlist Confirmation — {hackathon.title}"
         message = (
             f"Hi {student.first_name or student.username},\n\n"
-            f"Your registration application for \"{hackathon.title}\" has been received.\n\n"
+            f'Your registration application for "{hackathon.title}" has been received.\n\n'
             f"Because this hackathon has reached its maximum capacity ({hackathon.max_participants} builders), "
             f"you have been placed on the priority waitlist.\n\n"
             f"As soon as a spot opens up due to a cancellation, you will automatically be promoted to confirmed "
@@ -38,7 +38,7 @@ def send_student_registration_email(registration):
         subject = f"Registration Confirmed — {hackathon.title}"
         message = (
             f"Hi {student.first_name or student.username},\n\n"
-            f"Congratulations! You are officially registered for \"{hackathon.title}\" 🎉.\n\n"
+            f'Congratulations! You are officially registered for "{hackathon.title}" 🎉.\n\n'
             f"📅 Event Schedule & Location:\n"
             f"- Competition: {hackathon.start_date.strftime('%b %d, %Y @ %H:%M')} to {hackathon.end_date.strftime('%b %d, %Y @ %H:%M')}\n"
             f"- Venue / Format: {hackathon.location or hackathon.get_mode_display()} ({hackathon.get_mode_display()})\n"
@@ -78,7 +78,7 @@ def send_waitlist_promoted_email(registration):
     message = (
         f"Hi {student.first_name or student.username},\n\n"
         f"Great news! A spot just opened up and you have been promoted from the waitlist "
-        f"to CONFIRMED for \"{hackathon.title}\"!\n\n"
+        f'to CONFIRMED for "{hackathon.title}"!\n\n'
         f"📅 Quick reminder of event details:\n"
         f"- Competition window: {hackathon.start_date.strftime('%b %d, %Y @ %H:%M')} to {hackathon.end_date.strftime('%b %d, %Y @ %H:%M')}\n"
         f"- Venue: {hackathon.location or hackathon.get_mode_display()}\n\n"
@@ -118,7 +118,7 @@ def send_organizer_new_registration_email(registration):
     subject = f"New Registration: {student.username} for {hackathon.title}"
     message = (
         f"Hi {organizer.username},\n\n"
-        f"A new participant has just registered for your hackathon \"{hackathon.title}\":\n\n"
+        f'A new participant has just registered for your hackathon "{hackathon.title}":\n\n'
         f"👤 Participant: {student.get_full_name() or student.username} ({student.email})\n"
         f"🏫 University / Institution: {registration.university or 'Not specified'}\n"
         f"🎓 Study Level: {registration.get_study_level_display()}\n"
@@ -155,11 +155,15 @@ def check_and_notify_capacity_thresholds(hackathon, previous_count):
     threshold_80 = int(hackathon.max_participants * 0.8)
 
     # 80% Threshold reached
-    if previous_count < threshold_80 and current_count >= threshold_80 and current_count < hackathon.max_participants:
+    if (
+        previous_count < threshold_80
+        and current_count >= threshold_80
+        and current_count < hackathon.max_participants
+    ):
         subject = f"⚠️ 80% Capacity Reached: {hackathon.title}"
         message = (
             f"Hi {organizer.username},\n\n"
-            f"Your hackathon \"{hackathon.title}\" has crossed 80% capacity "
+            f'Your hackathon "{hackathon.title}" has crossed 80% capacity '
             f"({current_count} / {hackathon.max_participants} confirmed builders).\n\n"
             f"Check your mentor assignments and logistics preparations on HackFlow!"
         )
@@ -175,11 +179,13 @@ def check_and_notify_capacity_thresholds(hackathon, previous_count):
             logger.warning("Error sending 80%% capacity alert email: %s", exc)
 
     # 100% Full Capacity reached
-    elif previous_count < hackathon.max_participants and current_count >= hackathon.max_participants:
+    elif (
+        previous_count < hackathon.max_participants and current_count >= hackathon.max_participants
+    ):
         subject = f"🚨 Maximum Capacity Reached (100%): {hackathon.title}"
         message = (
             f"Hi {organizer.username},\n\n"
-            f"Congratulations! \"{hackathon.title}\" is now at 100% maximum capacity "
+            f'Congratulations! "{hackathon.title}" is now at 100% maximum capacity '
             f"({current_count} / {hackathon.max_participants} builders).\n\n"
             f"All subsequent registrations will automatically be routed to the priority waitlist."
         )

@@ -19,3 +19,4 @@ coverage>=7.0.0
 # HackFlow/celery.py and the `worker` service in docker-compose.yml).
 celery>=5.4,<6.0
 redis>=5.0,<7.0
+

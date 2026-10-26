@@ -22,6 +22,7 @@
                 <a href="{% url 'projects:project_list' %}" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Projects</a>
                 <a href="{% url 'core:home' %}#challenges" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Challenges</a>
                 <a href="{% url 'core:home' %}#leaderboard" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Leaderboard</a>
+                <a href="{% url 'teams:list' %}" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Teams</a>
                 <a href="{% url 'core:home' %}#organizers" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">For organizers</a>
                 <a href="{% url 'core:home' %}#sponsors" class="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Sponsors</a>
             </nav>
@@ -46,6 +47,10 @@
                         <span class="flex size-7 items-center justify-center rounded-full bg-primary/15 font-mono text-[10px] font-medium uppercase text-primary">
                             {{ user.username|slice:":2" }}
                         </span>
+                        {% if pending_invitations_count %}
+                        <span class="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground" aria-hidden="true">{{ pending_invitations_count }}</span>
+                        <span class="sr-only">{{ pending_invitations_count }} pending team invitation{{ pending_invitations_count|pluralize }}</span>
+                        {% endif %}
                         <span class="hidden max-w-28 truncate lg:inline">{{ user.username }}</span>
                         {% if user_is_admin %}
                         <span class="hidden sm:inline-flex rounded-md border border-rose-500/40 bg-rose-500/15 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-rose-400 shadow-xs">
@@ -85,6 +90,26 @@
                     </c-dropdown_menu.label>
                     <c-dropdown_menu.separator />
                     <c-dropdown_menu.item>
+                        <a href="{% url 'teams:list' %}" class="flex w-full items-center gap-2 text-foreground">
+                            <c-lucideicon.users class="size-4 text-muted-foreground" />
+                            Teams
+                        </a>
+                    </c-dropdown_menu.item>
+                    <c-dropdown_menu.item>
+                        <a href="{% url 'teams:skills' %}" class="flex w-full items-center gap-2 text-foreground">
+                            <c-lucideicon.user class="size-4 text-muted-foreground" />
+                            My skills profile
+                        </a>
+                    </c-dropdown_menu.item>
+                    <c-dropdown_menu.item>
+                        <a href="{% url 'teams:my_invitations' %}" class="flex w-full items-center gap-2 text-foreground">
+                            <c-lucideicon.mail class="size-4 text-muted-foreground" />
+                            My invitations
+                            {% if pending_invitations_count %}<span class="ml-auto rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">{{ pending_invitations_count }}</span>{% endif %}
+                        </a>
+                    </c-dropdown_menu.item>
+                    <c-dropdown_menu.separator />
+                    <c-dropdown_menu.item>
                         <a href="{% url 'projects:project_list' %}" class="flex w-full items-center gap-2 text-foreground">
                             <c-lucideicon.folder-kanban class="size-4 text-muted-foreground" />
                             Projects
@@ -97,6 +122,7 @@
                         </a>
                     </c-dropdown_menu.item>
                     <c-dropdown_menu.item>
+
                         <a href="{% url 'accounts:profile' %}" class="flex w-full items-center gap-2 text-foreground">
                             <c-lucideicon.user class="size-4 text-muted-foreground" />
                             Account settings

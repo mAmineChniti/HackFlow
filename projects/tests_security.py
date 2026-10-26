@@ -150,7 +150,7 @@ class ExportTests(BaseProjectTestCase):
 
     def test_csv_export_neutralises_formula_injection(self):
         Project.objects.create(
-            title="=HYPERLINK(\"http://evil.example\")",
+            title='=HYPERLINK("http://evil.example")',
             tagline="+1234567890",
             description="payload",
             created_by=self.student,
@@ -177,9 +177,7 @@ class ExportTests(BaseProjectTestCase):
         student_client = Client()
         student_client.force_login(self.student)
 
-        self.assertEqual(
-            student_client.get(reverse("projects:export_pdf")).status_code, 403
-        )
+        self.assertEqual(student_client.get(reverse("projects:export_pdf")).status_code, 403)
 
 
 class AdminAuditTrailTests(BaseProjectTestCase):
@@ -245,9 +243,7 @@ class AdminAuditTrailTests(BaseProjectTestCase):
 
         draft.refresh_from_db()
         self.assertEqual(draft.status, Project.Status.DRAFT)
-        self.assertFalse(
-            HistoriqueProjet.objects.filter(project=draft).exists()
-        )
+        self.assertFalse(HistoriqueProjet.objects.filter(project=draft).exists())
 
 
 class SlugUniquenessTests(BaseProjectTestCase):
@@ -291,9 +287,7 @@ class SlugUniquenessTests(BaseProjectTestCase):
             return real_filter(*args, **kwargs)
 
         with mock.patch.object(Project.objects, "filter", side_effect=fake_filter):
-            project = Project(
-                title="Race", tagline="t", description="d", created_by=self.student
-            )
+            project = Project(title="Race", tagline="t", description="d", created_by=self.student)
             project.save()
 
         self.assertTrue(project.slug.startswith("race-"))
@@ -315,10 +309,7 @@ class AiTemplateRenderingTests(TestCase):
 
     def test_category_suggestion_does_not_inject_model_output_as_html(self):
         template = (
-            Path(__file__).resolve().parent.parent
-            / "templates"
-            / "projects"
-            / "project_form.html"
+            Path(__file__).resolve().parent.parent / "templates" / "projects" / "project_form.html"
         ).read_text(encoding="utf-8")
 
         self.assertNotIn("${data.category_label}", template)

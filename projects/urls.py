@@ -25,5 +25,9 @@ urlpatterns = [
     path("<slug:slug>/delete/", views.project_delete, name="project_delete"),
     path("<slug:slug>/members/add/", views.member_add, name="member_add"),
     path("<slug:slug>/members/<int:member_id>/remove/", views.member_remove, name="member_remove"),
-    path("<slug:slug>/mentor-advice/", views.project_add_mentor_advice, name="project_add_mentor_advice"),
+    path(
+        "<slug:slug>/mentor-advice/",
+        views.project_add_mentor_advice,
+        name="project_add_mentor_advice",
+    ),
 ]

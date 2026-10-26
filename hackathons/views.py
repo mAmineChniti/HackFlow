@@ -114,13 +114,18 @@ class HackathonDetailView(DetailView):
 
     def get_queryset(self):
         user = self.request.user
+        # Prefetch related objects to avoid N+1 queries
+        qs = Hackathon.objects.select_related("organizer").prefetch_related(
+            "judges", "mentors", "schedule_items", "faqs", "registrations"
+        )
+
         if user.is_authenticated and (user.is_superuser or user.is_staff):
-            return Hackathon.objects.all()
+            return qs
         if user.is_authenticated:
-            return Hackathon.objects.filter(
+            return qs.filter(
                 Q(is_published=True) | Q(organizer=user) | Q(judges=user) | Q(mentors=user)
             ).distinct()
-        return Hackathon.objects.filter(is_published=True)
+        return qs.filter(is_published=True)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

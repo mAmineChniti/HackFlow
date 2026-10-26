@@ -1,4 +1,3 @@
-
 from django import forms
 from django.contrib.auth.forms import (
     AuthenticationForm,
@@ -72,9 +71,7 @@ class HackFlowSignupForm(UserCreationForm):
         ),
     )
     SIGNUP_ROLE_CHOICES = [
-        (value, label)
-        for value, label in Profile.Role.choices
-        if value not in PRIVILEGED_ROLES
+        (value, label) for value, label in Profile.Role.choices if value not in PRIVILEGED_ROLES
     ]
 
     role = forms.ChoiceField(
@@ -139,9 +136,7 @@ class HackFlowSignupForm(UserCreationForm):
 
     def clean_username(self):
         username = self.cleaned_data["username"]
-        if User.objects.filter(
-            Q(username__iexact=username) | Q(email__iexact=username)
-        ).exists():
+        if User.objects.filter(Q(username__iexact=username) | Q(email__iexact=username)).exists():
             raise ValidationError(
                 _("That username is already taken. Try another one."),
                 code="username_taken",
@@ -150,9 +145,7 @@ class HackFlowSignupForm(UserCreationForm):
 
     def clean_email(self):
         email = self.cleaned_data["email"].strip().lower()
-        if User.objects.filter(
-            Q(email__iexact=email) | Q(username__iexact=email)
-        ).exists():
+        if User.objects.filter(Q(email__iexact=email) | Q(username__iexact=email)).exists():
             raise ValidationError(
                 _("An account with that email already exists."),
                 code="email_taken",
@@ -265,9 +258,7 @@ class AccountSettingsForm(forms.ModelForm):
 
     def clean_username(self):
         username = self.cleaned_data["username"]
-        query = User.objects.filter(
-            Q(username__iexact=username) | Q(email__iexact=username)
-        )
+        query = User.objects.filter(Q(username__iexact=username) | Q(email__iexact=username))
         if self.instance.pk:
             query = query.exclude(pk=self.instance.pk)
         if query.exists():
@@ -279,9 +270,7 @@ class AccountSettingsForm(forms.ModelForm):
 
     def clean_email(self):
         email = self.cleaned_data["email"].strip().lower()
-        query = User.objects.filter(
-            Q(email__iexact=email) | Q(username__iexact=email)
-        )
+        query = User.objects.filter(Q(email__iexact=email) | Q(username__iexact=email))
         if self.instance.pk:
             query = query.exclude(pk=self.instance.pk)
         if query.exists():
@@ -326,9 +315,7 @@ class HackFlowPasswordChangeForm(PasswordChangeForm):
                 "placeholder": "Repeat your new password",
             }
         )
-        self.fields["new_password2"].help_text = _(
-            "Re-enter your new password to confirm."
-        )
+        self.fields["new_password2"].help_text = _("Re-enter your new password to confirm.")
 
 
 class DeleteAccountForm(forms.Form):
@@ -346,9 +333,7 @@ class DeleteAccountForm(forms.Form):
     )
     confirm = forms.BooleanField(
         label=_("I understand this permanently deletes my account and data."),
-        error_messages={
-            "required": _("Please confirm that you understand this is permanent.")
-        },
+        error_messages={"required": _("Please confirm that you understand this is permanent.")},
     )
 
     def __init__(self, user, *args, **kwargs):

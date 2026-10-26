@@ -16,6 +16,7 @@ try:
     import numpy as np
     from sklearn.feature_extraction.text import TfidfVectorizer
     from sklearn.metrics.pairwise import cosine_similarity
+
     SKLEARN_AVAILABLE = True
 except ImportError:
     SKLEARN_AVAILABLE = False
@@ -31,16 +32,94 @@ from sponsors.permissions import sponsors_visible_to, sponsorships_visible_to
 
 # Keep both language stopword sets to support legacy descriptions as well as English content.
 FRENCH_STOPWORDS = [
-    "de", "des", "du", "le", "la", "les", "un", "une", "et", "en", "pour", "par",
-    "sur", "avec", "dans", "au", "aux", "ce", "cet", "cette", "ces", "qui", "que",
-    "quoi", "dont", "ou", "mais", "donc", "or", "ni", "car", "plus", "moins", "tres",
-    "très", "notre", "nos", "votre", "vos", "leur", "leurs", "son", "sa", "ses",
-    "a", "à", "est", "sont", "être", "avoir", "faire", "tout", "tous", "toute", "toutes",
+    "de",
+    "des",
+    "du",
+    "le",
+    "la",
+    "les",
+    "un",
+    "une",
+    "et",
+    "en",
+    "pour",
+    "par",
+    "sur",
+    "avec",
+    "dans",
+    "au",
+    "aux",
+    "ce",
+    "cet",
+    "cette",
+    "ces",
+    "qui",
+    "que",
+    "quoi",
+    "dont",
+    "ou",
+    "mais",
+    "donc",
+    "or",
+    "ni",
+    "car",
+    "plus",
+    "moins",
+    "tres",
+    "très",
+    "notre",
+    "nos",
+    "votre",
+    "vos",
+    "leur",
+    "leurs",
+    "son",
+    "sa",
+    "ses",
+    "a",
+    "à",
+    "est",
+    "sont",
+    "être",
+    "avoir",
+    "faire",
+    "tout",
+    "tous",
+    "toute",
+    "toutes",
 ]
 ENGLISH_STOPWORDS = [
-    "a", "an", "and", "are", "as", "at", "be", "by", "for", "from", "has", "have",
-    "in", "is", "it", "its", "of", "on", "or", "our", "that", "the", "their", "this",
-    "to", "was", "were", "will", "with", "you", "your",
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "at",
+    "be",
+    "by",
+    "for",
+    "from",
+    "has",
+    "have",
+    "in",
+    "is",
+    "it",
+    "its",
+    "of",
+    "on",
+    "or",
+    "our",
+    "that",
+    "the",
+    "their",
+    "this",
+    "to",
+    "was",
+    "were",
+    "will",
+    "with",
+    "you",
+    "your",
 ]
 
 
@@ -68,7 +147,11 @@ def get_sponsor_text(sponsor: Sponsor) -> str:
     if not sponsor:
         return ""
 
-    sector_label = sponsor.get_sector_display() if hasattr(sponsor, "get_sector_display") else (sponsor.sector or "")
+    sector_label = (
+        sponsor.get_sector_display()
+        if hasattr(sponsor, "get_sector_display")
+        else (sponsor.sector or "")
+    )
     parts = [
         sponsor.name or "",
         sector_label or "",
@@ -99,9 +182,7 @@ def extract_top_keywords(
 
     # Fallback : si aucun terme commun, extraire les termes les plus représentatifs du sponsor
     sponsor_indices = np.argsort(-sponsor_vec)
-    fallback_words = [
-        feature_names[idx] for idx in sponsor_indices if sponsor_vec[idx] > 0
-    ][:top_k]
+    fallback_words = [feature_names[idx] for idx in sponsor_indices if sponsor_vec[idx] > 0][:top_k]
     return fallback_words or ["general match"]
 
 
@@ -135,10 +216,7 @@ def recommend_sponsors_for_hackathon(
         }
 
     user_scope = getattr(user, "pk", "all") if user is not None else "all"
-    cache_key = (
-        f"sponsor_recommendations_hackathon_{hackathon.pk}_"
-        f"top{top_n}_user{user_scope}"
-    )
+    cache_key = f"sponsor_recommendations_hackathon_{hackathon.pk}_top{top_n}_user{user_scope}"
     if use_cache:
         cached_result = cache.get(cache_key)
         if cached_result is not None:
@@ -153,13 +231,11 @@ def recommend_sponsors_for_hackathon(
 
     # 1. Exclure les sponsors déjà liés à ce hackathon (en cours, refusés, ou confirmés)
     visible_sponsorships = (
-        sponsorships_visible_to(user)
-        if user is not None
-        else Sponsorship.objects.all()
+        sponsorships_visible_to(user) if user is not None else Sponsorship.objects.all()
     )
-    existing_sponsor_ids = visible_sponsorships.filter(
-        hackathon=hackathon
-    ).values_list("sponsor_id", flat=True)
+    existing_sponsor_ids = visible_sponsorships.filter(hackathon=hackathon).values_list(
+        "sponsor_id", flat=True
+    )
 
     sponsor_scope = (
         sponsors_visible_to(user)
@@ -167,9 +243,7 @@ def recommend_sponsors_for_hackathon(
         else Sponsor.objects.filter(sponsorships__isnull=True)
     )
     eligible_sponsors = list(
-        sponsor_scope.exclude(id__in=existing_sponsor_ids)
-        .order_by("name")
-        .distinct()
+        sponsor_scope.exclude(id__in=existing_sponsor_ids).order_by("name").distinct()
     )
 
     if len(eligible_sponsors) < 2:
@@ -229,13 +303,15 @@ def recommend_sponsors_for_hackathon(
             top_k=3,
         )
 
-        results.append({
-            "sponsor": sponsor,
-            "score": percentage_score,
-            "raw_similarity": round(raw_sim * 100, 1),
-            "has_history_bonus": has_history_bonus,
-            "keywords": keywords,
-        })
+        results.append(
+            {
+                "sponsor": sponsor,
+                "score": percentage_score,
+                "raw_similarity": round(raw_sim * 100, 1),
+                "has_history_bonus": has_history_bonus,
+                "keywords": keywords,
+            }
+        )
 
     # Trier par score décroissant, puis alphabétique
     results.sort(key=lambda item: (-item["score"], item["sponsor"].name))

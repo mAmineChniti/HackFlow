@@ -217,13 +217,9 @@ class AuthenticationTests(TestCase):
         self.assertContains(response, "Reset links expire after 3 days.")
 
         alternatives = mail.outbox[0].alternatives
-        self.assertTrue(
-            any(content_type == "text/html" for _, content_type in alternatives)
-        )
+        self.assertTrue(any(content_type == "text/html" for _, content_type in alternatives))
         html_body = next(
-            content
-            for content, content_type in alternatives
-            if content_type == "text/html"
+            content for content, content_type in alternatives if content_type == "text/html"
         )
         self.assertIn("Reset your password", html_body)
 

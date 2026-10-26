@@ -71,6 +71,7 @@ class Project(models.Model):
         choices=Status.choices,
         default=Status.DRAFT,
         verbose_name="Project status",
+        db_index=True,  # Frequently filtered
     )
     deadline = models.DateTimeField(
         null=True,

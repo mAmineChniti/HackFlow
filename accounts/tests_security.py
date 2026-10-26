@@ -192,6 +192,4 @@ class CsrfEnforcementTests(TestCase):
 
         self.assertEqual(response.status_code, 403)
         # Still authenticated: the forged request was rejected.
-        self.assertEqual(
-            self.csrf_client.session.get("_auth_user_id"), str(user.pk)
-        )
+        self.assertEqual(self.csrf_client.session.get("_auth_user_id"), str(user.pk))

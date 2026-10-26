@@ -7,9 +7,10 @@ startup when ``SEED_DEMO_DATA=True``. It creates:
 * registrations, schedules and FAQs for several hackathons
 * projects in every status/category, with teams, history and mentor advice
 * sponsors, sponsorships, status history and email logs
+* teams with skill profiles, members and pending invitations
 * generated banner/logo images for the demo assets
 
-All demo users share the same password: ``hackflow2026`` (12 chars min).
+All demo users share the same password: ``hackflow2026`` (12 chars).
 """
 
 from __future__ import annotations
@@ -43,11 +44,13 @@ from sponsors.models import (
     StatusHistory,
     TierChoices,
 )
+from teams.models import Invitation, SkillProfile, Team, TeamMember
 
 User = get_user_model()
 
 EMAIL_DOMAIN = "hackflow.example"
-DEMO_PASSWORD = "hackflow2026"  # Single password for all demo users (12+ chars)
+# All demo users share this password - no environment variable needed
+DEMO_PASSWORD = "hackflow2026"
 
 # (username, first_name, last_name, role, is_staff, is_superuser)
 DEMO_USERS = [
@@ -472,8 +475,9 @@ class Command(BaseCommand):
                 hackathons,
                 generate_media=not options["skip_media"],
             )
+            teams = self._seed_teams(now, users, hackathons)
 
-        self._report(users, hackathons, projects, sponsors)
+        self._report(users, hackathons, projects, sponsors, teams)
 
     # ------------------------------------------------------------------
     # Users
@@ -1403,13 +1407,189 @@ class Command(BaseCommand):
         return sponsors
 
     # ------------------------------------------------------------------
+    # Teams
+    # ------------------------------------------------------------------
+
+    def _seed_teams(self, now, users, hackathons):
+        """Seed teams with skill profiles and invitations."""
+        # Create skill profiles for students
+        skill_profiles_data = [
+            (
+                "student",
+                "backend",
+                "Python, Django, PostgreSQL, Docker",
+                "Backend developer with DevOps experience.",
+                False,
+            ),
+            (
+                "sarah",
+                "frontend",
+                "React, TypeScript, Tailwind CSS, Figma",
+                "Frontend developer passionate about UX.",
+                False,
+            ),
+            (
+                "alex",
+                "designer",
+                "Figma, UI/UX, design systems, accessibility",
+                "Designer focused on accessible interfaces.",
+                True,
+            ),
+            (
+                "maya",
+                "data",
+                "Python, pandas, scikit-learn, data visualization",
+                "Data scientist interested in ML.",
+                True,
+            ),
+            (
+                "nour",
+                "backend",
+                "Django, FastAPI, PostgreSQL, Redis",
+                "Backend developer exploring async patterns.",
+                True,
+            ),
+            (
+                "yassine",
+                "frontend",
+                "Vue.js, Nuxt, TypeScript, testing",
+                "Frontend developer with testing expertise.",
+                True,
+            ),
+        ]
+
+        for username, main_role, skills, bio, looking in skill_profiles_data:
+            user = users.get(username)
+            if user:
+                SkillProfile.objects.update_or_create(
+                    user=user,
+                    defaults={
+                        "main_role": main_role,
+                        "skills": skills,
+                        "bio": bio,
+                        "looking_for_team": looking,
+                    },
+                )
+
+        teams = {}
+
+        # Team 1: Active hackathon team (full and productive)
+        team1, _ = Team.objects.update_or_create(
+            hackathon=hackathons["active"],
+            name="Code Crusaders",
+            defaults={
+                "description": "Building an AI-powered campus navigation system. We combine solid backend architecture with user-centered design.",
+                "leader": users["student"],
+                "max_members": 4,
+            },
+        )
+        TeamMember.objects.update_or_create(
+            team=team1,
+            user=users["student"],
+            defaults={
+                "role": TeamMember.Role.LEADER,
+                "skills": "Python, Django, team coordination",
+            },
+        )
+        TeamMember.objects.update_or_create(
+            team=team1,
+            user=users["sarah"],
+            defaults={"role": TeamMember.Role.FRONTEND, "skills": "React, TypeScript, UI/UX"},
+        )
+        TeamMember.objects.update_or_create(
+            team=team1,
+            user=users["alex"],
+            defaults={"role": TeamMember.Role.DESIGNER, "skills": "Figma, user research"},
+        )
+        teams["code-crusaders"] = team1
+
+        # Team 2: Ongoing hackathon team (needs one more member)
+        team2, _ = Team.objects.update_or_create(
+            hackathon=hackathons["ongoing"],
+            name="Green Innovators",
+            defaults={
+                "description": "Creating an IoT solution for campus energy monitoring. We're building sensor networks with real-time dashboards.",
+                "leader": users["maya"],
+                "max_members": 4,
+            },
+        )
+        TeamMember.objects.update_or_create(
+            team=team2,
+            user=users["maya"],
+            defaults={"role": TeamMember.Role.LEADER, "skills": "Python, data analysis, IoT"},
+        )
+        TeamMember.objects.update_or_create(
+            team=team2,
+            user=users["nour"],
+            defaults={"role": TeamMember.Role.BACKEND, "skills": "Django, APIs, real-time data"},
+        )
+        # Create pending invitation for this team
+        Invitation.objects.update_or_create(
+            team=team2,
+            invitee=users["yassine"],
+            defaults={
+                "invited_by": users["maya"],
+                "message": "We need a frontend developer for our dashboard. Interested in IoT and sustainability?",
+                "status": Invitation.Status.PENDING,
+            },
+        )
+        teams["green-innovators"] = team2
+
+        # Team 3: Completed hackathon team (winning team)
+        team3, _ = Team.objects.update_or_create(
+            hackathon=hackathons["completed"],
+            name="AI Pioneers",
+            defaults={
+                "description": "Winner team from the previous edition. Built NeuroNotes, an adaptive learning assistant.",
+                "leader": users["sarah"],
+                "max_members": 4,
+            },
+        )
+        TeamMember.objects.update_or_create(
+            team=team3,
+            user=users["sarah"],
+            defaults={"role": TeamMember.Role.LEADER, "skills": "AI/ML, Python, product design"},
+        )
+        TeamMember.objects.update_or_create(
+            team=team3,
+            user=users["alex"],
+            defaults={"role": TeamMember.Role.FRONTEND, "skills": "React, TypeScript"},
+        )
+        TeamMember.objects.update_or_create(
+            team=team3,
+            user=users["yassine"],
+            defaults={"role": TeamMember.Role.DESIGNER, "skills": "Figma, UI design, prototyping"},
+        )
+        teams["ai-pioneers"] = team3
+
+        # Team 4: Small team looking to grow
+        team4, _ = Team.objects.update_or_create(
+            hackathon=hackathons["active"],
+            name="Data Dynamos",
+            defaults={
+                "description": "Working on healthcare data analytics. Looking for designers and frontend developers!",
+                "leader": users["nour"],
+                "max_members": 4,
+            },
+        )
+        TeamMember.objects.update_or_create(
+            team=team4,
+            user=users["nour"],
+            defaults={"role": TeamMember.Role.LEADER, "skills": "Data engineering, Python, SQL"},
+        )
+        teams["data-dynamos"] = team4
+
+        return teams
+
+    # ------------------------------------------------------------------
     # Reporting
     # ------------------------------------------------------------------
 
-    def _report(self, users, hackathons, projects, sponsors):
+    def _report(self, users, hackathons, projects, sponsors, teams):
         hackathon_slugs = [hackathon.slug for hackathon in hackathons.values()]
         project_slugs = list(projects.keys())
         sponsor_names = list(sponsors.keys())
+        team_names = list(teams.keys())
 
         self.stdout.write(self.style.SUCCESS("Demo data seeded successfully."))
         self.stdout.write(
@@ -1456,7 +1636,16 @@ class Command(BaseCommand):
             "  sponsor emails: "
             f"{SponsorEmailLog.objects.filter(sponsor__name__in=sponsor_names).count()}"
         )
+        self.stdout.write(f"  teams:          {len(teams)} teams created")
         self.stdout.write(
-            "Passwords are not printed. All demo users share password: "
-            f"{DEMO_PASSWORD}"
+            f"  team members:   {TeamMember.objects.filter(team__name__in=teams.values()).count()}"
+        )
+        self.stdout.write(
+            f"  skill profiles: {SkillProfile.objects.filter(user__username__in=users).count()}"
+        )
+        self.stdout.write(
+            f"  invitations:    {Invitation.objects.filter(team__name__in=teams.values()).count()}"
+        )
+        self.stdout.write(
+            f"Passwords are not printed. All demo users share password: {DEMO_PASSWORD}"
         )

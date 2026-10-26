@@ -49,7 +49,9 @@ class BaseAsyncTestCase(TestCase):
         # Organizer: has AI permission on every project, so reaching the task
         # state depends solely on task-id ownership.
         self.organizer = User.objects.create_user(
-            username="organizer", email="organizer@example.com", password=PASSWORD,
+            username="organizer",
+            email="organizer@example.com",
+            password=PASSWORD,
             is_staff=True,
         )
         self.organizer.profile.role = Profile.Role.ORGANIZER
@@ -71,9 +73,7 @@ class BaseAsyncTestCase(TestCase):
 
     def _enqueue(self):
         """POST the AI endpoint with apply_async mocked; return (response, mock)."""
-        with mock.patch(
-            "projects.tasks.run_ai_evaluation.apply_async"
-        ) as apply_async:
+        with mock.patch("projects.tasks.run_ai_evaluation.apply_async") as apply_async:
             response = self.client.post(self.analyze_url, HTTP_X_CSRFTOKEN="x")
         return response, apply_async
 
@@ -219,9 +219,7 @@ class AsyncTaskStateTests(BaseAsyncTestCase):
 
     def test_unknown_task_id_returns_404(self):
         self.client.force_login(self.owner)
-        url = reverse(
-            "projects:ai_analyze_status", args=[self.project.slug, "deadbeef" * 4]
-        )
+        url = reverse("projects:ai_analyze_status", args=[self.project.slug, "deadbeef" * 4])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 

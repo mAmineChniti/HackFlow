@@ -2,6 +2,7 @@
 Participant Badge & Check-in Pass Generator for HackFlow.
 Provides verifiable QR code check-in tokens and pass metadata.
 """
+
 import io
 import base64
 import qrcode
@@ -13,10 +14,10 @@ def generate_badge_qr(request, registration) -> str:
     Generates a base64 encoded PNG QR code pointing to the official check-in URL.
     """
     checkin_url = request.build_absolute_uri(
-        reverse("hackathons:organizer_checkin", kwargs={
-            "slug": registration.hackathon.slug,
-            "ticket_code": registration.ticket_code
-        })
+        reverse(
+            "hackathons:organizer_checkin",
+            kwargs={"slug": registration.hackathon.slug, "ticket_code": registration.ticket_code},
+        )
     )
 
     qr = qrcode.QRCode(

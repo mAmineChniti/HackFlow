@@ -186,6 +186,7 @@ class Sponsorship(models.Model):
         choices=StatusChoices.choices,
         default=StatusChoices.PROSPECT,
         verbose_name=_("Status"),
+        db_index=True,  # Frequently filtered in pipeline views
     )
     contribution_type = models.CharField(
         max_length=20,
