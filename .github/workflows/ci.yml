@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: read
+  # Codecov uses GitHub OIDC for tokenless uploads from this public repo.
+  id-token: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -93,10 +95,13 @@ jobs:
             --cov-report=xml \
             --cov-report=term-missing
 
-      - name: Upload coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Upload coverage to Codecov
+        if: always() && hashFiles('coverage.xml') != ''
+        uses: codecov/codecov-action@v5
         with:
-          name: coverage
-          path: coverage.xml
-          if-no-files-found: warn
+          files: ./coverage.xml
+          flags: unittests
+          name: hackflow
+          use_oidc: true
+          fail_ci_if_error: false
+          verbose: true

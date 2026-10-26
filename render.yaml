@@ -11,8 +11,9 @@ databases:
     # the plan for anything long-lived.
 
 envVarGroups:
-  # Shared by the web service and the worker so they sign sessions and tokens
-  # with the same key. Do not use generateValue per service.
+  # Used by the web service (and by a dedicated worker if you add one on a
+  # paid plan) so sessions and tokens share one signing key. Do not use
+  # generateValue per service.
   - name: hackflow-shared
     envVars:
       - key: DJANGO_SECRET_KEY
@@ -33,6 +34,10 @@ services:
     plan: free
     region: oregon
     healthCheckPath: /health/
+    # The free plan has no background-worker tier, so this starts Gunicorn and
+    # one solo Celery worker in the same 512 MB web instance.
+    dockerCommand: sh /app/scripts/start-render.sh
+    maxShutdownDelaySeconds: 60
     # Free web services have an ephemeral filesystem: sponsor logos uploaded
     # at runtime are lost on redeploy/restart. Use object storage or a paid
     # plan with a persistent disk for durable media.
@@ -63,14 +68,33 @@ services:
           name: hackflow-redis
           type: keyvalue
           property: connectionString
-      # Celery/Redis async AI. Redis is the broker; hackflow-worker below
-      # consumes the long Groq calls so HTTP requests are never blocked.
+      # Celery/Redis async AI. The co-located worker consumes the long Groq
+      # calls so HTTP requests are never blocked.
       - key: AI_ASYNC_ENABLED
         value: "True"
       - key: CELERY_TASK_ALWAYS_EAGER
         value: "False"
       - key: CELERY_TASK_TIME_LIMIT
         value: "60"
+      # Sized for the free 512 MB / 0.1 CPU instance.
+      - key: GUNICORN_WORKERS
+        value: "1"
+      - key: GUNICORN_THREADS
+        value: "4"
+      # No Nginx/object storage on the free plan: let Django serve /media/.
+      - key: SERVE_MEDIA
+        value: "True"
+      # Demo data: profile roles drive sponsor permissions, and the idempotent
+      # seeder runs after migrate/collectstatic in the web container. This
+      # project is a demo, so production seeding stays on by default.
+      - key: SPONSORS_USE_PROFILE_ROLE
+        value: "True"
+      - key: SEED_DEMO_DATA
+        value: "True"
+      - key: DEMO_ADMIN_PASSWORD
+        sync: false
+      - key: DEMO_PASSWORD
+        sync: false
       - key: GROQ_API_KEY
         sync: false
       - key: PASSWORD_RESET_TIMEOUT
@@ -89,55 +113,10 @@ services:
       # ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS automatically. Add custom
       # domains via DJANGO_ALLOWED_HOSTS / DJANGO_CSRF_TRUSTED_ORIGINS.
 
-  # ---------------------------------------------------------------------------
-  # Celery worker — performs the long Groq calls off the HTTP request cycle.
-  #
-  # Render does not offer free background workers: this is the smallest paid
-  # compute plan. If the project must stay 100% free, delete this service and
-  # set AI_ASYNC_ENABLED=False on the web service (AI then runs synchronously).
-  # The included docker-compose.yml also runs Redis + this worker on a VPS.
-  # ---------------------------------------------------------------------------
-  - type: worker
-    name: hackflow-worker
-    runtime: docker
-    dockerfilePath: ./Dockerfile
-    dockerCommand: celery -A HackFlow worker --loglevel=info --concurrency=2
-    plan: 0.5c-512mb
-    region: oregon
-    envVars:
-      - fromGroup: hackflow-shared
-      - key: DATABASE_URL
-        fromDatabase:
-          name: hackflow-postgres
-          property: connectionString
-      - key: DB_CONN_MAX_AGE
-        value: "60"
-      - key: DB_CONN_HEALTH_CHECKS
-        value: "True"
-      - key: DB_SSL_REQUIRE
-        value: "True"
-      - key: REDIS_URL
-        fromService:
-          name: hackflow-redis
-          type: keyvalue
-          property: connectionString
-      - key: AI_ASYNC_ENABLED
-        value: "True"
-      - key: CELERY_TASK_ALWAYS_EAGER
-        value: "False"
-      - key: CELERY_TASK_TIME_LIMIT
-        value: "60"
-      # Only the web container runs migrations/collectstatic.
-      - key: RUN_MIGRATIONS
-        value: "0"
-      - key: RUN_COLLECTSTATIC
-        value: "0"
-      # Reuse the value entered once on the web service.
-      - key: GROQ_API_KEY
-        fromService:
-          name: hackflow
-          type: web
-          envVarKey: GROQ_API_KEY
+  # Render has no free background-worker plan. The Celery worker therefore
+  # runs inside the free web service (see scripts/start-render.sh). On a paid
+  # plan, move it to a `type: worker` service and remove the worker startup
+  # from that script.
 
   - type: keyvalue
     name: hackflow-redis

@@ -64,4 +64,17 @@ if [ "${RUN_COLLECTSTATIC:-1}" = "1" ]; then
     python manage.py collectstatic --noinput
 fi
 
+# Demo data is on by default because this is a demo project. It runs only in
+# the web container (workers set RUN_MIGRATIONS=0) and is idempotent, so it is
+# safe on every restart. The command requires DEMO_ADMIN_PASSWORD and
+# DEMO_PASSWORD; without them startup fails loudly instead of creating accounts
+# with unknown passwords. Set SEED_DEMO_DATA=False for an empty database.
+if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then
+    case "${SEED_DEMO_DATA:-1}" in
+        1|true|True|TRUE|yes|Yes|YES|on|On|ON)
+            python manage.py seed_demo
+            ;;
+    esac
+fi
+
 exec "$@"

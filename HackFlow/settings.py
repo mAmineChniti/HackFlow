@@ -220,6 +220,11 @@ CELERY_BROKER_URL = REDIS_URL or "memory://"
 CELERY_TASK_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_TIME_LIMIT = int(os.getenv("CELERY_TASK_TIME_LIMIT", "60"))
+# Redis redelivers unacknowledged tasks after this many seconds. Keep it above
+# the task time limit so a running evaluation is not executed twice.
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    "visibility_timeout": int(os.getenv("CELERY_VISIBILITY_TIMEOUT", "120")),
+}
 # With AI_ASYNC_ENABLED but no broker (demo without Redis), run tasks inline
 # through the Celery API so the endpoint still returns a result.
 CELERY_TASK_ALWAYS_EAGER = env_bool("CELERY_TASK_ALWAYS_EAGER", AI_ASYNC_ENABLED and not REDIS_URL)
@@ -260,6 +265,10 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 # Fichiers uploadés (logos sponsors, banners, etc.)
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+# Django only serves /media/ in DEBUG. On a host without Nginx or object
+# storage (Render free), set SERVE_MEDIA=True. Behind a real proxy or with
+# S3/R2-backed storage, leave it False and let that layer serve uploads.
+SERVE_MEDIA = env_bool("SERVE_MEDIA", False)
 
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
