@@ -79,7 +79,16 @@ project's SMTP settings.
 
 ## Demo data
 
-Run the seed command in development:
+For the complete site demo (roles, hackathons, projects, sponsors, generated
+media), use the project-wide idempotent seeder:
+
+```bash
+python manage.py seed_demo
+```
+
+`seed_demo` is also what the web container runs at startup when
+`SEED_DEMO_DATA=True`. The sponsor-only command below remains useful for module
+tests and isolated sponsor demos:
 
 ```bash
 python manage.py seed_sponsors
