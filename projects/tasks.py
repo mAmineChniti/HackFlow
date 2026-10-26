@@ -12,9 +12,12 @@ authorization (``user_id``) and expiry in one place.
 
 import logging
 import uuid
+from time import perf_counter
 
 from celery import shared_task
 from django.core.cache import cache
+
+from core.ai_metrics import record_ai_run
 
 logger = logging.getLogger(__name__)
 
@@ -70,12 +73,14 @@ def run_ai_evaluation(
     """
     from . import ai_service
 
+    started = perf_counter()
     try:
         data = ai_service.analyse_project(
             title=title,
             tagline=tagline,
             description=description,
             category=category,
+            mode="async",
         )
         # Never persist or return the raw exception text (see view comment).
         data.pop("error", None)
@@ -106,6 +111,13 @@ def run_ai_evaluation(
         )
     except Exception:
         logger.exception("AI evaluation task %s failed for project %s", task_id, project_id)
+        record_ai_run(
+            "project_evaluation",
+            "error",
+            (perf_counter() - started) * 1000,
+            mode="async",
+            success=False,
+        )
         set_task_state(
             task_id,
             {

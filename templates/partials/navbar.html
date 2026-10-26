@@ -133,6 +133,12 @@
                             Projects Admin
                         </a>
                     </c-dropdown_menu.item>
+                    <c-dropdown_menu.item>
+                        <a href="{% url 'projects:ai_metrics' %}" class="flex w-full items-center gap-2 text-foreground">
+                            <c-lucideicon.chart-column class="size-4 text-muted-foreground" />
+                            AI Evaluation Metrics
+                        </a>
+                    </c-dropdown_menu.item>
                     {% endif %}
                     {% if user.is_staff or user.is_superuser %}
                     <c-dropdown_menu.item>

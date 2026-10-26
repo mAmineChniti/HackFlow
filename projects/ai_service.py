@@ -8,7 +8,9 @@ Deux fonctionnalités d'évaluation IA à forte valeur ajoutée :
 import json
 import logging
 import re
+from time import perf_counter
 
+from core.ai_metrics import record_ai_run
 from core.groq import DEFAULT_AI_MODEL, call_groq, get_api_key, get_model
 
 logger = logging.getLogger(__name__)
@@ -97,7 +99,14 @@ def _fallback_analyse(title: str, tagline: str, description: str, category: str)
     }
 
 
-def analyse_project(title: str, tagline: str, description: str, category: str) -> dict:
+def analyse_project(
+    title: str,
+    tagline: str,
+    description: str,
+    category: str,
+    *,
+    mode: str = "sync",
+) -> dict:
     """
     Évalue un projet étudiant avec Groq.
     Retourne :
@@ -107,6 +116,18 @@ def analyse_project(title: str, tagline: str, description: str, category: str) -
       - weaknesses  : list[str] (pistes d'amélioration)
       - source      : 'Groq' ou 'IA Locale'
     """
+    started = perf_counter()
+
+    def finish(result: dict) -> dict:
+        record_ai_run(
+            "project_evaluation",
+            result.get("source_key", "unknown"),
+            (perf_counter() - started) * 1000,
+            mode=mode,
+            success=not result.get("failed", False),
+        )
+        return result
+
     prompt = f"""You are an expert jury member for an elite tech hackathon.
 Objectively evaluate this student project submitted for the hackathon.
 
@@ -129,7 +150,7 @@ Respond ONLY with strict, valid JSON:
 
     raw_text = _call_groq_api(prompt)
     if not raw_text:
-        return _fallback_analyse(title, tagline, description, category)
+        return finish(_fallback_analyse(title, tagline, description, category))
 
     try:
         if "```" in raw_text:
@@ -137,21 +158,23 @@ Respond ONLY with strict, valid JSON:
             if match:
                 raw_text = match.group(1).strip()
         data = json.loads(raw_text)
-        return {
-            "score": max(1, min(10, int(data.get("score", 7)))),
-            "comment": data.get("comment", "Evaluation generated successfully."),
-            "strengths": data.get("strengths", [])[:3],
-            "weaknesses": data.get("weaknesses", [])[:3],
-            "source": f"Groq ({get_model()})",
-            "source_key": "remote",
-        }
+        return finish(
+            {
+                "score": max(1, min(10, int(data.get("score", 7)))),
+                "comment": data.get("comment", "Evaluation generated successfully."),
+                "strengths": data.get("strengths", [])[:3],
+                "weaknesses": data.get("weaknesses", [])[:3],
+                "source": f"Groq ({get_model()})",
+                "source_key": "remote",
+            }
+        )
     except Exception as e:
         # Log the detail server-side only: returning str(e) to the browser can
         # expose endpoint URLs, project ids and credential-related messages.
         logger.warning("Error parsing Groq response in analyse_project: %s", e)
         fallback = _fallback_analyse(title, tagline, description, category)
         fallback["failed"] = True
-        return fallback
+        return finish(fallback)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -166,12 +189,16 @@ def _fallback_detect_category(title: str, description: str) -> dict:
     keywords = {
         "ai": [
             "ia",
+            "artificial intelligence",
             "intelligence artificielle",
             "machine learning",
             "deep learning",
             "nlp",
             "llm",
             "chat",
+            "classifier",
+            "generative",
+            "neural",
             "modèle",
             "data",
             "vision",
@@ -179,9 +206,15 @@ def _fallback_detect_category(title: str, description: str) -> dict:
         "cyber": [
             "sécurité",
             "cyber",
+            "cybersecurity",
+            "security",
+            "phishing",
+            "encryption",
+            "malware",
             "pentest",
             "chiffrement",
             "vulnerability",
+            "threat",
             "auth",
             "authentification",
             "firewall",
@@ -191,20 +224,31 @@ def _fallback_detect_category(title: str, description: str) -> dict:
             "arduino",
             "raspberry",
             "capteur",
+            "sensor",
+            "sensors",
+            "embedded",
             "embarqué",
+            "microcontroller",
             "hardware",
             "bluetooth",
             "robot",
+            "drone",
         ],
         "green": [
             "vert",
             "écologie",
             "climat",
+            "carbon",
             "carbone",
+            "recycling",
             "recyclage",
+            "energy",
             "énergie",
             "green",
             "durable",
+            "sustainability",
+            "sustainable",
+            "waste",
             "déchet",
         ],
         "mobile": [
@@ -218,12 +262,14 @@ def _fallback_detect_category(title: str, description: str) -> dict:
         ],
         "web": [
             "web",
+            "website",
             "site",
             "plateforme",
             "django",
             "react",
             "html",
             "portail",
+            "portal",
             "saas",
             "dashboard",
         ],
@@ -252,6 +298,17 @@ def detect_category(title: str, description: str) -> dict:
     """
     Analyse le titre et la description et suggère automatiquement la catégorie idoine.
     """
+    started = perf_counter()
+
+    def finish(result: dict) -> dict:
+        record_ai_run(
+            "category_detection",
+            result.get("source_key", "unknown"),
+            (perf_counter() - started) * 1000,
+            success=not result.get("failed", False),
+        )
+        return result
+
     categories_list = "\n".join([f'- "{k}": {v}' for k, v in CATEGORY_CHOICES.items()])
 
     prompt = f"""You are an AI assistant for a tech hackathon.
@@ -274,7 +331,7 @@ Respond ONLY with strict JSON:
 
     raw_text = _call_groq_api(prompt)
     if not raw_text:
-        return _fallback_detect_category(title, description)
+        return finish(_fallback_detect_category(title, description))
 
     try:
         if "```" in raw_text:
@@ -285,17 +342,19 @@ Respond ONLY with strict JSON:
         cat_key = data.get("category", "other")
         if cat_key not in CATEGORY_CHOICES:
             cat_key = "other"
-        return {
-            "category": cat_key,
-            "category_label": CATEGORY_CHOICES[cat_key],
-            "confidence": data.get("confidence", "medium"),
-            "reason": data.get("reason", "Category determined by Groq semantic analysis."),
-            "source": f"Groq ({get_model()})",
-            "source_key": "remote",
-        }
+        return finish(
+            {
+                "category": cat_key,
+                "category_label": CATEGORY_CHOICES[cat_key],
+                "confidence": data.get("confidence", "medium"),
+                "reason": data.get("reason", "Category determined by Groq semantic analysis."),
+                "source": f"Groq ({get_model()})",
+                "source_key": "remote",
+            }
+        )
     except Exception as e:
         # Server-side log only; the browser never sees the exception text.
         logger.warning("Error parsing Groq response in detect_category: %s", e)
         fallback = _fallback_detect_category(title, description)
         fallback["failed"] = True
-        return fallback
+        return finish(fallback)

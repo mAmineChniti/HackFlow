@@ -228,6 +228,7 @@ class AccessControlMatrixTests(TestCase):
     def test_organizer_only_project_urls_redirect_anonymous_to_login(self):
         for url in (
             reverse("projects:admin_dashboard"),
+            reverse("projects:ai_metrics"),
             reverse("projects:export_csv"),
             reverse("projects:export_pdf"),
             reverse("projects:project_create"),
@@ -262,6 +263,7 @@ class AccessControlMatrixTests(TestCase):
         self.client.login(username="student", password=PASSWORD)
         for url in (
             reverse("projects:admin_dashboard"),
+            reverse("projects:ai_metrics"),
             reverse("projects:export_csv"),
             reverse("projects:export_pdf"),
         ):

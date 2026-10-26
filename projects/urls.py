@@ -11,6 +11,7 @@ urlpatterns = [
     path("admin-dashboard/export-pdf/", views.export_projects_pdf, name="export_pdf"),
     path("admin-dashboard/<slug:slug>/review/", views.project_admin_review, name="admin_review"),
     path("admin-dashboard/<slug:slug>/score/", views.project_score, name="project_score"),
+    path("ai/metrics/", views.project_ai_metrics, name="ai_metrics"),
     path("ai/detect-category/", views.project_ai_detect_category, name="ai_detect_category"),
     path("<slug:slug>/", views.project_detail, name="project_detail"),
     path("<slug:slug>/ai-analyze/", views.project_ai_analyze, name="ai_analyze"),

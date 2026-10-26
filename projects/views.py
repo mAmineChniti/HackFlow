@@ -1,5 +1,6 @@
 import csv
 import logging
+from time import perf_counter
 
 from django.conf import settings
 from django.contrib import messages
@@ -13,7 +14,11 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from core.ai_metrics import record_ai_run, summarize_ai_runs
+from core.groq import get_model, is_configured
+
 from . import ai_service, services, tasks
+from .ai_benchmark import evaluate_category_classifier, evaluate_generative_quality
 from .forms import (
     ConseilMentorForm,
     ProjectForm,
@@ -422,6 +427,39 @@ def project_admin_dashboard(request):
 
 
 @login_required
+def project_ai_metrics(request):
+    """Present the rubric's AI metrics: classifier quality, quality rubric,
+    measured latency and the async execution configuration.
+
+    Restricted to organizers/admins because it exposes operational AI details
+    (model name, broker state, live latency, recent call history).
+    """
+    if not services.is_organizer(request.user):
+        raise PermissionDenied("AI metrics are reserved for organizers and administrators.")
+
+    classification = evaluate_category_classifier()
+    generative = evaluate_generative_quality()
+    live = summarize_ai_runs()
+
+    context = {
+        "classification": classification,
+        "generative": generative,
+        "live": live,
+        "ai_config": {
+            "remote_configured": is_configured(),
+            "model": get_model(),
+            "async_enabled": bool(getattr(settings, "AI_ASYNC_ENABLED", False)),
+            "broker_configured": bool(getattr(settings, "REDIS_URL", "")),
+            "celery_eager": bool(getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False)),
+            "rate_limit_max": getattr(settings, "AI_RATE_LIMIT_MAX", 0),
+            "rate_limit_window": getattr(settings, "AI_RATE_LIMIT_WINDOW", 60),
+        },
+        "measured_at": timezone.now(),
+    }
+    return render(request, "projects/ai_metrics.html", context)
+
+
+@login_required
 def project_admin_review(request, slug):
     """Accept or reject a project — Organizer/Admin only."""
     project = get_object_or_404(Project, slug=slug)
@@ -802,11 +840,13 @@ def project_ai_analyze(request, slug):
     data = cache.get(cache_key)
 
     if data:
+        record_ai_run("project_evaluation", "cache", 0.0, mode="cache")
         return JsonResponse({**data, "source_key": "cache"})
 
     category = project.get_category_display() or project.category
 
     if getattr(settings, "AI_ASYNC_ENABLED", False):
+        enqueue_started = perf_counter()
         task_id = tasks.new_task_id()
         tasks.set_task_state(
             task_id,
@@ -835,7 +875,21 @@ def project_ai_analyze(request, slug):
             # synchronous call so the endpoint keeps working (robustness).
             logger.exception("Failed to enqueue AI evaluation for project %s", project.pk)
             tasks.discard_task_state(task_id)
+            record_ai_run(
+                "evaluation_enqueue",
+                "broker_fallback",
+                (perf_counter() - enqueue_started) * 1000,
+                mode="sync",
+                success=False,
+            )
         else:
+            record_ai_run(
+                "evaluation_enqueue",
+                "queued",
+                (perf_counter() - enqueue_started) * 1000,
+                mode="async",
+                success=True,
+            )
             return JsonResponse(
                 {
                     "status": "queued",
