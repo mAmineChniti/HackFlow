@@ -87,8 +87,6 @@ INSTALLED_APPS = [
     "django_cotton",
     "cotton_icons",
     "django_htmx",
-    # Django MCP server
-    "django_mcp",
     # CORS support (enable when adding API endpoints)
     # "corsheaders",
     # Local apps
