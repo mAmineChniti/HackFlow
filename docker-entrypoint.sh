@@ -56,7 +56,27 @@ PY
 # Optional: reset database schema (use on first deploy after migration changes)
 if [ "${RESET_DB:-0}" = "1" ]; then
     echo "Resetting database schema..."
-    python manage.py flush --noinput
+    # Drop all tables and re-run migrations from scratch to ensure a clean
+    # state after migration changes. flush only deletes data, not schema.
+    python - <<'PY'
+import os
+import sys
+import django
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "HackFlow.settings")
+django.setup()
+
+from django.db import connection
+
+# Drop all tables to ensure a clean slate, then let migrate recreate them.
+with connection.cursor() as cursor:
+    tables = connection.introspection.table_names()
+    for table in tables:
+        cursor.execute(f'DROP TABLE IF EXISTS "{table}" CASCADE')
+    cursor.execute('DROP TABLE IF EXISTS "django_migrations" CASCADE')
+
+print("All tables dropped")
+PY
     python manage.py migrate --noinput
 else
     # Migrations belong to the web process. Workers set

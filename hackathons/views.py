@@ -503,8 +503,7 @@ def ai_generate_hackathon(request):
         return JsonResponse({"error": "POST method required."}, status=405)
 
     user = request.user
-    is_organizer = is_organizer(user)
-    if not is_organizer:
+    if not is_organizer(user):
         return JsonResponse({"error": "Only organizers can use the AI Assistant."}, status=403)
 
     try:
