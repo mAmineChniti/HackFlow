@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('hackathons', '0002_alter_hackathon_options_alter_hackathon_end_date_and_more'),
+        ('hackathons', '0002_alter_hackathonregistration_options_and_more'),
         ('hackathons', '0005_hackathonregistration_checked_in_and_more'),
     ]
 
