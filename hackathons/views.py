@@ -31,7 +31,7 @@ from .emails import (
 )
 from .forms import HackathonForm, RegistrationForm, ScheduleForm
 from .models import Hackathon, HackathonRegistration, HackathonSchedule
-from projects.services import is_organizer, is_admin, is_student
+from projects.services import is_organizer, is_admin, is_student, is_judge, is_mentor
 
 
 class HackathonListView(ListView):
@@ -440,36 +440,39 @@ def unregister_participant(request, slug):
 @login_required
 def organizer_dashboard(request):
     user = request.user
-    role = hasattr(user, "profile") and user.profile.role or "student"
 
-    if user.is_superuser or role == "admin":
+    if user.is_superuser or is_admin(user):
         hackathons = (
             Hackathon.objects.all()
             .annotate(total_registered=Count("registrations"))
             .order_by("-created_at")
         )
         dashboard_title = "Admin Portal — All Platform Hackathons"
-    elif role == "judge":
+        user_role = "admin"
+    elif is_judge(user):
         hackathons = (
             Hackathon.objects.filter(judges=user)
             .annotate(total_registered=Count("registrations"))
             .order_by("-created_at")
         )
         dashboard_title = "Judge Portal — Assigned Hackathons for Evaluation"
-    elif role == "mentor":
+        user_role = "judge"
+    elif is_mentor(user):
         hackathons = (
             Hackathon.objects.filter(mentors=user)
             .annotate(total_registered=Count("registrations"))
             .order_by("-created_at")
         )
         dashboard_title = "Mentor Portal — Assigned Hackathons for Mentoring"
-    elif role == "organizer":
+        user_role = "mentor"
+    elif is_organizer(user):
         hackathons = (
             Hackathon.objects.filter(organizer=user)
             .annotate(total_registered=Count("registrations"))
             .order_by("-created_at")
         )
         dashboard_title = "Organizer Dashboard — Hosted Hackathons"
+        user_role = "organizer"
     else:  # Student
         hackathons = (
             Hackathon.objects.filter(registrations__participant=user)
@@ -477,6 +480,7 @@ def organizer_dashboard(request):
             .order_by("-created_at")
         )
         dashboard_title = "Student Dashboard — My Registered Hackathons"
+        user_role = "student"
 
     return render(
         request,
@@ -484,7 +488,7 @@ def organizer_dashboard(request):
         {
             "hackathons": hackathons,
             "dashboard_title": dashboard_title,
-            "user_role": role,
+            "user_role": user_role,
         },
     )
 
@@ -499,11 +503,7 @@ def ai_generate_hackathon(request):
         return JsonResponse({"error": "POST method required."}, status=405)
 
     user = request.user
-    is_organizer = (
-        user.is_superuser
-        or user.is_staff
-        or (hasattr(user, "profile") and user.profile.is_organizer_user)
-    )
+    is_organizer = is_organizer(user)
     if not is_organizer:
         return JsonResponse({"error": "Only organizers can use the AI Assistant."}, status=403)
 

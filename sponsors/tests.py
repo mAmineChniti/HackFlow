@@ -1088,10 +1088,11 @@ class SponsorRolePermissionTest(TestCase):
     def test_default_role_permissions(self):
         expected = {
             "admin": SPONSOR_PERMISSIONS,
-            "organisateur": {"manage", "view_confidential", "contact", "export"},
-            "etudiant": set(),
-            "jury": set(),
-            "visiteur": set(),
+            "organizer": {"manage", "view_confidential", "contact", "export"},
+            "student": set(),
+            "judge": set(),
+            "mentor": set(),
+            "visitor": set(),
         }
         self.assertEqual(ROLE_PERMISSIONS, expected)
 
@@ -1235,8 +1236,8 @@ class SponsorRolePermissionTest(TestCase):
         self.user.profile.save(update_fields=["role"])
 
         self.assertFalse(self.user.is_staff)
-        # accounts roles are mapped onto the French label used here.
-        self.assertEqual(get_user_roles(self.user), {"organisateur"})
+        # accounts roles are mapped directly (English values used throughout).
+        self.assertEqual(get_user_roles(self.user), {"organizer"})
         self.assertTrue(can_view_confidential(self.user))
         self.assertTrue(can_manage_sponsorship(self.user, self.sponsorship))
         self.assertEqual(

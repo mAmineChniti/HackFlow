@@ -1,5 +1,5 @@
 """
-Template tags pour le module Gestion des Sponsors.
+Template tags for the Sponsors module.
 """
 
 from django import template
@@ -20,9 +20,9 @@ register = template.Library()
 @register.simple_tag
 def get_confirmed_sponsors(limit=6, user=None):
     """
-    Retourne jusqu'à 'limit' sponsorships confirmés dédoublonnés par sponsor.
-    Un sponsor confirmé sur plusieurs hackathons n'apparaît qu'une seule fois.
-    Utilise select_related('sponsor') pour éviter les requêtes N+1.
+    Returns up to 'limit' confirmed sponsorships deduplicated by sponsor.
+    A sponsor confirmed on multiple hackathons appears only once.
+    Uses select_related('sponsor') to avoid N+1 queries.
     """
     visible_sponsorships = sponsorships_visible_to(user)
     # The home page only displays confirmed public information, even when the

@@ -1,5 +1,7 @@
-{% load sponsor_tags %}
+{% load sponsor_tags project_tags %}
 {% can_manage_sponsors user as user_can_manage_sponsors %}
+{% is_organizer user as user_is_organizer %}
+{% is_admin user as user_is_admin %}
 <header class="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 header-blur">
     <div class="container-page flex h-16 items-center justify-between gap-4">
         <div class="flex items-center gap-8">
@@ -45,11 +47,11 @@
                             {{ user.username|slice:":2" }}
                         </span>
                         <span class="hidden max-w-28 truncate lg:inline">{{ user.username }}</span>
-                        {% if user.profile.is_admin_user %}
+                        {% if user_is_admin %}
                         <span class="hidden sm:inline-flex rounded-md border border-rose-500/40 bg-rose-500/15 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-rose-400 shadow-xs">
                             Admin
                         </span>
-                        {% elif user.profile.is_organizer_user %}
+                        {% elif user_is_organizer %}
                         <span class="hidden sm:inline-flex rounded-md border border-primary/40 bg-primary/15 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wider text-primary">
                             Org
                         </span>
@@ -126,7 +128,7 @@
                         </a>
                     </c-dropdown_menu.item>
                     {% endif %}
-                    {% if user.profile.role == 'organizer' or user.profile.role == 'admin' or user.is_staff or user.is_superuser %}
+                    {% if user_is_organizer or user_is_admin or user.is_staff or user.is_superuser %}
                     <c-dropdown_menu.item>
                         <a href="{% url 'projects:admin_dashboard' %}" class="flex w-full items-center gap-2 text-primary font-medium">
                             <c-lucideicon.shield-check class="size-4 text-primary" />
