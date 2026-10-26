@@ -57,15 +57,12 @@ services:
           property: connectionString
       - key: DB_CONN_MAX_AGE
         value: "60"
-      - key: DB_CONN_HEALTH_CHECKS
-        value: "True"
       - key: DB_SSL_REQUIRE
         value: "True"
+      # REDIS_URL: Set manually in Render Dashboard → Environment after creating
+      # your Redis instance externally. Sync: false to avoid blueprint creation.
       - key: REDIS_URL
-        fromService:
-          name: hackflow-redis
-          type: keyvalue
-          property: connectionString
+        sync: false
       # Celery/Redis async AI. The co-located worker consumes the long Groq
       # calls so HTTP requests are never blocked.
       - key: AI_ASYNC_ENABLED
@@ -115,13 +112,4 @@ services:
   # plan, move it to a `type: worker` service and remove the worker startup
   # from that script.
 
-  - type: keyvalue
-    name: hackflow-redis
-    plan: free
-    region: oregon
-    # Empty allow list = private network only (the web service reaches it
-    # internally).
-    ipAllowList: []
-    # This instance is both the shared cache and the Celery broker. Never
-    # evict keys: dropping a queued job would silently lose an AI evaluation.
-    maxmemoryPolicy: noeviction
+  # Redis (KeyValue) is created externally. Set REDIS_URL in Environment.
