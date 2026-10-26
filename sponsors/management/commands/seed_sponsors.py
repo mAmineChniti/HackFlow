@@ -143,16 +143,6 @@ class Command(BaseCommand):
             if options["reset"]:
                 self.reset_demo_records()
 
-            today = timezone.now().date()
-            hackathon, _ = Hackathon.objects.get_or_create(
-                name=DEMO_HACKATHON_NAME,
-                defaults={
-                    "theme": "Fictional AI and green technology demo",
-                    "start_date": today + datetime.timedelta(days=15),
-                    "end_date": today + datetime.timedelta(days=17),
-                },
-            )
-
             staff_user = next(
                 (
                     user
@@ -160,6 +150,31 @@ class Command(BaseCommand):
                     if can_manage_sponsors(user)
                 ),
                 None,
+            )
+            if staff_user is None:
+                self.stderr.write(
+                    self.style.ERROR(
+                        "Blocked: no user with sponsor-management permission is "
+                        "available to own the demo hackathon."
+                    )
+                )
+                return
+
+            now = timezone.now()
+            hackathon, _ = Hackathon.objects.get_or_create(
+                title=DEMO_HACKATHON_NAME,
+                defaults={
+                    "tagline": "Fictional AI and green technology demo",
+                    "description": "A demo hackathon used by the sponsor seed command.",
+                    "category": "AI & GreenTech",
+                    "registration_start": now,
+                    "registration_deadline": now + datetime.timedelta(days=14),
+                    "start_date": now + datetime.timedelta(days=15),
+                    "end_date": now + datetime.timedelta(days=17),
+                    "organizer": staff_user,
+                    "status": Hackathon.Status.REGISTRATION_OPEN,
+                    "is_published": True,
+                },
             )
             for sponsor_data in SPONSORS_DATA:
                 data = sponsor_data.copy()
@@ -210,7 +225,7 @@ class Command(BaseCommand):
         )
 
     def reset_demo_records(self):
-        demo_hackathons = Hackathon.objects.filter(name=DEMO_HACKATHON_NAME)
+        demo_hackathons = Hackathon.objects.filter(title=DEMO_HACKATHON_NAME)
         demo_sponsorships = Sponsorship.objects.filter(
             hackathon__in=demo_hackathons,
             sponsor__name__endswith=DEMO_SUFFIX,

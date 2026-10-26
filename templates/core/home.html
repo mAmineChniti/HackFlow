@@ -359,7 +359,7 @@
                     Pick a weekend. Find a team. Ship something you're proud of.
                 </p>
             </div>
-            <c-button_link href="#join" variant="outline" size="sm" class="w-fit">
+            <c-button_link href="{% url 'hackathons:list' %}" variant="outline" size="sm" class="w-fit">
                 View all events
                 <c-lucideicon.arrow-right />
             </c-button_link>
@@ -368,20 +368,26 @@
         <div class="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {% for event in hackathons %}
             <c-card class="group flex flex-col overflow-hidden border-border/70 bg-card/50 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40">
-                <div class="relative h-28 overflow-hidden border-b border-border/60 {{ event.gradient }}">
-                    <div class="absolute inset-0 bg-grid-pattern opacity-30"></div>
+                <div class="relative h-28 overflow-hidden border-b border-border/60 {% if event.gradient %}{{ event.gradient }}{% else %}bg-gradient-to-br from-primary/20 via-background to-secondary/30{% endif %}">
+                    {% if event.banner_image %}
+                        <img src="{{ event.banner_image.url }}" alt="{{ event.title }}" class="absolute inset-0 size-full object-cover opacity-60" />
+                    {% else %}
+                        <div class="absolute inset-0 bg-grid-pattern opacity-30"></div>
+                    {% endif %}
                     <div class="relative flex h-full flex-col justify-between p-5">
                         <div class="flex items-center justify-between gap-2">
                             <span class="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{{ event.category }}</span>
-                            <c-badge variant="{{ event.badge_variant }}" class="shrink-0 backdrop-blur-sm">{{ event.status }}</c-badge>
+                            <c-badge variant="{{ event.badge_variant|default:'outline' }}" class="shrink-0 backdrop-blur-sm">{{ event.status }}</c-badge>
                         </div>
-                        <p class="font-mono text-[11px] text-muted-foreground">{{ event.duration }}</p>
+                        <p class="font-mono text-[11px] text-muted-foreground">// {{ event.duration|default:"HackFlow challenge" }}</p>
                     </div>
                 </div>
 
                 <c-card.header class="pb-3">
-                    <c-card.title class="text-lg">{{ event.name }}</c-card.title>
-                    <c-card.description>{{ event.theme|default:"Details to be announced" }}</c-card.description>
+                    <c-card.title class="text-lg">
+                        <a href="{{ event.url }}" class="transition-colors hover:text-primary">{{ event.title }}</a>
+                    </c-card.title>
+                    <c-card.description>{{ event.tagline|default:"Details to be announced" }}</c-card.description>
                 </c-card.header>
 
                 <c-card.content class="flex-1 space-y-4 pt-0">
@@ -391,15 +397,31 @@
                             {{ event.dates }}
                         </div>
                         <div class="flex items-center gap-2 text-muted-foreground">
-                            <c-lucideicon.clock class="size-3.5 shrink-0" />
-                            {{ event.duration|default:"Duration TBA" }}
+                            <c-lucideicon.map-pin class="size-3.5 shrink-0" />
+                            {{ event.mode }}
                         </div>
+                        <div class="flex items-center gap-2 text-muted-foreground">
+                            <c-lucideicon.trophy class="size-3.5 shrink-0" />
+                            <span class="font-medium text-foreground">{{ event.prize }}</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-muted-foreground">
+                            <c-lucideicon.users class="size-3.5 shrink-0" />
+                            {{ event.registered|intcomma }} registered
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between text-[11px] text-muted-foreground">
+                            <span>{{ event.registered|intcomma }} / {{ event.capacity|intcomma }} spots</span>
+                            <span class="font-mono">{{ event.progress }}%</span>
+                        </div>
+                        <c-progress value="{{ event.registered }}" max="{{ event.capacity }}" />
                     </div>
                 </c-card.content>
 
                 <c-card.footer class="pt-0">
-                    <c-button_link href="#join" variant="outline" size="sm" class="w-full">
-                        {% if event.is_finished %}Event finished{% else %}Register interest{% endif %}
+                    <c-button_link href="{{ event.url }}" variant="outline" size="sm" class="w-full">
+                        {% if event.is_cancelled %}Event cancelled{% elif event.is_finished %}View recap{% else %}View details{% endif %}
                         <c-lucideicon.arrow-right />
                     </c-button_link>
                 </c-card.footer>

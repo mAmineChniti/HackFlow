@@ -44,9 +44,11 @@ def build_sanitized_ai_payload(
     tone: str = "professionnel",
 ) -> Dict[str, Any]:
     """Build an LLM payload that excludes sensitive or confidential data."""
-    hackathon_name = getattr(hackathon, "name", "") or "our next innovation hackathon"
+    hackathon_name = getattr(hackathon, "title", "") or "our next innovation hackathon"
     hackathon_theme = (
-        getattr(hackathon, "theme", "") or "Technology innovation and software engineering"
+        getattr(hackathon, "tagline", "")
+        or getattr(hackathon, "category", "")
+        or "Technology innovation and software engineering"
     )
 
     dates = ""

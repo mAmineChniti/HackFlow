@@ -21,7 +21,6 @@ User = get_user_model()
 
 class HomePageDataTests(TestCase):
     def setUp(self):
-        self.today = timezone.localdate()
         self.user = User.objects.create_user(
             username="builder", email="builder@example.com", password="pwd"
         )
@@ -37,11 +36,19 @@ class HomePageDataTests(TestCase):
         return Project.objects.create(title=title, **defaults)
 
     def _make_event(self, name, start_offset, end_offset, theme="Theme"):
+        now = timezone.now()
         return Hackathon.objects.create(
-            name=name,
-            theme=theme,
-            start_date=self.today + timedelta(days=start_offset),
-            end_date=self.today + timedelta(days=end_offset),
+            title=name,
+            tagline=theme,
+            description="A test hackathon.",
+            category="General",
+            registration_start=now - timedelta(days=1),
+            registration_deadline=now + timedelta(days=max(start_offset - 1, 0)),
+            start_date=now + timedelta(days=start_offset),
+            end_date=now + timedelta(days=end_offset),
+            organizer=self.user,
+            status=Hackathon.Status.REGISTRATION_OPEN,
+            is_published=True,
         )
 
     # ------------------------------------------------------------------
@@ -82,23 +89,38 @@ class HomePageDataTests(TestCase):
         self.assertIn("Completed", content)
 
     def test_same_month_dates_are_formatted_as_a_range(self):
-        start = timezone.localdate().replace(month=11, day=14)
+        now = timezone.localtime()
+        year = now.year if now.month <= 11 else now.year + 1
+        start = now.replace(
+            year=year, month=11, day=14, hour=9, minute=0, second=0, microsecond=0
+        )
         Hackathon.objects.create(
-            name="Range Event", start_date=start, end_date=start + timedelta(days=2)
+            title="Range Event",
+            tagline="Date formatting",
+            description="A test hackathon.",
+            category="General",
+            registration_start=start - timedelta(days=1),
+            registration_deadline=start - timedelta(hours=1),
+            start_date=start,
+            end_date=start + timedelta(days=2),
+            organizer=self.user,
+            status=Hackathon.Status.REGISTRATION_OPEN,
+            is_published=True,
         )
 
         content = self.client.get(reverse("core:home")).content.decode()
 
         self.assertIn("14 – 16 Nov", content)
 
-    def test_event_without_dates_does_not_break_the_page(self):
-        Hackathon.objects.create(name="Undated Event")
+    def test_event_with_blank_optional_details_uses_fallbacks(self):
+        self._make_event("Bare Event", 5, 7, theme="")
 
         response = self.client.get(reverse("core:home"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Undated Event")
-        self.assertContains(response, "Dates to be announced")
+        self.assertContains(response, "Bare Event")
+        self.assertContains(response, "Details to be announced")
+        self.assertContains(response, "Prize TBA")
 
     # ------------------------------------------------------------------
     # Leaderboard
@@ -164,7 +186,7 @@ class HomePageDataTests(TestCase):
         sponsor = Sponsor.objects.create(name="Counted Sponsor")
         Sponsorship.objects.create(
             sponsor=sponsor,
-            hackathon=Hackathon.objects.get(name="Counted Event"),
+            hackathon=Hackathon.objects.get(title="Counted Event"),
             tier=TierChoices.GOLD,
             amount=Decimal("1500.000"),
             status=StatusChoices.CONFIRME,

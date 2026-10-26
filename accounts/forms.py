@@ -1,3 +1,4 @@
+
 from django import forms
 from django.contrib.auth.forms import (
     AuthenticationForm,
@@ -56,6 +57,9 @@ class HackFlowAuthenticationForm(AuthenticationForm):
     }
 
 
+from .models import Profile
+
+
 class HackFlowSignupForm(UserCreationForm):
     email = forms.EmailField(
         label=_("Email"),
@@ -67,7 +71,6 @@ class HackFlowSignupForm(UserCreationForm):
             }
         ),
     )
-
     SIGNUP_ROLE_CHOICES = [
         (value, label)
         for value, label in Profile.Role.choices
@@ -79,6 +82,15 @@ class HackFlowSignupForm(UserCreationForm):
         choices=SIGNUP_ROLE_CHOICES,
         initial=Profile.Role.STUDENT,
         required=False,
+        widget=forms.Select(
+            attrs={
+                "class": (
+                    "flex h-10 w-full rounded-md border border-input bg-card/90 px-3 py-2 "
+                    "text-sm text-foreground shadow-xs transition-colors focus-visible:outline-hidden "
+                    "focus-visible:ring-1 focus-visible:ring-ring"
+                )
+            }
+        ),
         help_text=_(
             "Your role in HackFlow. Organizer and administrator roles are "
             "granted by the HackFlow team."
@@ -151,8 +163,8 @@ class HackFlowSignupForm(UserCreationForm):
         user = super().save(commit=commit)
         user.email = self.cleaned_data["email"]
         role = self.cleaned_data.get("role") or Profile.Role.STUDENT
-        # Signup never grants staff/superuser flags: elevated roles are assigned
-        # by an existing administrator (see accounts.admin.ProfileAdmin).
+        if role in PRIVILEGED_ROLES:
+            role = Profile.Role.STUDENT
         if commit:
             user.save()
             profile, _ = Profile.objects.get_or_create(user=user)

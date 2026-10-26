@@ -28,6 +28,7 @@ def health_check(request):
 urlpatterns = [
     path("", include("core.urls")),
     path("accounts/", include("accounts.urls")),
+    path("hackathons/", include("hackathons.urls", namespace="hackathons")),
     path("sponsors/", include("sponsors.urls")),
     path("projects/", include("projects.urls")),
     path("admin/", admin.site.urls),
@@ -35,6 +36,5 @@ urlpatterns = [
     path("healthz/", health_check, name="healthz"),
 ]
 
-# Serve des fichiers media en développement uniquement
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

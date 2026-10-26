@@ -209,7 +209,7 @@ class Sponsorship(models.Model):
         unique_together = [("sponsor", "hackathon")]
 
     def __str__(self):
-        return f"{self.sponsor.name} → {self.hackathon.name} [{self.get_tier_display()}]"
+        return f"{self.sponsor.name} → {self.hackathon.title} [{self.get_tier_display()}]"
 
     def change_status(self, new_status: str, changed_by: User) -> "StatusHistory | None":
         """

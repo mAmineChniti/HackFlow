@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} — HackFlow{% endblock %}
+
+{% block content %}
+<div class="relative py-10 md:py-14">
+    <!-- Back link -->
+    <div class="container-page mb-6">
+        <a href="{% url 'hackathons:list' %}" class="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
+            <c-lucideicon.arrow-left class="size-3.5" />
+            Back to Hackathons
+        </a>
+    </div>
+
+    <div class="container-page max-w-4xl space-y-8">
+        <!-- Header -->
+        <div class="border-b border-border/60 pb-6">
+            <div class="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-xs font-medium text-primary mb-3">
+                <span class="size-1.5 rounded-full bg-primary animate-pulse"></span>
+                Organizer Portal
+            </div>
+            <h1 class="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                {{ page_title }}
+            </h1>
+            <p class="mt-2 text-sm text-muted-foreground">
+                Configure your hackathon parameters, dates, team constraints, and judging criteria.
+            </p>
+        </div>
+
+        <!-- AI Assistant Banner -->
+        <div x-data="aiCopilot()" class="rounded-xl border border-primary/40 bg-gradient-to-r from-primary/10 via-background to-secondary/20 p-5 shadow-sm space-y-4">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">✨</span>
+                        <h2 class="text-sm font-semibold text-foreground">HackFlow AI Co-pilot</h2>
+                        <span class="rounded-full bg-primary/20 px-2 py-0.5 font-mono text-[10px] text-primary font-medium">Smart Generator</span>
+                    </div>
+                    <p class="text-xs text-muted-foreground">
+                        Type an event title below, then click to auto-generate a punchy tagline, comprehensive description, and scoring rubric.
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    @click="generateContent()"
+                    :disabled="loading"
+                    class="inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/20 px-4 py-2 font-mono text-xs font-medium text-primary hover:bg-primary/30 transition-all shrink-0 cursor-pointer disabled:opacity-50"
+                >
+                    <span x-show="!loading" class="flex items-center gap-1.5">
+                        <c-lucideicon.sparkles class="size-3.5" />
+                        Generate with AI
+                    </span>
+                    <span x-show="loading" class="flex items-center gap-1.5" style="display: none;">
+                        <svg class="animate-spin size-3.5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Crafting content...
+                    </span>
+                </button>
+            </div>
+
+            <!-- Optional Hints input -->
+            <div class="flex items-center gap-2 pt-2 border-t border-border/40">
+                <span class="text-[11px] font-mono text-muted-foreground whitespace-nowrap">AI Focus / Keywords:</span>
+                <input
+                    type="text"
+                    x-model="hints"
+                    placeholder="e.g. LLM agents, sustainable energy, zero-knowledge proofs (optional)"
+                    class="flex h-7 w-full rounded-md border border-border/60 bg-background/60 px-2.5 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-hidden focus:border-primary"
+                />
+            </div>
+
+            <div x-show="statusMsg" x-text="statusMsg" class="text-xs font-mono text-emerald-400 mt-2" style="display: none;"></div>
+            <div x-show="errorMsg" x-text="errorMsg" class="text-xs font-mono text-destructive mt-2" style="display: none;"></div>
+        </div>
+
+        <script>
+            function aiCopilot() {
+                return {
+                    loading: false,
+                    hints: '',
+                    statusMsg: '',
+                    errorMsg: '',
+                    async generateContent() {
+                        const titleInput = document.getElementById('id_title');
+                        const categoryInput = document.getElementById('id_category');
+                        const taglineInput = document.getElementById('id_tagline');
+                        const descInput = document.getElementById('id_description');
+                        const rulesInput = document.getElementById('id_rules');
+
+                        const title = titleInput ? titleInput.value.trim() : '';
+                        if (!title) {
+                            this.errorMsg = '⚠️ Please enter an Event Title first (e.g. AI Innovation Sprint 2026).';
+                            if (titleInput) titleInput.focus();
+                            return;
+                        }
+
+                        this.loading = true;
+                        this.statusMsg = '';
+                        this.errorMsg = '';
+
+                        try {
+                            const response = await fetch("{% url 'hackathons:ai_generate' %}", {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': '{{ csrf_token }}'
+                                },
+                                body: JSON.stringify({
+                                    title: title,
+                                    category: categoryInput ? categoryInput.value.trim() : '',
+                                    hints: this.hints
+                                })
+                            });
+
+                            const data = await response.json();
+                            if (data.success && data.data) {
+                                const res = data.data;
+                                if (taglineInput && res.tagline) taglineInput.value = res.tagline;
+                                if (descInput && res.description) descInput.value = res.description;
+                                if (rulesInput && res.rules) rulesInput.value = res.rules;
+                                if (categoryInput && !categoryInput.value && res.suggested_skills) {
+                                    categoryInput.value = res.suggested_skills.slice(0, 3).join(', ');
+                                }
+                                this.statusMsg = '✨ Fields filled with AI suggestions! You can customize them before saving.';
+                            } else {
+                                this.errorMsg = data.error || 'Failed to generate content.';
+                            }
+                        } catch (err) {
+                            this.errorMsg = 'Error connecting to AI service: ' + err.message;
+                        } finally {
+                            this.loading = false;
+                        }
+                    }
+                };
+            }
+        </script>
+
+        <!-- Form Card -->
+        <c-card class="border-border/80 bg-card/60 p-6 md:p-8 backdrop-blur-sm">
+            <form method="post" enctype="multipart/form-data" class="space-y-8">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <c-alert variant="destructive">
+                    <c-alert.description>
+                        {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                        {% endfor %}
+                    </c-alert.description>
+                </c-alert>
+                {% endif %}
+
+                <!-- Section 1 : General Information -->
+                <div class="space-y-4">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="sm:col-span-2 space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Event Title *</label>
+                            {{ form.title }}
+                            {% for error in form.title.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="sm:col-span-2 space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Tagline (One-line pitch) *</label>
+                            {{ form.tagline }}
+                            {% for error in form.tagline.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Category *</label>
+                            {{ form.category }}
+                            {% for error in form.category.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Difficulty Level</label>
+                            {{ form.difficulty }}
+                            {% for error in form.difficulty.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="sm:col-span-2 space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Detailed Description *</label>
+                            {{ form.description }}
+                            {% for error in form.description.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="sm:col-span-2 space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Banner Image</label>
+                            {{ form.banner_image }}
+                            {% for error in form.banner_image.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <c-separator />
+
+                <!-- Section 2 : Mode & Location -->
+                <div class="space-y-4">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Event Mode *</label>
+                            {{ form.mode }}
+                            {% for error in form.mode.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Physical Venue or Virtual Link</label>
+                            {{ form.location }}
+                            {% for error in form.location.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <c-separator />
+
+                <!-- Section 3 : Dates & Timeline -->
+                <div class="space-y-4">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Registration Opens *</label>
+                            {{ form.registration_start }}
+                            {% for error in form.registration_start.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Registration Deadline *</label>
+                            {{ form.registration_deadline }}
+                            {% for error in form.registration_deadline.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Event Start Date *</label>
+                            {{ form.start_date }}
+                            {% for error in form.start_date.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Event End Date *</label>
+                            {{ form.end_date }}
+                            {% for error in form.end_date.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <c-separator />
+
+                <!-- Section 4 : Participants, Teams & Prizes -->
+                <div class="space-y-4">
+                    <div class="grid gap-4 sm:grid-cols-3">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Max Capacity (builders)</label>
+                            {{ form.max_participants }}
+                            {% for error in form.max_participants.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Min Team Size</label>
+                            {{ form.min_team_size }}
+                            {% for error in form.min_team_size.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Max Team Size</label>
+                            {{ form.max_team_size }}
+                            {% for error in form.max_team_size.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="sm:col-span-2 space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Prizes / Bounties</label>
+                            {{ form.prize_pool }}
+                            {% for error in form.prize_pool.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Contact Email</label>
+                            {{ form.contact_email }}
+                            {% for error in form.contact_email.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="sm:col-span-3 space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Resources Link (Docs, APIs, Drive)</label>
+                            {{ form.resources_link }}
+                            {% for error in form.resources_link.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="sm:col-span-3 space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Rules & Guidelines</label>
+                            {{ form.rules }}
+                            {% for error in form.rules.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <c-separator />
+
+                <!-- Section 5 : Lifecycle & Visibility -->
+                <div class="space-y-4">
+                    <div class="grid gap-4 sm:grid-cols-2 items-center">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-foreground">Lifecycle Status</label>
+                            {{ form.status }}
+                            {% for error in form.status.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="flex items-center gap-3 pt-5">
+                            {{ form.is_published }}
+                            <label for="{{ form.is_published.id_for_label }}" class="text-xs font-medium text-foreground cursor-pointer">
+                                Publish publicly in the event catalogue
+                            </label>
+                            {% for error in form.is_published.errors %}<p class="text-xs text-destructive">{{ error }}</p>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit buttons -->
+                <div class="flex items-center justify-end gap-3 pt-4">
+                    <c-button_link href="{% url 'hackathons:list' %}" variant="outline" size="lg">
+                        Cancel
+                    </c-button_link>
+                    <c-button type="submit" size="lg">
+                        <c-lucideicon.check class="size-4" />
+                        {{ action_label }}
+                    </c-button>
+                </div>
+            </form>
+        </c-card>
+    </div>
+</div>
+{% endblock %}

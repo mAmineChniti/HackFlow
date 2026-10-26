@@ -3,6 +3,7 @@ import os
 from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
+from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase
 from django.utils import timezone
 
@@ -24,11 +25,20 @@ class HomePageTests(TestCase):
         self.assertContains(response, "HackFlow")
 
     def test_home_page_lists_events_from_the_database(self):
+        now = timezone.now()
+        organizer = get_user_model().objects.create_user(username="organizer")
         Hackathon.objects.create(
-            name="Database Driven Hack",
-            theme="Distributed systems",
-            start_date=timezone.localdate() + timedelta(days=10),
-            end_date=timezone.localdate() + timedelta(days=12),
+            title="Database Driven Hack",
+            tagline="Distributed systems",
+            description="An event created in the test database.",
+            category="Systems",
+            registration_start=now,
+            registration_deadline=now + timedelta(days=9),
+            start_date=now + timedelta(days=10),
+            end_date=now + timedelta(days=12),
+            organizer=organizer,
+            status=Hackathon.Status.REGISTRATION_OPEN,
+            is_published=True,
         )
 
         response = self.client.get("/")

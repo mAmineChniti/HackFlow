@@ -16,7 +16,7 @@
                 </h3>
                 <p class="text-xs text-muted-foreground">
                     {% if target_hackathon %}
-                    Suggested matches for <strong class="text-foreground">{{ target_hackathon.name }}</strong> ({{ target_hackathon.theme|default:"General" }})
+                    Suggested matches for <strong class="text-foreground">{{ target_hackathon.title }}</strong> ({{ target_hackathon.tagline|default:"General" }})
                     {% else %}
                     Select a hackathon to discover the best-matching companies.
                     {% endif %}

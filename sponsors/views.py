@@ -414,7 +414,7 @@ class SponsorshipCreateView(SponsorPermissionRequiredMixin, CreateView):
         )
         messages.success(
             self.request,
-            f'Sponsorship for "{self.object.sponsor.name}" was linked to hackathon "{self.object.hackathon.name}".',
+            f'Sponsorship for "{self.object.sponsor.name}" was linked to hackathon "{self.object.hackathon.title}".',
         )
         return response
 

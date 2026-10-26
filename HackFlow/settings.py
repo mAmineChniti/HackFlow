@@ -19,6 +19,18 @@ INSECURE_DEV_SECRET_KEY = "django-insecure-dev-only-change-me"
 load_dotenv(BASE_DIR / ".env")
 load_dotenv()
 
+if sys.platform == "win32":
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+    if hasattr(sys.stderr, "reconfigure"):
+        try:
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
 
 def env_bool(name: str, default: bool = False) -> bool:
     return os.getenv(name, str(default)).lower() in ("1", "true", "yes", "on")
@@ -80,9 +92,7 @@ INSTALLED_APPS = [
     # Local apps
     "accounts",
     "core",
-    # TEMPORAIRE : stub Hackathon pour dev local — NE PAS inclure dans la PR sponsors
     "hackathons",
-    # Module sponsors (Gestion des Sponsors)
     "sponsors",
     "projects",
 ]
@@ -247,7 +257,7 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
-# Fichiers uploadés (logos sponsors, etc.)
+# Fichiers uploadés (logos sponsors, banners, etc.)
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 

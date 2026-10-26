@@ -28,7 +28,7 @@
     </select>
     {% else %}
     <input
-        type="{{ field.field.widget.input_type }}"
+        type="{{ field.field.widget.input_type|default:'text' }}"
         name="{{ field.html_name }}"
         id="{{ field.id_for_label }}"
         {% if field.field.widget.input_type != 'password' %}value="{{ field.value|default_if_none:'' }}"{% endif %}

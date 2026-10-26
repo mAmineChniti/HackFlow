@@ -16,12 +16,8 @@ from django.db.models import Sum
 from django.shortcuts import render
 from django.utils import timezone
 
+from hackathons.models import Hackathon
 from projects.models import Project
-
-try:  # The hackathons app is still a temporary stub that may be replaced.
-    from hackathons.models import Hackathon
-except Exception:  # pragma: no cover - only when the stub app is removed
-    Hackathon = None
 
 try:  # Sponsors is an optional module for deployments that don't run events.
     from sponsors.models import Sponsorship, StatusChoices as SponsorshipStatus
@@ -43,6 +39,7 @@ EVENT_BADGE_VARIANTS = {
     "Upcoming": "secondary",
     "Completed": "outline",
     "Announced": "secondary",
+    "Cancelled": "outline",
 }
 
 RECENT_SUBMISSION_STATUSES = (
@@ -56,6 +53,15 @@ STATUS_TONES = {
     Project.Status.UNDER_REVIEW: "tone-amber",
     Project.Status.ACCEPTED: "tone-sky",
 }
+
+
+def _event_local_date(value):
+    """Convert a stored datetime to a date in the project timezone."""
+    if not value:
+        return None
+    if timezone.is_aware(value):
+        return timezone.localtime(value).date()
+    return value.date()
 
 
 def _format_date_range(start, end):
@@ -76,7 +82,7 @@ def _format_date_range(start, end):
 
 
 def _event_status(start, end, today):
-    """Derive a display status from the event dates (no stored status field)."""
+    """Derive a display status from the event dates."""
     if end and today > end:
         return "Completed"
     if start and today < start:
@@ -104,20 +110,43 @@ def _initials(text):
 
 
 def _build_event(event, index, today):
-    status = _event_status(event.start_date, event.end_date, today)
-    duration = _event_duration(event.start_date, event.end_date)
+    start = _event_local_date(event.start_date)
+    end = _event_local_date(event.end_date)
+    if event.status == Hackathon.Status.CANCELLED:
+        status = "Cancelled"
+    elif event.status == Hackathon.Status.FINISHED:
+        status = "Completed"
+    else:
+        status = _event_status(start, end, today)
+
+    duration = _event_duration(start, end)
+    registered = event.registered_count
+    capacity = event.max_participants
+    progress = min(int((registered / capacity) * 100), 100) if capacity else 0
+
     return {
-        "name": event.name,
-        "theme": event.theme,
-        "category": event.theme or "Hackathon",
+        "name": event.title,
+        "title": event.title,
+        "tagline": event.tagline,
+        "theme": event.tagline or event.category,
+        "category": event.category or "Hackathon",
         "status": status,
+        "status_code": event.status,
         "badge_variant": EVENT_BADGE_VARIANTS.get(status, "secondary"),
-        "dates": _format_date_range(event.start_date, event.end_date),
+        "dates": _format_date_range(start, end),
         "duration": f"{duration}-day event" if duration else "",
+        "mode": event.get_mode_display(),
+        "prize": event.prize_pool or "Prize TBA",
+        "registered": registered,
+        "capacity": capacity,
+        "progress": progress,
+        "url": event.get_absolute_url(),
+        "banner_image": event.banner_image,
         "start_date": event.start_date,
         "end_date": event.end_date,
         "gradient": EVENT_GRADIENTS[index % len(EVENT_GRADIENTS)],
-        "is_finished": status == "Completed",
+        "is_finished": status in {"Completed", "Cancelled"},
+        "is_cancelled": status == "Cancelled",
     }
 
 
@@ -130,38 +159,30 @@ def _featured_event(events, today):
     if not events:
         return None
 
-    ongoing = [
-        event
-        for event in events
-        if event.start_date
-        and event.end_date
-        and event.start_date <= today <= event.end_date
-    ]
+    ongoing = []
+    upcoming = []
+    finished = []
+    for event in events:
+        start = _event_local_date(event.start_date)
+        end = _event_local_date(event.end_date)
+        if start and end and start <= today <= end:
+            ongoing.append(event)
+        elif start and start > today:
+            upcoming.append(event)
+        elif end and end < today:
+            finished.append(event)
+
     if ongoing:
         return min(ongoing, key=lambda event: event.start_date)
-
-    upcoming = [
-        event
-        for event in events
-        if event.start_date and event.start_date > today
-    ]
     if upcoming:
         return min(upcoming, key=lambda event: event.start_date)
-
-    finished = [
-        event
-        for event in events
-        if event.end_date and event.end_date < today
-    ]
     if finished:
         return max(finished, key=lambda event: event.end_date)
-
     return events[0]
 
 
 def _platform_stats():
     """Real counters for the landing page instead of invented numbers."""
-    today = timezone.localdate()
     confirmed_funding = 0
     confirmed_count = 0
     if Sponsorship is not None:
@@ -169,13 +190,14 @@ def _platform_stats():
         confirmed_count = confirmed.count()
         confirmed_funding = confirmed.aggregate(total=Sum("amount"))["total"] or 0
 
+    published_events = Hackathon.objects.filter(is_published=True).exclude(
+        status=Hackathon.Status.CANCELLED
+    )
     return {
         "projects": Project.objects.count(),
         "builders": User.objects.count(),
-        "events": Hackathon.objects.count() if Hackathon else 0,
-        "live_events": (
-            Hackathon.objects.exclude(end_date__lt=today).count() if Hackathon else 0
-        ),
+        "events": published_events.count(),
+        "live_events": published_events.filter(end_date__gte=timezone.now()).count(),
         "confirmed_sponsorships": confirmed_count,
         "funding": confirmed_funding,
     }
@@ -188,65 +210,138 @@ def _platform_stats():
 # ---------------------------------------------------------------------------
 
 DEMO_CHALLENGES = [
-    {"title": "Rate Limit Bypass", "category": "Web Security", "glyph": "</>",
-     "difficulty": "Hard", "difficulty_class": "tone-rose", "points": "500",
-     "solves": "1,284", "tag": "New"},
-    {"title": "Build a RAG Pipeline", "category": "AI / ML", "glyph": "{ }",
-     "difficulty": "Intermediate", "difficulty_class": "tone-amber", "points": "750",
-     "solves": "642", "tag": ""},
-    {"title": "Zero-Copy Parser", "category": "Systems", "glyph": "0x1",
-     "difficulty": "Hard", "difficulty_class": "tone-rose", "points": "1000",
-     "solves": "231", "tag": ""},
+    {
+        "title": "Rate Limit Bypass",
+        "category": "Web Security",
+        "glyph": "</>",
+        "difficulty": "Hard",
+        "difficulty_class": "tone-rose",
+        "points": "500",
+        "solves": "1,284",
+        "tag": "New",
+    },
+    {
+        "title": "Build a RAG Pipeline",
+        "category": "AI / ML",
+        "glyph": "{ }",
+        "difficulty": "Intermediate",
+        "difficulty_class": "tone-amber",
+        "points": "750",
+        "solves": "642",
+        "tag": "",
+    },
+    {
+        "title": "Zero-Copy Parser",
+        "category": "Systems",
+        "glyph": "0x1",
+        "difficulty": "Hard",
+        "difficulty_class": "tone-rose",
+        "points": "1000",
+        "solves": "231",
+        "tag": "",
+    },
 ]
 
 DEMO_TESTIMONIALS = [
-    {"quote": ("HackFlow is where our team met. Two hackathons later we had a "
-               "working prototype, a design partner and a seed round."),
-     "name": "Maya Chen", "role": "Co-founder, Loopline", "initials": "MC",
-     "accent": "tone-lime"},
-    {"quote": ("The best-run hackathon I've ever judged. Rubrics were clear, "
-               "scoring was transparent, and the team actually shipped on time."),
-     "name": "Dev Patel", "role": "Staff Engineer, Vercel", "initials": "DP",
-     "accent": "tone-sky"},
-    {"quote": ("I shipped my first open-source PR through a HackFlow challenge. "
-               "A year later I maintain the project."),
-     "name": "Ana Souza", "role": "OSS maintainer, Rift", "initials": "AS",
-     "accent": "tone-fuchsia"},
+    {
+        "quote": (
+            "HackFlow is where our team met. Two hackathons later we had a "
+            "working prototype, a design partner and a seed round."
+        ),
+        "name": "Maya Chen",
+        "role": "Co-founder, Loopline",
+        "initials": "MC",
+        "accent": "tone-lime",
+    },
+    {
+        "quote": (
+            "The best-run hackathon I've ever judged. Rubrics were clear, "
+            "scoring was transparent, and the team actually shipped on time."
+        ),
+        "name": "Dev Patel",
+        "role": "Staff Engineer, Vercel",
+        "initials": "DP",
+        "accent": "tone-sky",
+    },
+    {
+        "quote": (
+            "I shipped my first open-source PR through a HackFlow challenge. "
+            "A year later I maintain the project."
+        ),
+        "name": "Ana Souza",
+        "role": "OSS maintainer, Rift",
+        "initials": "AS",
+        "accent": "tone-fuchsia",
+    },
 ]
 
 DEMO_FAQS = [
-    {"value": "faq-what", "question": "What exactly is HackFlow?",
-     "answer": ("HackFlow is a home for builders. We run time-boxed hackathons, host "
-                "always-on challenges, and give organizers the tooling to run their own "
-                "events — registration, teams, submissions, judging and live leaderboards, "
-                "all in one place.")},
-    {"value": "faq-free", "question": "Is it free to join?",
-     "answer": ("Yes. Creating a profile, joining hackathons and solving challenges is free "
-                "for builders. Organizers can start with a free tier and upgrade when they "
-                "need advanced judging, sponsor tooling or private events.")},
-    {"value": "faq-host", "question": "Can I host my own hackathon?",
-     "answer": ("Absolutely. You get a branded event page, registration and team management, "
-                "submission handling, rubric-based judging, automated scoring for technical "
-                "challenges and a real-time leaderboard. Reach out and we'll help you launch.")},
-    {"value": "faq-beginner", "question": "Are the challenges beginner friendly?",
-     "answer": ("Every challenge is tagged by difficulty, and we publish hints, write-ups and "
-                "community solutions after each event. Start with the beginner track, then "
-                "level up at your own pace.")},
-    {"value": "faq-judging", "question": "How are submissions judged?",
-     "answer": ("Hackathon projects are scored against a published rubric by independent "
-                "judges, with conflict-of-interest checks and transparent score breakdowns. "
-                "Technical challenges run against automated test suites, so leaderboard points "
-                "are reproducible.")},
+    {
+        "value": "faq-what",
+        "question": "What exactly is HackFlow?",
+        "answer": (
+            "HackFlow is a home for builders. We run time-boxed hackathons, host "
+            "always-on challenges, and give organizers the tooling to run their own "
+            "events — registration, teams, submissions, judging and live leaderboards, "
+            "all in one place."
+        ),
+    },
+    {
+        "value": "faq-free",
+        "question": "Is it free to join?",
+        "answer": (
+            "Yes. Creating a profile, joining hackathons and solving challenges is free "
+            "for builders. Organizers can start with a free tier and upgrade when they "
+            "need advanced judging, sponsor tooling or private events."
+        ),
+    },
+    {
+        "value": "faq-host",
+        "question": "Can I host my own hackathon?",
+        "answer": (
+            "Absolutely. You get a branded event page, registration and team management, "
+            "submission handling, rubric-based judging, automated scoring for technical "
+            "challenges and a real-time leaderboard. Reach out and we'll help you launch."
+        ),
+    },
+    {
+        "value": "faq-beginner",
+        "question": "Are the challenges beginner friendly?",
+        "answer": (
+            "Every challenge is tagged by difficulty, and we publish hints, write-ups and "
+            "community solutions after each event. Start with the beginner track, then "
+            "level up at your own pace."
+        ),
+    },
+    {
+        "value": "faq-judging",
+        "question": "How are submissions judged?",
+        "answer": (
+            "Hackathon projects are scored against a published rubric by independent "
+            "judges, with conflict-of-interest checks and transparent score breakdowns. "
+            "Technical challenges run against automated test suites, so leaderboard points "
+            "are reproducible."
+        ),
+    },
 ]
 
 
 def home(request):
     today = timezone.localdate()
 
-    events = []
-    if Hackathon is not None:
-        events = list(
-            Hackathon.objects.exclude(name="").order_by("-start_date", "name")
+    now = timezone.now()
+    published_events = Hackathon.objects.filter(is_published=True).exclude(
+        status=Hackathon.Status.CANCELLED
+    )
+    events = list(
+        published_events.filter(end_date__gte=now).order_by("start_date")[:6]
+    )
+    remaining_slots = 6 - len(events)
+    if remaining_slots:
+        events.extend(
+            published_events.filter(end_date__lt=now).order_by("-end_date")[
+                :remaining_slots
+            ]
         )
     event_cards = [_build_event(event, index, today) for index, event in enumerate(events)]
 
@@ -254,7 +349,7 @@ def home(request):
     featured_data = None
     if featured is not None:
         featured_data = _build_event(featured, 0, today)
-        featured_data["url"] = "#hackathons"
+        featured_data["url"] = featured.get_absolute_url()
 
     scored_projects = (
         Project.objects.filter(score__isnull=False)

@@ -73,7 +73,7 @@
             {% for h in hackathons %}
             <a href="{% url 'sponsors:dashboard' %}?hackathon={{ h.pk }}"
                class="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors {% if selected_hackathon.pk == h.pk %}bg-primary text-primary-foreground shadow-sm{% else %}border border-border bg-background/60 text-muted-foreground hover:text-foreground{% endif %}">
-                {{ h.name }}
+                {{ h.title }}
             </a>
             {% endfor %}
         </div>

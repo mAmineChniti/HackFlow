@@ -123,7 +123,7 @@ def export_sponsorships_to_excel(queryset: QuerySet[Sponsorship]) -> io.BytesIO:
         row_values = [
             sp.sponsor.name,
             sp.sponsor.get_sector_display(),
-            sp.hackathon.name,
+            sp.hackathon.title,
             sp.get_tier_display(),
             float(sp.amount),
             sp.get_contribution_type_display(),

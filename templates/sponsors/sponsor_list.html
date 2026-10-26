@@ -141,7 +141,7 @@
                 >
                     <option value="">All hackathons</option>
                     {% for h in hackathons %}
-                    <option value="{{ h.pk }}" {% if selected_hackathon == h.pk|stringformat:"s" %}selected{% endif %}>{{ h.name }}</option>
+                    <option value="{{ h.pk }}" {% if selected_hackathon == h.pk|stringformat:"s" %}selected{% endif %}>{{ h.title }}</option>
                     {% endfor %}
                 </c-select>
             </div>
