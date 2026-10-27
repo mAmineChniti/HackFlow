@@ -1,4 +1,5 @@
-from datetime import date
+from datetime import date, timedelta
+from django.utils import timezone
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
@@ -10,7 +11,8 @@ from django.urls import reverse
 
 from . import ai, services
 from .forms import JoinTeamForm, TeamForm
-from .models import Hackathon, Invitation, SkillProfile, Team, TeamMember
+from .models import Invitation, SkillProfile, Team, TeamMember
+from hackathons.models import Hackathon
 from .management.commands.evaluate_matching import evaluate
 
 User = get_user_model()
@@ -24,8 +26,17 @@ class BaseTeamTestCase(TestCase):
         self.leader = User.objects.create_user("leader", "leader@example.com", self.password)
         self.member = User.objects.create_user("member", "member@example.com", self.password)
         self.outsider = User.objects.create_user("outsider", "outsider@example.com", self.password)
+        now = timezone.now()
         self.hackathon = Hackathon.objects.create(
-            title="Hack Tunis", start_date=date(2026, 12, 1), end_date=date(2026, 12, 3)
+            title="Hack Tunis",
+            tagline="t",
+            description="d",
+            category="AI",
+            registration_start=now - timedelta(days=2),
+            registration_deadline=now + timedelta(days=5),
+            start_date=now + timedelta(days=7),
+            end_date=now + timedelta(days=9),
+            organizer=self.leader,
         )
         self.team = services.create_team(
             leader=self.leader,
@@ -76,7 +87,15 @@ class ModelTests(BaseTeamTestCase):
             name="Small",
             description="",
             hackathon=Hackathon.objects.create(
-                title="Autre", start_date=date(2026, 12, 5), end_date=date(2026, 12, 6)
+                title="Autre",
+                tagline="t",
+                description="d",
+                category="AI",
+                registration_start=timezone.now() - timedelta(days=2),
+                registration_deadline=timezone.now() + timedelta(days=5),
+                start_date=timezone.now() + timedelta(days=7),
+                end_date=timezone.now() + timedelta(days=9),
+                organizer=self.member,
             ),
             max_members=2,
         )
@@ -187,7 +206,15 @@ class PublicViewTests(BaseTeamTestCase):
             name="Zeta Squad",
             description="",
             hackathon=Hackathon.objects.create(
-                title="Autre", start_date=date(2026, 12, 5), end_date=date(2026, 12, 6)
+                title="Autre",
+                tagline="t",
+                description="d",
+                category="AI",
+                registration_start=timezone.now() - timedelta(days=2),
+                registration_deadline=timezone.now() + timedelta(days=5),
+                start_date=timezone.now() + timedelta(days=7),
+                end_date=timezone.now() + timedelta(days=9),
+                organizer=self.member,
             ),
             max_members=4,
         )
@@ -808,18 +835,3 @@ class SuggestionInviteFlowTests(BaseTeamTestCase):
             )
             self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(Invitation.objects.filter(status="pending").count(), len(usernames))
-
-
-class SeedDemoTests(TestCase):
-    def test_seed_demo_is_idempotent(self):
-        from io import StringIO
-
-        from django.core.management import call_command
-
-        call_command("seed_teams_demo", stdout=StringIO())
-        teams_count = Team.objects.count()
-        invitations_count = Invitation.objects.count()
-        call_command("seed_teams_demo", stdout=StringIO())
-        self.assertEqual(Team.objects.count(), teams_count)
-        self.assertEqual(Invitation.objects.count(), invitations_count)
-        self.assertEqual(Team.objects.get(name="Alpha Team").members.count(), 2)

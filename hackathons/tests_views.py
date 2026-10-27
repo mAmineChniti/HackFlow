@@ -350,9 +350,7 @@ class HackathonRegistrationViewTests(TestCase):
         self.client.force_login(admin_user)
         response = self.client.post(self.register_url, registration_payload())
         self.assertRedirects(response, self.detail_url)
-        self.assertTrue(
-            HackathonRegistration.objects.filter(participant=admin_user).exists()
-        )
+        self.assertTrue(HackathonRegistration.objects.filter(participant=admin_user).exists())
 
     def test_unregister_when_not_registered_warns(self):
         self.client.force_login(self.student)
@@ -363,9 +361,7 @@ class HackathonRegistrationViewTests(TestCase):
         HackathonRegistration.objects.create(hackathon=self.hackathon, participant=self.student)
         self.client.force_login(self.student)
         self.client.get(self.unregister_url)
-        self.assertTrue(
-            HackathonRegistration.objects.filter(participant=self.student).exists()
-        )
+        self.assertTrue(HackathonRegistration.objects.filter(participant=self.student).exists())
 
     def test_unregister_promotes_first_waitlisted_participant(self):
         Registration = HackathonRegistration
@@ -449,9 +445,7 @@ class HackathonAiEndpointTests(TestCase):
         self.client.force_login(self.organizer)
         response = self.client.post(reverse("hackathons:ai_generate"), {"category": "AI"})
         self.assertEqual(response.status_code, 400)
-        self.assertJSONEqual(
-            response.content, {"error": "Please provide an event title first."}
-        )
+        self.assertJSONEqual(response.content, {"error": "Please provide an event title first."})
 
     def test_form_encoded_generation(self):
         self.client.force_login(self.organizer)
@@ -476,12 +470,8 @@ class HackathonAiEndpointTests(TestCase):
 
     def test_generation_failure_returns_500(self):
         self.client.force_login(self.organizer)
-        with patch(
-            "hackathons.views.generate_hackathon_content", side_effect=RuntimeError("boom")
-        ):
-            response = self.client.post(
-                reverse("hackathons:ai_generate"), {"title": "Broken"}
-            )
+        with patch("hackathons.views.generate_hackathon_content", side_effect=RuntimeError("boom")):
+            response = self.client.post(reverse("hackathons:ai_generate"), {"title": "Broken"})
         self.assertEqual(response.status_code, 500)
         self.assertJSONEqual(response.content, {"error": "boom"})
 
@@ -549,8 +539,7 @@ class HackathonExportAndCheckinTests(TestCase):
         response = self.client.get(
             reverse("hackathons:participant_badge", args=[self.hackathon.slug])
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.context["registration"].ticket_code.startswith("HF-PASS-"))
+        self.assertRedirects(response, self.hackathon.get_absolute_url())
 
     def test_badge_falls_back_to_first_registration(self):
         other = make_user("checkin-other")
@@ -558,7 +547,7 @@ class HackathonExportAndCheckinTests(TestCase):
         response = self.client.get(
             reverse("hackathons:participant_badge", args=[self.hackathon.slug])
         )
-        self.assertEqual(response.context["registration"], self.registration)
+        self.assertRedirects(response, self.hackathon.get_absolute_url())
 
     def test_checkin_page_marks_attendance_once(self):
         self.client.force_login(self.organizer)

@@ -124,7 +124,9 @@ class HackathonForm(TailwindFormMixin, forms.ModelForm):
 
         User = get_user_model()
         if "judges" in self.fields:
-            self.fields["judges"].queryset = User.objects.filter(is_active=True)
+            self.fields["judges"].queryset = User.objects.filter(
+                models.Q(profile__role="judge") | models.Q(is_superuser=True)
+            )
             self.fields["judges"].required = False
             self.fields[
                 "judges"
